@@ -1,0 +1,44 @@
+## demo
+
+## defines defintions
+DEFINE V { i, e, a, u, o }
+DEFINE N { m, n, ng }
+DEFINE Pv- { p, t, k }
+DEFINE Pv+ { b, d, g }
+
+## merges 'n' and 'g' to 'ng'
+n g >> ng
+
+## stops are voiced when between vowels or before 'l'
+## but not contacting 'h'
+@Pv- >> @Pv+ / @V _ @V / _ l // h _ // _ h
+
+## word final vowels are lost
+@V >> / _ #
+
+## word final nasals are lost
+@N >> / _ #
+
+## voiced stops are devoiced when at the end of a word proceeding
+## a word that starts with the corresponding voiceless stop
+$s@Pv+ >> $s@Pv- / _ # $s@Pv-
+
+PRINT before h-loss:
+
+## 'h' is lost when following a phone
+## (same as: h >> // # _)
+h >> / * _
+
+DEFINE ALVEOLAR { n, t, d, s }
+DEFINE PALATAL { ɲ, tʃ, dʒ, ʃ }
+
+## converts alveolars to palatals when proceeding 'i' or 'j'
+## or proceeding another alveolar proceeding 'i' or 'j'
+@ALVEOLAR >> @PALATAL / _ (@ALVEOLAR) { i, j }
+
+## redefines defintions with palatals
+DEFINE N { m, n, ɲ, ng }
+DEFINE Pv- { p, t, k }
+DEFINE Pv+ { b, d, g }
+
+u >> y / i $gap .. _ // w $gap .. _
