@@ -157,19 +157,19 @@ pub const BLUE: &str = "\x1b[94m";
 pub const MAGENTA: &str = "\x1b[35m";
 
 #[cfg(feature = "no_color")]
-pub const RESET: &str = "";
+pub(crate) const RESET: &str = "";
 #[cfg(feature = "no_color")]
-pub const BOLD: &str = "";
+pub(crate) const BOLD: &str = "";
 #[cfg(feature = "no_color")]
-pub const RED: &str = "";
+pub(crate) const RED: &str = "";
 #[cfg(feature = "no_color")]
-pub const YELLOW: &str = "";
+pub(crate) const YELLOW: &str = "";
 #[cfg(feature = "no_color")]
-pub const GREEN: &str = "";
+pub(crate) const GREEN: &str = "";
 #[cfg(feature = "no_color")]
-pub const BLUE: &str = "";
+pub(crate) const BLUE: &str = "";
 #[cfg(feature = "no_color")]
-pub const MAGENTA: &str = "";
+pub(crate) const MAGENTA: &str = "";
 
 /// Formats an error with its enviroment
 fn format_error(e: impl std::error::Error, line: &str, line_num: usize) -> String {
