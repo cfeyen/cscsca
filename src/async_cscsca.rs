@@ -12,7 +12,7 @@ mod async_test;
 /// Returns a string of either the final text or a formatted error and the print logs
 // ! Should be made to remain in line with `cscsca::apply`
 pub async fn apply(input: &str, code: &str) -> (String, PrintLogs) {
-    let (res, logs) = apply_fallible(input, code).await;
+    let (res, logs) = apply_falliable(input, code).await;
     let output = match res {
         Ok(final_phones) => final_phones,
         Err(e) => e,
@@ -25,7 +25,7 @@ pub async fn apply(input: &str, code: &str) -> (String, PrintLogs) {
 /// 
 /// Returns a result of either the final text or a formatted error and the print logs
 // ! Should be made to remain in line with `cscsca::apply_falliable`
-pub async fn apply_fallible(input: &str, code: &str) -> (Result<String, String>, PrintLogs) {
+pub async fn apply_falliable(input: &str, code: &str) -> (Result<String, String>, PrintLogs) {
     let mut definitions = HashMap::new();
     let lines_with_nums = code_by_line(code);
     let mut phone_list = build_phone_list(input);
