@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{*, applier::async_applier};
 use tokio::time::{timeout, Duration, error::Elapsed};
 
-// todo: consider passing &mut logs to apply_falliable to a function that can early terminate and still return logs can be written
+// todo: consider passing &mut logs to apply_fallible to a function that can early terminate and still return logs can be written
 
 #[cfg(test)]
 mod async_test;
@@ -13,9 +13,9 @@ pub async fn limited_apply(input: &str, code: &str, limit: Duration) -> Result<(
     timeout(limit, apply(input, code)).await
 }
 
-/// Runs `async_cscsca::apply_falliable` for a finite time
-pub async fn limited_apply_falliable(input: &str, code: &str, limit: Duration) -> Result<(Result<String, String>, PrintLogs), Elapsed> {
-    timeout(limit, apply_falliable(input, code)).await
+/// Runs `async_cscsca::apply_fallible` for a finite time
+pub async fn limited_apply_fallible(input: &str, code: &str, limit: Duration) -> Result<(Result<String, String>, PrintLogs), Elapsed> {
+    timeout(limit, apply_fallible(input, code)).await
 }
 
 /// Asynchronously applies sca source code to an input string
@@ -23,7 +23,7 @@ pub async fn limited_apply_falliable(input: &str, code: &str, limit: Duration) -
 /// Returns a string of either the final text or a formatted error and the print logs
 // ! Should be made to remain in line with `cscsca::apply`
 pub async fn apply(input: &str, code: &str) -> (String, PrintLogs) {
-    let (res, logs) = apply_falliable(input, code).await;
+    let (res, logs) = apply_fallible(input, code).await;
     let output = match res {
         Ok(final_phones) => final_phones,
         Err(e) => e,
@@ -35,8 +35,8 @@ pub async fn apply(input: &str, code: &str) -> (String, PrintLogs) {
 /// Asynchronously applies sca source code to an input string
 /// 
 /// Returns a result of either the final text or a formatted error and the print logs
-// ! Should be made to remain in line with `cscsca::apply_falliable`
-pub async fn apply_falliable(input: &str, code: &str) -> (Result<String, String>, PrintLogs) {
+// ! Should be made to remain in line with `cscsca::apply_fallible`
+pub async fn apply_fallible(input: &str, code: &str) -> (Result<String, String>, PrintLogs) {
     let mut definitions = HashMap::new();
     let lines_with_nums = code_by_line(code);
     let mut phone_list = build_phone_list(input);

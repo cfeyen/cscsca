@@ -24,7 +24,7 @@ pub const BOUND_STR: &str = "#";
 /// 
 /// Returns a string of either the final text or a formatted error and the print logs
 pub fn apply(input: &str, code: &str) -> (String, PrintLogs) {
-    let (res, logs) = apply_falliable(input, code);
+    let (res, logs) = apply_fallible(input, code);
     let output = match res {
         Ok(final_phones) => final_phones,
         Err(e) => e,
@@ -36,7 +36,7 @@ pub fn apply(input: &str, code: &str) -> (String, PrintLogs) {
 /// Applies sca source code to an input string
 /// 
 /// Returns a result of either the final text or a formatted error and the print logs
-pub fn apply_falliable(input: &str, code: &str) -> (Result<String, String>, PrintLogs) {
+pub fn apply_fallible(input: &str, code: &str) -> (Result<String, String>, PrintLogs) {
     let mut definitions = HashMap::new();
     let lines_with_nums = code_by_line(code);
     let mut phone_list = build_phone_list(input);
