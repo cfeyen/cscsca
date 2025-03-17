@@ -1,11 +1,22 @@
 use std::collections::HashMap;
 
 use crate::{*, applier::async_applier};
+use tokio::{runtime::Runtime, time::{timeout, Duration, error::Elapsed}};
 
 // todo: consider passing &mut logs to apply_falliable to a function that can early terminate and still return logs can be written
 
 #[cfg(test)]
 mod async_test;
+
+/// Runs `async_cscsca::apply` for a finite time
+pub async fn limited_apply(input: &str, code: &str, limit: Duration) -> Result<(String, PrintLogs), Elapsed> {
+    timeout(limit, apply(input, code)).await
+}
+
+/// Runs `async_cscsca::apply_falliable` for a finite time
+pub async fn limited_apply_falliable(input: &str, code: &str, limit: Duration) -> Result<(Result<String, String>, PrintLogs), Elapsed> {
+    timeout(limit, apply_falliable(input, code)).await
+}
 
 /// Asynchronously applies sca source code to an input string
 /// 

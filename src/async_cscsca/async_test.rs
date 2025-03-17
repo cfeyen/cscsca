@@ -1,6 +1,6 @@
 use super::*;
 use tokio::runtime::Runtime;
-use tokio::time::{timeout, Duration};
+use tokio::time::Duration;
 
 #[test]
 fn demo_merge_n_g_and_nasals_dropped_word_finally() {
@@ -61,9 +61,8 @@ fn demo_print() {
 #[test]
 fn time_out_infinite_loop() {
     assert!(
-        Runtime::new().unwrap().block_on(async { timeout(
-            Duration::from_millis(100),
-            apply("a", "{a, b} > {b, a}")
-        ).await }).is_err()
+        Runtime::new().unwrap().block_on( async {
+            limited_apply("a", "{a, b} > {b, a}", Duration::from_millis(100)).await
+        } ).is_err()
     );
 }

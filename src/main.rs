@@ -33,7 +33,9 @@ fn main() {
         match (cmd.as_str(), args.len()) {
             #[cfg(feature = "async_apply")]
             (LIMITED_APPLY_CMD, 3..) => {
-                use tokio::{runtime::Runtime, time::{timeout, Duration}};
+                use tokio::{runtime::Runtime, time::Duration};
+                use cscsca::async_cscsca;
+
                 let time = &args[0];
                 let path = &args[1];
                 let text = &args[2..].join(" ");
@@ -50,13 +52,10 @@ fn main() {
                     println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
                     println!("{}", Runtime::new()
                         .map(|f| f.block_on( async {
-                            timeout(
-                                Duration::from_secs(time),
-                                cscsca::async_cscsca::apply(text, code)
-                            )
-                            .await
-                            .map(|output| {#[cfg(feature = "no_runtime_print")] output.1.print(); output.0})
-                            .unwrap_or(format!("{RED}Error:{RESET} Could not apply changes in the allotted time"))
+                            async_cscsca::limited_apply(text, code, Duration::from_secs(time))
+                                .await
+                                .map(|output| {#[cfg(feature = "no_runtime_print")] output.1.print(); output.0})
+                                .unwrap_or(format!("{RED}Error:{RESET} Could not apply changes in the allotted time"))
                         } ))
                         .unwrap_or(format!("{RED}Error:{RESET} An unexpected error occured"))
                     );
