@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{*, applier::async_applier};
-use tokio::{runtime::Runtime, time::{timeout, Duration, error::Elapsed}};
+use tokio::time::{timeout, Duration, error::Elapsed};
 
 // todo: consider passing &mut logs to apply_falliable to a function that can early terminate and still return logs can be written
 
