@@ -15,6 +15,7 @@ mod tests;
 pub const DEFINITION_LINE_START: &str = "DEFINE";
 pub const PRINT_LINE_START: &str = "PRINT";
 pub const COMMENT_LINE_START: &str = "##";
+pub const ESCAPE_CHAR: char = '\\';
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
@@ -98,9 +99,19 @@ fn tokenize_line<'s>(line: &'s str, definitions: &HashMap<&str, Vec<IrToken<'s>>
     let mut tokens = Vec::new();
     let mut prefix = None;
     let mut slice = SubString::new(line);
+    let mut escape = false;
 
     for c in chars {
         match c {
+            // handles escapes
+            _ if escape => {
+                slice.grow(c);
+                escape = false;
+            },
+            ESCAPE_CHAR => {
+                slice.grow(c);
+                escape = true
+            },
             // handles prefixes
             DEFINITION_PREFIX => start_prefix(Prefix::Definition, &mut tokens, &mut slice, &mut prefix, definitions)?,
             SELECTION_PREFIX => start_prefix(Prefix::Label, &mut tokens, &mut slice, &mut prefix, definitions)?,

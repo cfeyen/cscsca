@@ -274,6 +274,23 @@ fn print_statement() {
 }
 
 #[test]
+fn escape_print() {
+    let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move }));
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("\\PRINT"), shift_token, IrToken::Phone("escaped")])]), tokenize("\\PRINT >> escaped"))
+}
+
+#[test]
+fn escape_definition_call() {
+    let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move }));
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("\\@a"), shift_token])]), tokenize("\\@a >>"))
+}
+
+#[test]
+fn escape_escape() {
+    assert_eq!(Err((IrError::UndefinedDefinition("a"), 1)), tokenize("\\\\@a >>"))
+}
+
+#[test]
 fn tokenize_and_check_simple() {
     assert_eq!(Ok(vec![
         IrLine::Empty,

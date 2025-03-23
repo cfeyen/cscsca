@@ -42,7 +42,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[P
 
     match token {
         // if the phone matches, check the next token with the next index, else return false
-        RuleToken::Phone(phone) => if phones.get(*phone_index).unwrap_or(&Phone::new(BOUND_STR)) == phone {
+        RuleToken::Phone(phone) => if phone.matches(phones.get(*phone_index).unwrap_or(&Phone::new(BOUND_STR))) {
             *phone_index = direction.change_by_one(*phone_index);
             tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
         } else {

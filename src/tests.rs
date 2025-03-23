@@ -57,6 +57,14 @@ fn demo_print() {
 }
 
 #[test]
+fn escape() {
+    assert_eq!(
+        "Aa@",
+        apply("@aa@", "\\@ a >> A").0
+    )
+}
+
+#[test]
 fn matches_with_option_that_can_insert_but_should_not() {
     assert_eq!(
         "paa".to_string(),

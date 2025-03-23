@@ -1,4 +1,4 @@
-use crate::BOUND_STR;
+use crate::{tokens::ESCAPE_CHAR, BOUND_STR};
 
 /// A representation of a phoneme
 /// 
@@ -22,6 +22,44 @@ impl<'s> Phone<'s> {
     /// Gets the symbol of the phone
     pub fn symbol(&self) -> &'s str {
         self.symbol
+    }
+    
+    /// Determines if a different phone matches with escaping characters in the first phone removed
+    /// 
+    /// **Note**: This is not symetric, a.matches(b) does not imply b.matches(a)
+    /// 
+    /// ```
+    /// use cscsca::phones::Phone;
+    /// 
+    /// assert!(Phone::new("test").matches(&Phone::new("test")));
+    /// assert!(!Phone::new("test").matches(&Phone::new("not test")));
+    /// assert!(Phone::new("\\@").matches(&Phone::new("@")));
+    /// assert!(!Phone::new("@").matches(&Phone::new("\\@")));
+    /// assert!(Phone::new("\\\\@").matches(&Phone::new("\\@")));
+    /// assert!(!Phone::new("\\@").matches(&Phone::new("\\@")));
+    /// ```
+    pub fn matches(&self, other: &Self) -> bool {
+        let phone_chars = self.symbol.chars();
+        let mut other_chars = other.symbol.chars();
+
+        let mut escape = false;
+
+        for phone_char in phone_chars {
+            if phone_char == ESCAPE_CHAR && !escape {
+                escape = true;
+                continue;
+            }
+
+            escape = false;
+
+            if let Some(str_char) = other_chars.next() {
+                if phone_char != str_char { return false; }
+            } else {
+                return false;
+            }
+        }
+
+        other_chars.next().is_none()
     }
 }
 
