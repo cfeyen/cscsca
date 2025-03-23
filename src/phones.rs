@@ -24,12 +24,13 @@ impl<'s> Phone<'s> {
         self.symbol
     }
     
-    /// Determines if a different phone matches with escaping characters in the first phone removed
+    /// Determines if a different phone matches with escaping characters in the first phone removed,
+    /// and whitespace treated as bounds
     /// 
     /// **Note**: This is not symetric, a.matches(b) does not imply b.matches(a)
     /// 
     /// ```
-    /// use cscsca::phones::Phone;
+    /// use cscsca::{phones::Phone, BOUND_STR};
     /// 
     /// assert!(Phone::new("test").matches(&Phone::new("test")));
     /// assert!(!Phone::new("test").matches(&Phone::new("not test")));
@@ -37,6 +38,8 @@ impl<'s> Phone<'s> {
     /// assert!(!Phone::new("@").matches(&Phone::new("\\@")));
     /// assert!(Phone::new("\\\\@").matches(&Phone::new("\\@")));
     /// assert!(!Phone::new("\\@").matches(&Phone::new("\\@")));
+    /// assert!(Phone::new("\\ ").matches(&Phone::new(&format!("{BOUND_STR}"))));
+    /// assert!(Phone::new("\\ ").matches(&Phone::new(" ")));
     /// ```
     pub fn matches(&self, other: &Self) -> bool {
         let phone_chars = self.symbol.chars();
@@ -52,8 +55,9 @@ impl<'s> Phone<'s> {
 
             escape = false;
 
-            if let Some(str_char) = other_chars.next() {
-                if phone_char != str_char { return false; }
+            if let Some(other_char) = other_chars.next() {
+                if phone_char.is_whitespace() && other_char.to_string() == BOUND_STR { continue; }
+                if phone_char != other_char { return false; }
             } else {
                 return false;
             }
