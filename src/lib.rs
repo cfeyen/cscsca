@@ -119,7 +119,7 @@ fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
 /// 
 /// Returns any errors as a formated string
 fn build_rule<'s>(line: &'s str, line_num: usize, definitions: &mut HashMap<&'s str, Vec<IrToken<'s>>>) -> Result<RuleLine<'s>, String> {
-    let tokens = tokens::tokenize_line_or_create_defintion(line, definitions)
+    let tokens = tokens::tokenize_line_or_create_runtime_command(line, definitions)
         .map_err(|e| format_error(e, line, line_num))?;
 
     token_checker::check_token_line(&tokens)

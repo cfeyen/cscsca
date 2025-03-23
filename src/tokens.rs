@@ -50,7 +50,7 @@ pub fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
     let mut definitions = HashMap::new();
 
     for (line_num, line) in lines {
-        match tokenize_line_or_create_defintion(line, &mut definitions) {
+        match tokenize_line_or_create_runtime_command(line, &mut definitions) {
             Ok(tokens) => token_lines.push(tokens),
             Err(e) => return Err((e, line_num)),
         }
@@ -62,7 +62,7 @@ pub fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
 /// Converts source code into intermediate representation tokens
 /// 
 /// Note: these tokens may not be structurally valid and should be checked
-pub fn tokenize_line_or_create_defintion<'s>(line: &'s str, definitions: &mut HashMap<&'s str, Vec<IrToken<'s>>>) -> Result<IrLine<'s>, IrError<'s>> {
+pub fn tokenize_line_or_create_runtime_command<'s>(line: &'s str, definitions: &mut HashMap<&'s str, Vec<IrToken<'s>>>) -> Result<IrLine<'s>, IrError<'s>> {
     Ok(if let Some(definition_content) = line.strip_prefix(DEFINITION_LINE_START) {
         // handles definitions
         let ir = tokenize_line(definition_content, definitions)?;
