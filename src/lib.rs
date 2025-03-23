@@ -132,34 +132,28 @@ fn phone_list_to_string(phone_list: &[Phone]) -> String {
 }
 
 #[cfg(not(feature = "no_color"))]
-pub const RESET: &str = "\x1b[0m";
-#[cfg(not(feature = "no_color"))]
-pub const BOLD: &str = "\x1b[1m";
-#[cfg(not(feature = "no_color"))]
-pub const RED: &str = "\x1b[31m";
-#[cfg(not(feature = "no_color"))]
-pub const YELLOW: &str = "\x1b[93m";
-#[cfg(not(feature = "no_color"))]
-pub const GREEN: &str = "\x1b[92m";
-#[cfg(not(feature = "no_color"))]
-pub const BLUE: &str = "\x1b[94m";
-#[cfg(not(feature = "no_color"))]
-pub const MAGENTA: &str = "\x1b[35m";
+pub mod colors {
+    pub const RESET: &str = "\x1b[0m";
+    pub const BOLD: &str = "\x1b[1m";
+    pub const RED: &str = "\x1b[31m";
+    pub const YELLOW: &str = "\x1b[93m";
+    pub const GREEN: &str = "\x1b[92m";
+    pub const BLUE: &str = "\x1b[94m";
+    pub const MAGENTA: &str = "\x1b[35m";
+}
 
 #[cfg(feature = "no_color")]
-pub(crate) const RESET: &str = "";
-#[cfg(feature = "no_color")]
-pub(crate) const BOLD: &str = "";
-#[cfg(feature = "no_color")]
-pub(crate) const RED: &str = "";
-#[cfg(feature = "no_color")]
-pub(crate) const YELLOW: &str = "";
-#[cfg(feature = "no_color")]
-pub(crate) const GREEN: &str = "";
-#[cfg(feature = "no_color")]
-pub(crate) const BLUE: &str = "";
-#[cfg(feature = "no_color")]
-pub(crate) const MAGENTA: &str = "";
+pub mod colors {
+    pub const RESET: &str = "";
+    pub const BOLD: &str = "";
+    pub const RED: &str = "";
+    pub const YELLOW: &str = "";
+    pub const GREEN: &str = "";
+    pub const BLUE: &str = "";
+    pub const MAGENTA: &str = "";
+}
+
+use colors::*;
 
 /// Formats an error with its enviroment
 fn format_error(e: impl std::error::Error, line: &str, line_num: usize) -> String {

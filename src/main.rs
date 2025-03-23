@@ -1,6 +1,6 @@
 use std::{env, fs};
 
-use cscsca::{RED, GREEN, BLUE, BOLD, RESET};
+use cscsca::colors::{RED, GREEN, BLUE, BOLD, RESET};
 
 const APPLY_CMD: &str = "sca";
 #[cfg(feature = "async_apply")]
