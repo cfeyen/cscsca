@@ -171,7 +171,7 @@ pub fn print_chars(text: &str) {
 
 /// color formats then prints the help file
 pub fn help() {
-    let text = &mut include_str!("help.txt").chars();
+    let text = &mut include_str!("assets/help.txt").chars();
     let mut help = String::new();
 
     while let Some(c) = text.next() {
@@ -206,11 +206,11 @@ pub fn help() {
 }
 
 /// returns the demo file
-pub fn demo() -> &'static str {
-    include_str!("demo.sca")
+pub const fn demo() -> &'static str {
+    include_str!("assets/demo.sca")
 }
 
 /// returns the template file
-pub fn template() -> &'static str {
-    include_str!("base.sca")
+pub const fn template() -> &'static str {
+    include_str!("assets/base.sca")
 }
