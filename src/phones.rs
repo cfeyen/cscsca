@@ -10,17 +10,20 @@ pub struct Phone<'s> {
 
 impl<'s> Phone<'s> {
     /// Creates a new phone with the given symbol
-    pub fn new(symbol: &'s str) -> Self {
+    #[inline]
+    pub const fn new(symbol: &'s str) -> Self {
         Self { symbol, }
     }
 
     /// Creates a word boundery
-    pub fn new_bound() -> Self {
+    #[inline]
+    pub const fn new_bound() -> Self {
         Self::new(BOUND_STR)
     }
 
     /// Gets the symbol of the phone
-    pub fn symbol(&self) -> &'s str {
+    #[inline]
+    pub const fn symbol(&self) -> &'s str {
         self.symbol
     }
     

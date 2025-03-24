@@ -240,41 +240,48 @@ struct SubString<'s> {
 
 impl<'s> SubString<'s> {
     /// Creates a new SliceData
-    pub fn new(source: &'s str) -> Self {
+    #[inline]
+    pub const fn new(source: &'s str) -> Self {
         Self { source, start: 0, len: 0 }
     }
 
     /// Returns if the slice has 0 length
-    pub fn is_empty(&self) -> bool {
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     /// Retreives the internal slice (may be done any number of times)
+    #[inline]
     pub fn take_slice(&self) -> &'s str {
         &self.source[self.start..self.start + self.len]
     }
 
     /// Increments the internal slice length by the size of c in utf-8
-    pub fn grow(&mut self, c: char) {
+    #[inline]
+    pub const fn grow(&mut self, c: char) {
         self.len += c.len_utf8();
     }
 
     /// Moves the slice start to the index after the slice ends and resets the length
-    pub fn move_after (&mut self) {
+    #[inline]
+    pub const fn move_after (&mut self) {
         self.start += self.len;
         self.len = 0;
     }
     
     /// Moves the slice start to the index after the slice ends and resets the length
     /// then moves skipping a byte
-    pub fn skip_byte(&mut self) {
+    #[inline]
+    pub const fn skip_byte(&mut self) {
         self.move_after();
         self.start += 1;
     }
 
     /// Moves the slice start to the index after the slice ends and resets the length
     /// then moves skipping a slice the size of c in utf-8
-    pub fn skip(&mut self, c: char) {
+    #[inline]
+    pub const fn skip(&mut self, c: char) {
         self.move_after();
         self.start += c.len_utf8();
     }

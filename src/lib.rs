@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use phones::Phone;
 use rules::RuleLine;
-use runtime_cmd::{PrintLogs, RuntimeCmd};
+use runtime_cmd::{PrintLog, RuntimeCmd};
 use tokens::{ir::IrToken, token_checker};
 
 pub mod tokens;
@@ -22,18 +22,18 @@ pub const BOUND_STR: &str = "#";
 
 /// Applies sca source code to an input string
 /// 
-/// Returns a string of either the final text or a formatted error and the print logs
-pub fn apply(input: &str, code: &str) -> (String, PrintLogs) {
-    let mut logs = PrintLogs::default();
-    let result = apply_fallible(input, code, &mut logs);
+/// Returns a string of either the final text or a formatted error and the print log
+pub fn apply(input: &str, code: &str) -> (String, PrintLog) {
+    let mut log = PrintLog::default();
+    let result = apply_fallible(input, code, &mut log);
 
-    (result.unwrap_or_else(|e| e), logs)
+    (result.unwrap_or_else(|e| e), log)
 }
 
 /// Applies sca source code to an input string, logging prints
 /// 
 /// Returns a result of either the final text or a formatted error
-pub fn apply_fallible(input: &str, code: &str, print_logs: &mut PrintLogs) -> Result<String, String> {
+pub fn apply_fallible(input: &str, code: &str, print_log: &mut PrintLog) -> Result<String, String> {
     let mut definitions = HashMap::new();
     let lines_with_nums = code_by_line(code);
     let mut phone_list = build_phone_list(input);
@@ -47,7 +47,7 @@ pub fn apply_fallible(input: &str, code: &str, print_logs: &mut PrintLogs) -> Re
                     .map_err(|e| format_error(e, line, line_num))?
             }
             RuleLine::Empty => (),
-            RuleLine::Cmd(cmd, args) => handle_runtime_cmd(cmd, args, &phone_list, print_logs),
+            RuleLine::Cmd(cmd, args) => handle_runtime_cmd(cmd, args, &phone_list, print_log),
         }
     }
 
@@ -55,13 +55,13 @@ pub fn apply_fallible(input: &str, code: &str, print_logs: &mut PrintLogs) -> Re
 }
 
 /// Executes runtime commends
-fn handle_runtime_cmd(cmd: RuntimeCmd, args: &str, phone_list: &[Phone], logs: &mut PrintLogs) {
+fn handle_runtime_cmd(cmd: RuntimeCmd, args: &str, phone_list: &[Phone], log: &mut PrintLog) {
     match cmd {
         RuntimeCmd::Print => {
             let output = format!("{args} '{BLUE}{}{RESET}'", phone_list_to_string(phone_list));
             #[cfg(not(feature = "no_runtime_print"))]
             println!("{output}");
-            logs.log(output);
+            log.log(output);
         }
     }
 }
