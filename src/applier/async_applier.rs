@@ -5,8 +5,7 @@ use crate::{rules::sound_change_rule::SoundChangeRule, Phone};
 use super::{apply_at, next_position, ApplicationError};
 
 /// Asynchronously applies a rule to a list of phones
-/// 
-/// Should be made to remain in line with `applier::apply`
+// ! Should be made to remain in line with `applier::apply`
 pub async fn apply<'a, 's>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>) -> Result<(), ApplicationError<'a, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
