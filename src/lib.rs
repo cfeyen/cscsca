@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use phones::Phone;
 use rules::RuleLine;
-use runtime_cmd::{PrintLog, RuntimeCmd};
+use runtime_cmds::{PrintLog, RuntimeCmd};
 use tokens::{ir::IrToken, token_checker};
 
 pub mod tokens;
@@ -10,7 +10,7 @@ pub mod phones;
 pub mod meta_tokens;
 pub mod rules;
 pub mod applier;
-pub mod runtime_cmd;
+pub mod runtime_cmds;
 
 #[cfg(feature = "async_apply")]
 pub mod async_cscsca;

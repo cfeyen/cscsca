@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use sound_change_rule::{Cond, LabelType, RuleToken, ScopeId, SoundChangeRule};
 
-use crate::{meta_tokens::ScopeType, phones::Phone, runtime_cmd::RuntimeCmd, tokens::{ir::{Break, IrToken}, IrLine}};
+use crate::{meta_tokens::ScopeType, phones::Phone, runtime_cmds::RuntimeCmd, tokens::{ir::{Break, IrToken}, IrLine}};
 
 pub mod sound_change_rule;
 
