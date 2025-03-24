@@ -165,7 +165,7 @@ pub fn print_chars(text: &str) {
     println!("Characters in '{BLUE}{text}{RESET}':");
 
     for (i, c) in text.chars().enumerate().map(|(i, c)| (i + 1, c)) {
-        println!("{i}:\t{c} ~ '{YELLOW}{}{RESET}'", format!("{c:?}").replace("'", ""));
+        println!("{i}:\t{c} ~ '{YELLOW}{}{RESET}'", c.escape_default());
     }
 }
 
