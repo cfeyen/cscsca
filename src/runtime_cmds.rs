@@ -11,6 +11,12 @@ pub struct PrintLog {
 }
 
 impl PrintLog {
+    /// Creates an empty log
+    #[inline]
+    pub const fn new() -> Self {
+        Self { logs: Vec::new() }
+    }
+
     /// Prints the logs
     pub fn print(&self) {
         for log in &self.logs {
