@@ -75,7 +75,7 @@ impl Runtime {
     }
 
     /// Applies rules to an input given the context of the runtime, errors are returned as formated strings
-    pub fn apply(mut self, input: &str, code: &str) -> (Result<String, String>, PrintLog) {
+    pub fn apply(&mut self, input: &str, code: &str) -> (Result<String, String>, PrintLog) {
         let mut log = PrintLog::new();
 
         (self.apply_all_lines(input, code, &mut log), log)
