@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError};
 
 use crate::{meta_tokens::{Direction, Shift, ShiftType}, phones::Phone, rules::sound_change_rule::{RuleToken, SoundChangeRule}, tokens::ir::IrToken, BOUND_STR};
@@ -7,19 +9,23 @@ mod matcher;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "async_apply")]
-pub mod async_applier;
-
-/// Applies a rule to a list of phones
-pub fn apply<'a, 's>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>) -> Result<(), ApplicationError<'a, 's>> {
+/// Applies a rule to a list of phones within a time limit
+pub fn apply<'a, 's>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, max_time: &Duration) -> Result<(), ApplicationError<'a, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
+    let start = Instant::now();
     
     while phone_index < phones.len() {
         if let Some((replace_len, input_len)) = apply_at(rule, phones, phone_index)? {
             phone_index = next_position(rule, input_len, replace_len, phone_index, phones);
         } else {
             phone_index = dir.change_by_one(phone_index);
+        }
+
+        // returns an error if the time limit is exceeded
+        // protects against infinite loops
+        if Instant::now() - start > *max_time {
+            return Err(ApplicationError::TimeLimitExceeded);
         }
     }
 
@@ -237,6 +243,7 @@ pub enum ApplicationError<'a, 's: 'a> {
     MatchError(MatchError<'a, 's>),
     UnmatchedTokenInOutput(&'a RuleToken<'s>),
     InvalidSelectionAccess(&'a RuleToken<'s>, usize),
+    TimeLimitExceeded,
 }
 
 impl<'a, 's> From<MatchError<'a, 's>> for ApplicationError<'a, 's> {
@@ -256,7 +263,8 @@ impl std::fmt::Display for ApplicationError<'_, '_> {
             Self::MatchError(e) => format!("{e}"),
             Self::UnmatchedTokenInOutput(token) => {
                 format!("Cannot match the following token in the output to a token in the input: {token}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
-            }
+            },
+            Self::TimeLimitExceeded => "Could not apply changes in allotted time".to_string()
         };
 
         write!(f, "{}", s)

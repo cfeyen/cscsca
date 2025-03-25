@@ -97,9 +97,6 @@
         A '[y]#[-]' phone acts as a word boundary
         A '[y]\[-]' can escape the special effects of the following character
 
-[m]cscsca[-] [g][!]sca_lim[-] [b]time[-] [b]path[-] [b]text[-]
-    Attempts to apply the rules at the file in [b]path[-] to [b]text[-] in [b]time[-] seconds
-
 [m]cscsca[-] [g][!]apply[-] [b]code_file[-] [b]text_file[-]
     Prints the result of appling the code in [b]code_file[-] to [b]text_file[-]
 

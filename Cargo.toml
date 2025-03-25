@@ -1,12 +1,9 @@
 [package]
 name = "cscsca"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [features]
-async_apply = ["dep:tokio"]
-no_runtime_print = []
 no_color = []
 
 [dependencies]
-tokio = { version = "1.43.0", features = ["rt", "rt-multi-thread", "time"], optional = true }

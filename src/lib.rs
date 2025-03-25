@@ -1,9 +1,6 @@
-use std::collections::HashMap;
-
 use phones::Phone;
-use rules::RuleLine;
-use runtime_cmds::{PrintLog, RuntimeCmd};
-use tokens::{ir::IrToken, token_checker};
+use runtime::Runtime;
+use runtime_cmds::PrintLog;
 
 pub mod tokens;
 pub mod phones;
@@ -12,8 +9,7 @@ pub mod rules;
 pub mod applier;
 pub mod runtime_cmds;
 
-#[cfg(feature = "async_apply")]
-pub mod async_cscsca;
+pub mod runtime;
 
 #[cfg(test)]
 mod tests;
@@ -24,8 +20,7 @@ pub const BOUND_STR: &str = "#";
 /// 
 /// Returns a string of either the final text or a formatted error and the print log
 pub fn apply(input: &str, code: &str) -> (String, PrintLog) {
-    let mut log = PrintLog::default();
-    let result = apply_fallible(input, code, &mut log);
+    let (result, log) = apply_fallible(input, code);
 
     (result.unwrap_or_else(|e| e), log)
 }
@@ -33,45 +28,9 @@ pub fn apply(input: &str, code: &str) -> (String, PrintLog) {
 /// Applies sca source code to an input string, logging prints
 /// 
 /// Returns a result of either the final text or a formatted error
-pub fn apply_fallible(input: &str, code: &str, print_log: &mut PrintLog) -> Result<String, String> {
-    let mut definitions = HashMap::new();
-    let lines_with_nums = code_by_line(code);
-    let mut phone_list = build_phone_list(input);
-
-    for (line_num, line) in lines_with_nums {
-        let rule_line = build_rule(line, line_num, &mut definitions)?;
-
-        match rule_line {
-            RuleLine::Rule(rule) => {
-                applier::apply(&rule, &mut phone_list)
-                    .map_err(|e| format_error(e, line, line_num))?
-            }
-            RuleLine::Empty => (),
-            RuleLine::Cmd(cmd, args) => handle_runtime_cmd(cmd, args, &phone_list, print_log),
-        }
-    }
-
-    Ok(phone_list_to_string(&phone_list))
-}
-
-/// Executes runtime commends
-fn handle_runtime_cmd(cmd: RuntimeCmd, args: &str, phone_list: &[Phone], log: &mut PrintLog) {
-    match cmd {
-        RuntimeCmd::Print => {
-            let output = format!("{args} '{BLUE}{}{RESET}'", phone_list_to_string(phone_list));
-            #[cfg(not(feature = "no_runtime_print"))]
-            println!("{output}");
-            log.log(output);
-        }
-    }
-}
-
-/// Converts code to an iterator of each line with the line number attached
-fn code_by_line(code: &str) -> impl Iterator<Item = (usize, &str)> {
-    code
-        .lines()
-        .enumerate()
-        .map(|(num, line)| (num + 1, line))
+#[inline]
+pub fn apply_fallible(input: &str, code: &str) -> (Result<String, String>, PrintLog) {
+    Runtime::default().apply(input, code)
 }
 
 /// Builds a list of phones (as string slices with lifetime 's)
@@ -103,20 +62,6 @@ fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
     }
 
     phone_list
-}
-
-/// Converts a line to a rule
-/// 
-/// Returns any errors as a formated string
-fn build_rule<'s>(line: &'s str, line_num: usize, definitions: &mut HashMap<&'s str, Vec<IrToken<'s>>>) -> Result<RuleLine<'s>, String> {
-    let tokens = tokens::tokenize_line_or_create_runtime_command(line, definitions)
-        .map_err(|e| format_error(e, line, line_num))?;
-
-    token_checker::check_token_line(&tokens)
-        .map_err(|e| format_error(e, line, line_num))?;
-
-    rules::build_rule(&tokens)
-        .map_err(|e| format_error(e, line, line_num))
 }
 
 /// Converts a list of string slices to a string
@@ -156,7 +101,7 @@ pub mod colors {
 use colors::*;
 
 /// Formats an error with its enviroment
-fn format_error(e: impl std::error::Error, line: &str, line_num: usize) -> String {
+fn format_error(e: &dyn std::error::Error, line: &str, line_num: usize) -> String {
     format!("{RED}Error:{RESET} {e}\nLine {line_num}: {line}")
 }
 

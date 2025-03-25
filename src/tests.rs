@@ -65,6 +65,11 @@ fn escape() {
 }
 
 #[test]
+fn time_out_of_infinte_loop() {
+    assert!(apply_fallible("a", "{a, b} > {b, a}").0.is_err());
+}
+
+#[test]
 fn matches_with_option_that_can_insert_but_should_not() {
     assert_eq!(
         "paa".to_string(),

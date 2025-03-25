@@ -3,8 +3,6 @@ use std::{env, fs};
 use cscsca::colors::{RED, GREEN, BLUE, BOLD, RESET};
 
 const APPLY_CMD: &str = "sca";
-#[cfg(feature = "async_apply")]
-const LIMITED_APPLY_CMD: &str = "sca_lim";
 const APPLY_TO_FILE_CMD: &str = "apply";
 const CHAR_HELP_CMD: &str = "chars";
 const HELP_CMD: &str = "help";
@@ -31,38 +29,6 @@ fn main() {
 
     if let Some(cmd) = cmd {
         match (cmd.as_str(), args.len()) {
-            #[cfg(feature = "async_apply")]
-            (LIMITED_APPLY_CMD, 3..) => {
-                use tokio::{runtime::Runtime, time::Duration};
-                use cscsca::async_cscsca;
-
-                let time = &args[0];
-                let path = &args[1];
-                let text = &args[2..].join(" ");
-
-                if let Ok(time) = time.parse() {
-                    let code = &match fs::read_to_string(path) {
-                        Ok(code) => code,
-                        Err(_) => {
-                            println!("{RED}Error:{RESET} Could not find file '{BLUE}{path}{RESET}'");
-                            return;
-                        }
-                    };
-    
-                    println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
-                    println!("{}", Runtime::new()
-                        .map(|f| f.block_on( async {
-                            async_cscsca::limited_apply(text, code, Duration::from_secs(time))
-                                .await
-                                .map(|output| {#[cfg(feature = "no_runtime_print")] output.1.print(); output.0})
-                                .unwrap_or(format!("{RED}Error:{RESET} Could not apply changes in the allotted time"))
-                        } ))
-                        .unwrap_or(format!("{RED}Error:{RESET} An unexpected error occured"))
-                    );
-                } else {
-                    println!("{RED}Error:{RESET} could not convert {time} to an integer number of seconds");
-                }
-            }
             (APPLY_CMD, 2..) => {
                 let path = &args[0];
                 let text = &args[1..].join(" ");
@@ -78,8 +44,6 @@ fn main() {
                 println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
 
                 let output = cscsca::apply(text, code);
-                #[cfg(feature = "no_runtime_print")]
-                output.1.print();
                 println!("{}", output.0);
             },
             // prints the result of appling code from one file to text in another
@@ -106,8 +70,6 @@ fn main() {
                 println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
 
                 let output = cscsca::apply(text, code);
-                #[cfg(feature = "no_runtime_print")]
-                output.1.print();
                 println!("{}", output.0);
             },
             // stores the result of appling code from one file to text in another in a third
@@ -136,8 +98,6 @@ fn main() {
                 println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
 
                 let output = cscsca::apply(text, code);
-                #[cfg(feature = "no_runtime_print")]
-                output.1.print();
                 println!("{}", output.0);
 
                 match fs::write(dest, output.0) {
