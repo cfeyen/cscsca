@@ -56,7 +56,7 @@ pub enum Cond<'s> {
 
 impl<'s> Cond<'s> {
     /// Checks if the condition matches the phones in a list around a given index
-    /// assuming the input of a given size matches
+    /// assuming the input of a given size matches and based on the application direction
     pub fn eval<'a>(&'a self, phones: &[Phone<'s>], phone_index: usize, input_len: usize, choices: &mut Choices<'a, 's>, dir: Direction) -> Result<bool, MatchError<'a, 's>> {
         match self {
             Self::Match { before, after } => {
