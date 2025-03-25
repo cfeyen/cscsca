@@ -109,7 +109,7 @@ fn remove_word_final_ltr() { // also tests bound deduplication
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
         input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
         output: vec![],
-        conds: vec![Cond { before: Vec::new(), after: vec![RuleToken::Phone(Phone::new_bound())] }],
+        conds: vec![Cond::Match { before: Vec::new(), after: vec![RuleToken::Phone(Phone::new_bound())] }],
         anti_conds: Vec::new(),
     };
 
@@ -126,7 +126,7 @@ fn remove_word_final_rtl() { // also tests bound deduplication
         kind: Shift { dir: Direction::RTL, kind: ShiftType::Move },
         input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
         output: vec![],
-        conds: vec![Cond { before: Vec::new(), after: vec![RuleToken::Phone(Phone::new_bound())] }],
+        conds: vec![Cond::Match { before: Vec::new(), after: vec![RuleToken::Phone(Phone::new_bound())] }],
         anti_conds: Vec::new(),
     };
 
@@ -234,7 +234,7 @@ fn phone_to_phone_word_final_ltr() { // also tests bound deduplication
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::new("a"))],
         output: vec![RuleToken::Phone(Phone::new("b"))],
-        conds: vec![Cond { before: Vec::new(), after: vec![RuleToken::Phone(Phone::new_bound())] }],
+        conds: vec![Cond::Match { before: Vec::new(), after: vec![RuleToken::Phone(Phone::new_bound())] }],
         anti_conds: Vec::new(),
     };
 
@@ -251,7 +251,7 @@ fn phone_to_phone_word_final_rtl() { // also tests bound deduplication
         kind: Shift { dir: Direction::RTL, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::new("a"))],
         output: vec![RuleToken::Phone(Phone::new("b"))],
-        conds: vec![Cond { before: Vec::new(), after: vec![RuleToken::Phone(Phone::new_bound())] }],
+        conds: vec![Cond::Match { before: Vec::new(), after: vec![RuleToken::Phone(Phone::new_bound())] }],
         anti_conds: Vec::new(),
     };
 
@@ -280,14 +280,14 @@ fn quadruple_agreement() { // also tests bound deduplication
                 vec![RuleToken::Phone(Phone::new("f"))],
             ] }
         ],
-        conds: vec![Cond { before: Vec::new(), after: vec![
+        conds: vec![Cond::Match { before: Vec::new(), after: vec![
             RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
                 vec![RuleToken::Phone(Phone::new("g"))],
                 vec![RuleToken::Phone(Phone::new("h"))],
                 vec![RuleToken::Phone(Phone::new("i"))],
             ] }
         ] }],
-        anti_conds: vec![Cond { before: vec![
+        anti_conds: vec![Cond::Match { before: vec![
             RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
                 vec![RuleToken::Phone(Phone::new("j"))],
                 vec![RuleToken::Phone(Phone::new("k"))],

@@ -277,7 +277,7 @@ fn single_cond() {
         kind: shift,
         input: vec![RuleToken::Phone(Phone::new("a"))],
         output: vec![RuleToken::Phone(Phone::new("b"))],
-        conds: vec![Cond {
+        conds: vec![Cond::Match {
             before: vec![RuleToken::Phone(Phone::new("c"))],
             after: vec![RuleToken::Phone(Phone::new("d"))],
         }],
@@ -302,15 +302,15 @@ fn three_conds() {
         input: vec![RuleToken::Phone(Phone::new("a"))],
         output: vec![RuleToken::Phone(Phone::new("b"))],
         conds: vec![
-            Cond {
+            Cond::Match {
                 before: vec![RuleToken::Phone(Phone::new("c"))],
                 after: vec![],
             },
-            Cond {
+            Cond::Match {
                 before: vec![RuleToken::Phone(Phone::new("d"))],
                 after: vec![RuleToken::Phone(Phone::new("e"))],
             },
-            Cond {
+            Cond::Match {
                 before: vec![],
                 after: vec![RuleToken::Phone(Phone::new("f"))],
             },
@@ -342,7 +342,7 @@ fn single_anti_cond() {
         input: vec![RuleToken::Phone(Phone::new("a"))],
         output: vec![RuleToken::Phone(Phone::new("b"))],
         conds: vec![Cond::default()],
-        anti_conds: vec![Cond {
+        anti_conds: vec![Cond::Match {
             before: vec![RuleToken::Phone(Phone::new("c"))],
             after: vec![RuleToken::Phone(Phone::new("d"))],
         }],
@@ -367,15 +367,15 @@ fn three_anti_conds() {
         output: vec![RuleToken::Phone(Phone::new("b"))],
         conds: vec![Cond::default()],
         anti_conds: vec![
-            Cond {
+            Cond::Match {
                 before: vec![RuleToken::Phone(Phone::new("c"))],
                 after: vec![],
             },
-            Cond {
+            Cond::Match {
                 before: vec![RuleToken::Phone(Phone::new("d"))],
                 after: vec![RuleToken::Phone(Phone::new("e"))],
             },
-            Cond {
+            Cond::Match {
                 before: vec![],
                 after: vec![RuleToken::Phone(Phone::new("f"))],
             },
@@ -405,11 +405,11 @@ fn cond_and_anti_cond() {
         kind: shift,
         input: vec![RuleToken::Phone(Phone::new("a"))],
         output: vec![RuleToken::Phone(Phone::new("b"))],
-        conds: vec![Cond {
+        conds: vec![Cond::Match {
             before: vec![RuleToken::Phone(Phone::new("c"))],
             after: vec![RuleToken::Phone(Phone::new("d"))],
         }],
-        anti_conds: vec![Cond {
+        anti_conds: vec![Cond::Match {
             before: vec![RuleToken::Phone(Phone::new("e"))],
             after: vec![RuleToken::Phone(Phone::new("f"))],
         }],
@@ -437,29 +437,29 @@ fn three_conds_and_anti_conds() {
         input: vec![RuleToken::Phone(Phone::new("a"))],
         output: vec![RuleToken::Phone(Phone::new("b"))],
         conds: vec![
-            Cond {
+            Cond::Match {
                 before: vec![RuleToken::Phone(Phone::new("c"))],
                 after: vec![],
             },
-            Cond {
+            Cond::Match {
                 before: vec![RuleToken::Phone(Phone::new("d"))],
                 after: vec![RuleToken::Phone(Phone::new("e"))],
             },
-            Cond {
+            Cond::Match {
                 before: vec![],
                 after: vec![RuleToken::Phone(Phone::new("f"))],
             },
         ],
         anti_conds: vec![
-            Cond {
+            Cond::Match {
                 before: vec![RuleToken::Phone(Phone::new("g"))],
                 after: vec![],
             },
-            Cond {
+            Cond::Match {
                 before: vec![RuleToken::Phone(Phone::new("h"))],
                 after: vec![RuleToken::Phone(Phone::new("i"))],
             },
-            Cond {
+            Cond::Match {
                 before: vec![],
                 after: vec![RuleToken::Phone(Phone::new("j"))],
             },
@@ -499,7 +499,7 @@ fn shift_cond_gap_input() {
         kind: shift,
         input: vec![],
         output: vec![],
-        conds: vec![Cond {
+        conds: vec![Cond::Match {
             before: vec![RuleToken::Gap { id: None }],
             after: vec![],
         }],
@@ -521,7 +521,7 @@ fn shift_anti_cond_gap_input() {
         input: vec![],
         output: vec![],
         conds: vec![Cond::default()],
-        anti_conds: vec![Cond {
+        anti_conds: vec![Cond::Match {
             before: vec![RuleToken::Gap { id: None }],
             after: vec![],
         }],
@@ -541,7 +541,7 @@ fn shift_cond_label_gap_input() {
         kind: shift,
         input: vec![],
         output: vec![],
-        conds: vec![Cond {
+        conds: vec![Cond::Match {
             before: vec![RuleToken::Gap { id: Some("label") }],
             after: vec![],
         }],
@@ -674,7 +674,7 @@ fn cond_with_scope() {
             kind: shift,
             input: vec![RuleToken::Phone(Phone::new("a"))],
             output: vec![RuleToken::Phone(Phone::new("b"))],
-            conds: vec![Cond {
+            conds: vec![Cond::Match {
                     before: vec![RuleToken::SelectionScope { id: None, options: vec![
                             vec![RuleToken::Phone(Phone::new("c"))],
                             vec![RuleToken::Phone(Phone::new("d"))],
@@ -711,7 +711,7 @@ fn anti_cond_with_scope() {
             input: vec![RuleToken::Phone(Phone::new("a"))],
             output: vec![RuleToken::Phone(Phone::new("b"))],
             conds: vec![Cond::default()],
-            anti_conds: vec![Cond {
+            anti_conds: vec![Cond::Match {
                 before: vec![RuleToken::OptionalScope { id: Some(ScopeId::Name("label")), content: vec![
                         RuleToken::Phone(Phone::new("c"))
                     ]}],

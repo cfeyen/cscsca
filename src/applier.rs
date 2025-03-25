@@ -4,7 +4,7 @@ use matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_m
 
 use crate::{meta_tokens::{Direction, Shift, ShiftType}, phones::Phone, rules::sound_change_rule::{RuleToken, SoundChangeRule}, tokens::ir::IrToken, BOUND_STR};
 
-mod matcher;
+pub(crate) mod matcher;
 
 #[cfg(test)]
 mod tests;
@@ -65,12 +65,12 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
 
     let mut choices = Choices::default();
 
-    let Shift { dir, kind: _} = kind;
+    let Shift { dir, kind: _} = *kind;
 
-    let matches = if *dir == Direction::LTR {
-        tokens_match_phones_from_left(&mut input.iter().collect::<Vec<_>>(),&phones[phone_index..], &mut choices)?
+    let matches = if dir == Direction::LTR {
+        tokens_match_phones_from_left(input,&phones[phone_index..], &mut choices)?
     } else{
-        tokens_match_phones_from_right(&mut input.iter().collect::<Vec<_>>(), &phones[0..=phone_index], &mut choices)?
+        tokens_match_phones_from_right(input, &phones[0..=phone_index], &mut choices)?
     };
 
     if !matches { return Ok(None); }
@@ -82,56 +82,20 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
         // ? this process could probably be optimized
         let initial_choices = choices.clone();
 
-        if *dir == Direction::LTR {
-            let before_matches = tokens_match_phones_from_right(&mut cond.before.iter().collect::<Vec<_>>(), &phones[0..phone_index], &mut choices)?;
-            let after_matches = tokens_match_phones_from_left(&mut cond.after.iter().collect::<Vec<_>>(), &phones[phone_index + input_len..], &mut choices)?;
+        if cond.eval(phones, phone_index, input_len, &mut choices, dir)? {
+            for anti_cond in anti_conds.iter() {
+                // saves choices to reset between anti-conditions
+                let initial_choices = choices.clone();
 
-            if before_matches && after_matches {
-                for anti_cond in anti_conds.iter() {
-                    // saves choices to reset between anti-conditions
-                    let initial_choices = choices.clone();
-
-                    let before_matches = tokens_match_phones_from_right(&mut anti_cond.before.iter().collect::<Vec<_>>(), &phones[0..phone_index], &mut choices)?;
-                    let after_matches = tokens_match_phones_from_left(&mut anti_cond.after.iter().collect::<Vec<_>>(), &phones[phone_index + input_len..], &mut choices)?;
-
-                    if before_matches && after_matches {
-                        continue 'cond_loop;
-                    }
-
-                    // resets choices between anti-conditions
-                    choices = initial_choices;
+                if anti_cond.eval(phones, phone_index, input_len, &mut choices, dir)? {
+                    continue 'cond_loop;
                 }
 
-                return replace_input(phones, phone_index, input_len, output, &choices);
+                // resets choices between anti-conditions
+                choices = initial_choices;
             }
-        } else {
-            let before_slice = if input_len <= phone_index {
-                &phones[0..=phone_index - input_len]
-            } else {
-                &[]
-            };
-            
-            let before_matches = tokens_match_phones_from_right(&mut cond.before.iter().collect::<Vec<_>>(), before_slice, &mut choices)?;
-            let after_matches = tokens_match_phones_from_left(&mut cond.after.iter().collect::<Vec<_>>(), &phones[phone_index + 1..], &mut choices)?;
 
-            if before_matches && after_matches {
-                for anti_cond in anti_conds.iter() {
-                    // saves choices to reset between anti-conditions
-                    let initial_choices = choices.clone();
-
-                    let before_matches = tokens_match_phones_from_right(&mut anti_cond.before.iter().collect::<Vec<_>>(), before_slice, &mut choices)?;
-                    let after_matches = tokens_match_phones_from_left(&mut anti_cond.after.iter().collect::<Vec<_>>(), &phones[phone_index + 1..], &mut choices)?;
-
-                    if before_matches && after_matches {
-                        continue 'cond_loop;
-                    }
-
-                    // resets choices between anti-conditions
-                    choices = initial_choices;
-                }
-
-                return replace_input(phones, 1 + phone_index - input_len, input_len, output, &choices);
-            }
+            return replace_input(phones, phone_index, input_len, output, &choices);
         }
 
         // resets choices between conditions

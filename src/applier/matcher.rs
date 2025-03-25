@@ -17,14 +17,14 @@ mod empty_form_tests;
 /// Checks if tokens match phones starting from the left
 /// 
 /// Note see `tokens_match_phones` for side effects
-pub fn tokens_match_phones_from_right<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'a, 's>) -> Result<bool, MatchError<'a, 's>> {
+pub fn tokens_match_phones_from_right<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'a, 's>) -> Result<bool, MatchError<'a, 's>> {
     tokens_match_phones(tokens, phones, Direction::RTL.start_index(tokens), &mut Direction::RTL.start_index(phones), choices, Direction::RTL)
 }
 
 /// Checks if tokens match phones starting from the left
 /// 
 /// Note see `tokens_match_phones` for side effects
-pub fn tokens_match_phones_from_left<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'a, 's>) -> Result<bool, MatchError<'a, 's>> {
+pub fn tokens_match_phones_from_left<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'a, 's>) -> Result<bool, MatchError<'a, 's>> {
     tokens_match_phones(tokens, phones, 0, &mut Direction::LTR.start_index(phones), choices, Direction::LTR)
 }
 
@@ -33,8 +33,8 @@ pub fn tokens_match_phones_from_left<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>
 /// ## Side Effects
 /// - if there are the tokens match, the provided hash maps contain agreements
 /// - if there are errors there may be bad data in the maps
-fn tokens_match_phones<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[Phone<'s>], token_index: usize, phone_index: &mut usize, choices: &mut Choices<'a, 's>, direction: Direction) -> Result<bool, MatchError<'a, 's>> {
-    let token = if let Some(&token) = tokens.get(token_index) {
+fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<'s>], token_index: usize, phone_index: &mut usize, choices: &mut Choices<'a, 's>, direction: Direction) -> Result<bool, MatchError<'a, 's>> {
+    let token = if let Some(token) = tokens.get(token_index) {
         token
     } else {
         return Ok(true);
@@ -56,16 +56,15 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[P
             // if the index can be accessed use the contents at that index
             if let Some(content) = options.get(choice) {
                 // if those contents can be matched, continue checking, otherwise return false
-                let mut list = content.iter().collect::<Vec<_>>();
-                let start_index = direction.start_index(&list);
-                if tokens_match_phones(&mut list, phones, start_index, phone_index, choices, direction)? {
+                let start_index = direction.start_index(content);
+                if tokens_match_phones(content, phones, start_index, phone_index, choices, direction)? {
                     tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
                 } else {
                     Ok(false)
                 }
             } else { // if the index cannot be accessed return an error
-                let name = if let ScopeId::Name(name) = id {
-                    Some(*name)
+                let name = if let ScopeId::Name(name) = *id {
+                    Some(name)
                 } else {
                     None
                 };
@@ -81,10 +80,9 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[P
                 choices.selection_choices.insert(id, num);
                 let starting_phone_index = *phone_index;
 
-                let mut option_content = option.iter().collect::<Vec<_>>();
-                let start_index = direction.start_index(&option_content);
+                let start_index = direction.start_index(option);
 
-                let option_matches = tokens_match_phones(&mut option_content, phones, start_index, phone_index, choices, direction)?;
+                let option_matches = tokens_match_phones(option, phones, start_index, phone_index, choices, direction)?;
                 let following_matches = tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)?;
 
                 if option_matches && following_matches {
@@ -103,10 +101,9 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[P
             for option in options.iter() {
                 let starting_phone_index = *phone_index;
 
-                let mut option_content = option.iter().collect::<Vec<_>>();
-                let start_index = direction.start_index(&option_content);
+                let start_index = direction.start_index(option);
 
-                let option_matches = tokens_match_phones(&mut option_content, phones, start_index, phone_index, choices, direction)?;
+                let option_matches = tokens_match_phones(option, phones, start_index, phone_index, choices, direction)?;
                 let following_matches = tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)?;
 
                 if option_matches && following_matches {
@@ -191,10 +188,9 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[P
         } if choices.optional_choices.contains_key(id) => {
             let choice = choices.optional_choices[id];
 
-            let mut list = content.iter().collect::<Vec<_>>();
-            let start_index = direction.start_index(&list);
+            let start_index = direction.start_index(content);
             if choice {
-                if tokens_match_phones(&mut list, phones, start_index, phone_index, choices, direction)? {
+                if tokens_match_phones(content, phones, start_index, phone_index, choices, direction)? {
                     tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
                 } else {
                     Ok(false)
@@ -207,13 +203,11 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[P
             id: Some(id), content
         } => {
             let starting_phone_index = *phone_index;
-
-            let mut inner_content = content.iter().collect::<Vec<_>>();
-            let start_index = direction.start_index(&inner_content);
+            let start_index = direction.start_index(content);
 
             choices.optional_choices.insert(id, true);
 
-            let content_matches = tokens_match_phones(&mut inner_content, phones, start_index, phone_index, choices, direction)?;
+            let content_matches = tokens_match_phones(content, phones, start_index, phone_index, choices, direction)?;
             let following_matches = tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)?;
 
             if content_matches && following_matches {
@@ -228,11 +222,9 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &mut [&'a RuleToken<'s>], phones: &[P
             id: None, content
         } => {
             let starting_phone_index = *phone_index;
+            let start_index = direction.start_index(content);
 
-            let mut inner_content = content.iter().collect::<Vec<_>>();
-            let start_index = direction.start_index(&inner_content);
-
-            let content_matches = tokens_match_phones(&mut inner_content, phones, start_index, phone_index, choices, direction)?;
+            let content_matches = tokens_match_phones(content, phones, start_index, phone_index, choices, direction)?;
             let following_matches = tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)?;
 
             if content_matches && following_matches {
@@ -258,7 +250,7 @@ pub fn match_len<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], choices: &Choices<'a, 
             RuleToken::Phone(_) => len += 1,
             RuleToken::Gap { id: _ } => return Err(MatchError::CannotCheckLenOfGap),
             RuleToken::OptionalScope { id: Some(id), content } => {
-                if let Some(choice) = choices.optional_choices.get(&id) {
+                if let Some(choice) = choices.optional_choices.get(id) {
                     if *choice {
                         len += match_len(content, choices)?
                     }
@@ -267,7 +259,7 @@ pub fn match_len<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], choices: &Choices<'a, 
                 }
             },
             RuleToken::SelectionScope { id: Some(id), options } => {
-                if let Some(choice) = choices.selection_choices.get(&id) {
+                if let Some(choice) = choices.selection_choices.get(id) {
                     if let Some(content) = options.get(*choice) {
                         len += match_len(content, choices)?
                     } else {

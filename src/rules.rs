@@ -135,7 +135,7 @@ fn ir_to_conds<'a, 's: 'a>(ir: Vec<&'a [IrToken<'s>]>) -> Result<Vec<Cond<'s>>, 
         // and discards the input token leaving cond_ir as the portion after it
         let before = &mut cond_ir.take_while(|token| !matches!(token, IrToken::Input));
 
-        let cond = Cond {
+        let cond = Cond::Match {
             before: ir_tokens_to_rule_tokens(before, &mut None, None, None)?,
             after: ir_tokens_to_rule_tokens(cond_ir, &mut None, None, None)?,
         };
