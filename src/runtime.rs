@@ -11,6 +11,8 @@ pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 pub type PutFn = Box<fn(&str) -> Result<(), Box<dyn Error>>>;
 
 /// Returns the default function for the runtime's io_put_fn callback
+/// 
+/// Prints to stdout
 #[inline]
 pub fn default_io_put_fn() -> PutFn {
     Box::new(|msg| {
