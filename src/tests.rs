@@ -70,6 +70,22 @@ fn time_out_of_infinte_loop() {
 }
 
 #[test]
+fn input() {
+    assert_eq!(
+        Runtime::new()
+            .set_io_get_fn(Box::new(|_| Ok(String::from("a"))))
+            .apply("a", "GET a :\n%a >> b")
+            .0, Ok("b".to_string())
+    );
+    assert_eq!(
+        Runtime::new()
+            .set_io_get_fn(Box::new(|_| Ok(String::from("b"))))
+            .apply("a", "GET a :\n%a >> b")
+            .0, Ok("a".to_string())
+    );
+}
+
+#[test]
 fn matches_with_option_that_can_insert_but_should_not() {
     assert_eq!(
         "paa".to_string(),

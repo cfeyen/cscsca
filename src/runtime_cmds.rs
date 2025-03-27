@@ -2,6 +2,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeCmd {
     Print,
+    Get,
 }
 
 /// A log of strings

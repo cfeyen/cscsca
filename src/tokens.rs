@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{meta_tokens::{ Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, runtime_cmds::RuntimeCmd};
 use ir::{IrToken, Break,ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, INPUT_STR};
-use prefix::{Prefix, DEFINITION_PREFIX, SELECTION_PREFIX};
+use prefix::{Prefix, DEFINITION_PREFIX, SELECTION_PREFIX, VARIABLE_PREFIX};
 use token_checker::{check_tokens, IrStructureError};
 
 pub mod ir;
@@ -14,6 +14,7 @@ mod tests;
 
 pub const DEFINITION_LINE_START: &str = "DEFINE";
 pub const PRINT_LINE_START: &str = "PRINT";
+pub const GET_LINE_START: &str = "GET";
 pub const COMMENT_LINE_START: &str = "##";
 pub const ESCAPE_CHAR: char = '\\';
 
@@ -23,6 +24,20 @@ pub enum IrLine<'s> {
     Ir(Vec<IrToken<'s>>),
     Cmd(RuntimeCmd, &'s str),
     Empty,
+}
+
+#[derive(Debug, Default, Clone, PartialEq)]
+pub struct CompileTimeData<'s> {
+    pub definitions: HashMap<&'s str, Vec<IrToken<'s>>>,
+    pub variables: HashMap<&'s str, Vec<IrToken<'s>>>,
+    pub sources: Vec<*const str>,
+}
+
+impl<'s> CompileTimeData<'s> {
+    #[inline]
+    pub fn new() -> Self {
+        Self::default()
+    }
 }
 
 /// Converts source code into intermediate representation tokens,
@@ -48,10 +63,10 @@ pub fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
         .map(|(num, line)| (num + 1, line.trim()));
 
     let mut token_lines = Vec::new();
-    let mut definitions = HashMap::new();
+    let mut compile_time_data = CompileTimeData::new();
 
     for (line_num, line) in lines {
-        match tokenize_line_or_create_runtime_command(line, &mut definitions) {
+        match tokenize_line_or_create_runtime_command(line, &mut compile_time_data) {
             Ok(tokens) => token_lines.push(tokens),
             Err(e) => return Err((e, line_num)),
         }
@@ -63,13 +78,13 @@ pub fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
 /// Converts source code into intermediate representation tokens
 /// 
 /// Note: these tokens may not be structurally valid and should be checked
-pub fn tokenize_line_or_create_runtime_command<'s>(line: &'s str, definitions: &mut HashMap<&'s str, Vec<IrToken<'s>>>) -> Result<IrLine<'s>, IrError<'s>> {
+pub fn tokenize_line_or_create_runtime_command<'s>(line: &'s str, compile_time_data: &mut CompileTimeData<'s>) -> Result<IrLine<'s>, IrError<'s>> {
     Ok(if let Some(definition_content) = line.strip_prefix(DEFINITION_LINE_START) {
         // handles definitions
-        let ir = tokenize_line(definition_content, definitions)?;
+        let ir = tokenize_line(definition_content, compile_time_data)?;
 
         if let Some(IrToken::Phone(name)) = ir.first() {
-            definitions.insert(name, ir[1..].into());
+            compile_time_data.definitions.insert(name, ir[1..].into());
             IrLine::Empty
         } else {
             return Err(IrError::EmptyDefinition);
@@ -80,9 +95,12 @@ pub fn tokenize_line_or_create_runtime_command<'s>(line: &'s str, definitions: &
     } else if let Some(args) = line.strip_prefix(PRINT_LINE_START) {
         // handles print statement
         IrLine::Cmd(RuntimeCmd::Print, args.trim())
+    } else if let Some(args) = line.strip_prefix(GET_LINE_START) {
+        // handles get statement
+        IrLine::Cmd(RuntimeCmd::Get, args.trim())
     } else {
         // handles rules
-        let mut ir_line = IrLine::Ir(tokenize_line(line, definitions)?);
+        let mut ir_line = IrLine::Ir(tokenize_line(line, compile_time_data)?);
         
         // converts empty rules to the empty varient
         if let IrLine::Ir(ir) = &ir_line {
@@ -94,7 +112,7 @@ pub fn tokenize_line_or_create_runtime_command<'s>(line: &'s str, definitions: &
 }
 
 /// Converts a line to tokens
-fn tokenize_line<'s>(line: &'s str, definitions: &HashMap<&str, Vec<IrToken<'s>>>) -> Result<Vec<IrToken<'s>>, IrError<'s>> {
+pub(crate) fn tokenize_line<'s>(line: &'s str, compile_time_data: &CompileTimeData<'s>) -> Result<Vec<IrToken<'s>>, IrError<'s>> {
     let chars = line.chars();
     let mut tokens = Vec::new();
     let mut prefix = None;
@@ -113,16 +131,17 @@ fn tokenize_line<'s>(line: &'s str, definitions: &HashMap<&str, Vec<IrToken<'s>>
                 escape = true
             },
             // handles prefixes
-            DEFINITION_PREFIX => start_prefix(Prefix::Definition, &mut tokens, &mut slice, &mut prefix, definitions)?,
-            SELECTION_PREFIX => start_prefix(Prefix::Label, &mut tokens, &mut slice, &mut prefix, definitions)?,
+            DEFINITION_PREFIX => start_prefix(Prefix::Definition, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
+            SELECTION_PREFIX => start_prefix(Prefix::Label, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
+            VARIABLE_PREFIX => start_prefix(Prefix::Variable, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             // handles scope bounds
-            OPTIONAL_START_CHAR => push_phone_and(IrToken::ScopeStart(ScopeType::Optional), &mut tokens, &mut slice, &mut prefix, definitions)?,
-            OPTIONAL_END_CHAR => push_phone_and(IrToken::ScopeEnd(ScopeType::Optional), &mut tokens, &mut slice, &mut prefix, definitions)?,
-            SELECTION_START_CHAR => push_phone_and(IrToken::ScopeStart(ScopeType::Selection), &mut tokens, &mut slice, &mut prefix, definitions)?,
-            SELECTION_END_CHAR => push_phone_and(IrToken::ScopeEnd(ScopeType::Selection), &mut tokens, &mut slice, &mut prefix, definitions)?,
+            OPTIONAL_START_CHAR => push_phone_and(IrToken::ScopeStart(ScopeType::Optional), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
+            OPTIONAL_END_CHAR => push_phone_and(IrToken::ScopeEnd(ScopeType::Optional), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
+            SELECTION_START_CHAR => push_phone_and(IrToken::ScopeStart(ScopeType::Selection), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
+            SELECTION_END_CHAR => push_phone_and(IrToken::ScopeEnd(ScopeType::Selection), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             // handles simple one-to-one char to token pushes
-            ANY_CHAR => push_phone_and(IrToken::Any, &mut tokens, &mut slice, &mut prefix, definitions)?,
-            ARG_SEP_CHAR => push_phone_and(IrToken::ArgSep, &mut tokens, &mut slice, &mut prefix, definitions)?,
+            ANY_CHAR => push_phone_and(IrToken::Any, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
+            ARG_SEP_CHAR => push_phone_and(IrToken::ArgSep, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             // handles compound char to token pushes
             LTR_CHAR => {
                 let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay }))) = tokens.last() {
@@ -132,7 +151,7 @@ fn tokenize_line<'s>(line: &'s str, definitions: &HashMap<&str, Vec<IrToken<'s>>
                     ShiftType::Stay
                 };
 
-                push_phone_and(IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind })), &mut tokens, &mut slice, &mut prefix, definitions)?;
+                push_phone_and(IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind })), &mut tokens, &mut slice, &mut prefix, compile_time_data)?;
             },
             RTL_CHAR => {
                 let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::RTL, kind: ShiftType::Stay }))) = tokens.last() {
@@ -142,7 +161,7 @@ fn tokenize_line<'s>(line: &'s str, definitions: &HashMap<&str, Vec<IrToken<'s>>
                     ShiftType::Stay
                 };
 
-                push_phone_and(IrToken::Break(Break::Shift(Shift { dir: Direction::RTL, kind })), &mut tokens, &mut slice, &mut prefix, definitions)?;
+                push_phone_and(IrToken::Break(Break::Shift(Shift { dir: Direction::RTL, kind })), &mut tokens, &mut slice, &mut prefix, compile_time_data)?;
             },
             COND_CHAR => {
                 let cond_type = if let Some(IrToken::Break(Break::Cond)) = tokens.last() {
@@ -152,11 +171,11 @@ fn tokenize_line<'s>(line: &'s str, definitions: &HashMap<&str, Vec<IrToken<'s>>
                     Break::Cond
                 };
 
-                push_phone_and(IrToken::Break(cond_type), &mut tokens, &mut slice, &mut prefix, definitions)?;
+                push_phone_and(IrToken::Break(cond_type), &mut tokens, &mut slice, &mut prefix, compile_time_data)?;
             },
             // whitespace
             _ if c.is_whitespace() => {
-                push_phone(&mut tokens, &mut slice, &mut prefix, definitions)?;
+                push_phone(&mut tokens, &mut slice, &mut prefix, compile_time_data)?;
                 slice.skip(c);
             },
             // other chars
@@ -164,7 +183,7 @@ fn tokenize_line<'s>(line: &'s str, definitions: &HashMap<&str, Vec<IrToken<'s>>
         }
     }
 
-    push_phone(&mut tokens, &mut slice, &mut prefix, definitions)?;
+    push_phone(&mut tokens, &mut slice, &mut prefix, compile_time_data)?;
 
     Ok(tokens)
 }
@@ -172,11 +191,11 @@ fn tokenize_line<'s>(line: &'s str, definitions: &HashMap<&str, Vec<IrToken<'s>>
 
 /// Pushes the slice according to `push_phone`, then sets the prefix
 /// and moves the slice over an extra character to account for the prefix character
-fn start_prefix<'s>(new_prefix: Prefix, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, definitions: &HashMap<&str, Vec<IrToken<'s>>>) -> Result<(), IrError<'s>> {
+fn start_prefix<'s>(new_prefix: Prefix, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, compile_time_data: &CompileTimeData<'s>) -> Result<(), IrError<'s>> {
     if prefix.is_some() && slice.is_empty() { 
         return Err(IrError::EmptyPrefix(prefix.unwrap()))
     } else {
-        push_phone(tokens, slice, prefix, definitions)?;
+        push_phone(tokens, slice, prefix, compile_time_data)?;
         slice.skip_byte();
     }
 
@@ -186,8 +205,8 @@ fn start_prefix<'s>(new_prefix: Prefix, tokens: &mut Vec<IrToken<'s>>, slice: &m
 
 /// Pushes the slice according to `push_phone`, then pushes the provided token
 /// and moves the slice over an extra character to account for that token
-fn push_phone_and<'s>(token: IrToken<'s>, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, definitions: &HashMap<&str, Vec<IrToken<'s>>>) -> Result<(), IrError<'s>> {
-    push_phone(tokens, slice, prefix, definitions)?;
+fn push_phone_and<'s>(token: IrToken<'s>, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, compile_time_data: &CompileTimeData<'s>) -> Result<(), IrError<'s>> {
+    push_phone(tokens, slice, prefix, compile_time_data)?;
     slice.skip_byte();
     tokens.push(token);
     Ok(())
@@ -202,7 +221,7 @@ fn push_phone_and<'s>(token: IrToken<'s>, tokens: &mut Vec<IrToken<'s>>, slice: 
 /// 
 /// If the slice is the input pattern and there is no prefix,
 /// an input token is pushed instead of a phone
-fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, definitions: &HashMap<&str, Vec<IrToken<'s>>>) -> Result<(), IrError<'s>> {
+fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, compile_time_data: &CompileTimeData<'s>) -> Result<(), IrError<'s>> {
     let literal = slice.take_slice();
     slice.move_after();
 
@@ -212,7 +231,7 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
         None if literal.is_empty() => (),
         None => tokens.push(IrToken::Phone(literal)),
         Some(Prefix::Definition) => {
-            if let Some(content) = definitions.get(literal) {
+            if let Some(content) = compile_time_data.definitions.get(literal) {
                 for token in content {
                     tokens.push(*token);
                 }
@@ -221,6 +240,15 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
             }
         },
         Some(Prefix::Label) => tokens.push(IrToken::Label(literal)),
+        Some(Prefix::Variable) => {
+            if let Some(content) = compile_time_data.variables.get(literal) {
+                for token in content {
+                    tokens.push(*token);
+                }
+            } else {
+                return Err(IrError::UndefinedDefinition(literal))
+            }
+        },
     }
 
     *prefix = None;
