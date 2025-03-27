@@ -1,4 +1,4 @@
-use crate::{tokens::COMMENT_LINE_START, meta_tokens::ScopeType};
+use crate::{meta_tokens::ScopeType, rules::conditions::CondType, tokens::COMMENT_LINE_START};
 use super::{ir::{Break, IrToken}, IrLine};
 
 #[cfg(test)]
@@ -67,7 +67,7 @@ fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
                     found_anti_conds = true;
                     if in_cond {
                         if inputs_in_cond == 0 {
-                            return Err(IrStructureError::NoInputInCond)
+                            return Err(IrStructureError::NoFocusInCond)
                         } else if inputs_in_cond > 1 {
                             return Err(IrStructureError::ManyInputsInCond)
                         }
@@ -82,7 +82,7 @@ fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
                 Break::Cond => {
                     if in_cond {
                         if inputs_in_cond == 0 {
-                            return Err(IrStructureError::NoInputInCond)
+                            return Err(IrStructureError::NoFocusInCond)
                         } else if inputs_in_cond > 1 {
                             return Err(IrStructureError::ManyInputsInCond)
                         }
@@ -92,8 +92,8 @@ fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
                     inputs_in_cond = 0;
                 },
             },
-            IrToken::Input => if !in_cond {
-                return Err(IrStructureError::InputOutOfCond);
+            IrToken::CondFocus(focus) => if !in_cond {
+                return Err(IrStructureError::FocusOutOfCond(*focus));
             } else {
                 inputs_in_cond += 1;
             }
@@ -106,7 +106,7 @@ fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
 
     if in_cond {
         if inputs_in_cond == 0 {
-            return Err(IrStructureError::NoInputInCond)
+            return Err(IrStructureError::NoFocusInCond)
         } else if inputs_in_cond > 1 {
             return Err(IrStructureError::ManyInputsInCond)
         }
@@ -182,9 +182,9 @@ pub enum IrStructureError<'s> {
     ShiftAfterShift(Break),
     BreakBeforeShift(Break),
     AntiCondBeforeCond,
-    NoInputInCond,
+    NoFocusInCond,
     ManyInputsInCond,
-    InputOutOfCond,
+    FocusOutOfCond(CondType),
     GapOutOfCond,
 }
 
@@ -223,14 +223,14 @@ impl std::fmt::Display for IrStructureError<'_> {
             Self::ShiftAfterShift(shift) => {
                 format!("Found shift token '{shift}' after another shift token")
             },
-            Self::NoInputInCond => {
-                format!("Found condition or anti-condition without the input pattern ('{}')", IrToken::Input)
+            Self::NoFocusInCond => {
+                format!("Found condition or anti-condition without the input pattern ('{}') or equality operator ('{}')", CondType::MatchInput, CondType::Equality)
             },
             Self::ManyInputsInCond => {
-                format!("Found condition or anti-condition with multiple input patterns ('{}')", IrToken::Input)
+                format!("Found condition or anti-condition with multiple input patterns ('{}') or equality operators ('{}')", CondType::MatchInput, CondType::Equality)
             },
-            Self::InputOutOfCond => {
-                format!("Found input pattern ('{}') outside of a condition or anti-condition", IrToken::Input)
+            Self::FocusOutOfCond(focus) => {
+                format!("Found condition focus ('{focus}') outside of a condition or anti-condition")
             },
             Self::GapOutOfCond => {
                 format!("Found gap pattern ('{}') outside of a condition or anti-condition", IrToken::Gap)

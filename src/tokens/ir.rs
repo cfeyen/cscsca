@@ -1,10 +1,12 @@
-use crate::{tokens::prefix::SELECTION_PREFIX, meta_tokens::{Shift, ScopeType}};
+use std::fmt::Display;
+
+use crate::{meta_tokens::{ScopeType, Shift}, rules::conditions::CondType, tokens::prefix::SELECTION_PREFIX};
 
 pub const ANY_CHAR: char = '*';
 pub const ARG_SEP_CHAR: char = ',';
 pub const COND_CHAR: char = '/';
 pub const GAP_STR: &str = "..";
-pub const INPUT_STR: &str = "_";
+pub const AND_CHAR: char = '&';
 
 /// Tokens that make up the intermediate representation of sound shifts
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -21,22 +23,22 @@ pub enum IrToken<'s> {
     ArgSep,
     /// A gap of size 0 or greater that does not contain a word boundery
     Gap,
-    /// The input in a condition or anti-condition
-    Input,
+    /// The main focus and type of a condition or anti-condition
+    CondFocus(CondType),
     /// The start of a scope
     ScopeStart(ScopeType),
     /// The end of a scope
     ScopeEnd(ScopeType),
 }
 
-impl std::fmt::Display for IrToken<'_> {
+impl Display for IrToken<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Self::Any => format!("{ANY_CHAR}"),
             Self::ArgSep => format!("{ARG_SEP_CHAR}"),
             Self::Break(r#break) => format!("{}", r#break),
             Self::Gap => GAP_STR.to_string(),
-            Self::Input => INPUT_STR.to_string(),
+            Self::CondFocus(focus) => format!("{focus}"),
             Self::Phone(phone) => phone.to_string(),
             Self::ScopeEnd(kind) => kind.fmt_end().to_string(),
             Self::ScopeStart(kind) => kind.fmt_start().to_string(),
@@ -62,7 +64,7 @@ pub enum Break {
     AntiCond,
 }
 
-impl std::fmt::Display for Break {
+impl Display for Break {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Self::Shift(shift) => format!("{shift}"),

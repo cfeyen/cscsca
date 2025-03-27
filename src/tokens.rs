@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::{meta_tokens::{ Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, runtime_cmds::RuntimeCmd};
-use ir::{IrToken, Break,ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, INPUT_STR};
+use crate::{meta_tokens::{ Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, rules::conditions::{CondType, EQUALITY_CHAR, INPUT_STR}, runtime_cmds::RuntimeCmd};
+use ir::{Break, IrToken, ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR};
 use prefix::{Prefix, DEFINITION_PREFIX, SELECTION_PREFIX, VARIABLE_PREFIX};
 use token_checker::{check_tokens, IrStructureError};
 
@@ -155,6 +155,7 @@ pub(crate) fn tokenize_line<'s>(line: &'s str, compile_time_data: &CompileTimeDa
             // handles simple one-to-one char to token pushes
             ANY_CHAR => push_phone_and(IrToken::Any, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             ARG_SEP_CHAR => push_phone_and(IrToken::ArgSep, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
+            EQUALITY_CHAR => push_phone_and(IrToken::CondFocus(CondType::Equality), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             // handles compound char to token pushes
             LTR_CHAR => {
                 let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay }))) = tokens.last() {
@@ -239,7 +240,7 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
     slice.move_after();
 
     match prefix {
-        None if literal == INPUT_STR => tokens.push(IrToken::Input),
+        None if literal == INPUT_STR => tokens.push(IrToken::CondFocus(CondType::MatchInput)),
         None if literal == GAP_STR => tokens.push(IrToken::Gap),
         None if literal.is_empty() => (),
         None => tokens.push(IrToken::Phone(literal)),

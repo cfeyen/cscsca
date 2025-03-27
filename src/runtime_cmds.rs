@@ -3,6 +3,7 @@
 pub enum RuntimeCmd {
     Print,
     Get,
+    // todo: GetAsPhone
 }
 
 /// A log of strings

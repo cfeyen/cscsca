@@ -1,7 +1,9 @@
 use std::sync::Arc;
 use std::fmt::Display;
 
-use crate::{applier::matcher::{tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, meta_tokens::{Direction, ScopeType, Shift}, phones::Phone, tokens::ir::{Break, IrToken}};
+use crate::{meta_tokens::{ScopeType, Shift}, phones::Phone, tokens::ir::{Break, IrToken}};
+
+use super::conditions::Cond;
 
 /// A collection of data that define a sound change rule
 #[derive(Debug, Clone, PartialEq)]
@@ -42,80 +44,6 @@ impl Display for SoundChangeRule<'_> {
         }
         
         write!(f, "{} {} {}{}{}", input, &self.kind, output, conds, anti_conds)
-    }
-}
-
-/// A set of tokens that represent the enviroment before and after the input pattern
-#[derive(Debug, Clone, PartialEq)]
-pub enum Cond<'s> {
-    Match {
-        before: Vec<RuleToken<'s>>,
-        after: Vec<RuleToken<'s>>,
-    }
-}
-
-impl<'s> Cond<'s> {
-    /// Checks if the condition matches the phones in a list around a given index
-    /// assuming the input of a given size matches and based on the application direction
-    pub fn eval<'a>(&'a self, phones: &[Phone<'s>], phone_index: usize, input_len: usize, choices: &mut Choices<'a, 's>, dir: Direction) -> Result<bool, MatchError<'a, 's>> {
-        match self {
-            Self::Match { before, after } => {
-                let (before_phones, after_phones) = match dir {
-                    Direction::LTR => (&phones[0..phone_index], &phones[phone_index + input_len..]),
-                    Direction::RTL => {
-                        let before_phones = if input_len <= phone_index {
-                            &phones[0..=phone_index - input_len]
-                        } else {
-                            &[]
-                        };
-
-                        (before_phones, &phones[phone_index + 1..])
-                    },
-                };
-
-                let before_matches = tokens_match_phones_from_right(before, before_phones, choices)?;
-                let after_matches = tokens_match_phones_from_left(after, after_phones, choices)?;
-
-                Ok(before_matches && after_matches)
-            }
-        }
-    }
-
-    #[inline]
-    pub const fn new_match(before: Vec<RuleToken<'s>>, after: Vec<RuleToken<'s>>) -> Self {
-        Self::Match { before, after }
-    }
-}
-
-impl Display for Cond<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Match { before, after } => {
-                let before = before
-                    .iter()
-                    .map(|t| format!("{t}"))
-                    .collect::<Vec<_>>()
-                    .join(" ");
-
-                let after = after
-                    .iter()
-                    .map(|t| format!("{t}"))
-                    .collect::<Vec<_>>()
-                    .join(" ");
-
-                write!(f, "{} {} {}", before, IrToken::Input, after)
-            }
-        }
-    }
-}
-
-impl Default for Cond<'_> {
-    #[inline]
-    fn default() -> Self {
-        Self::Match {
-            before: Default::default(),
-            after: Default::default(),
-        }
     }
 }
 

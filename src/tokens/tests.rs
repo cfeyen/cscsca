@@ -255,12 +255,12 @@ fn tokenize_sep_with_suroundings() {
 
 #[test]
 fn tokenize_input() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Input])]), tokenize("_"))
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::CondFocus(CondType::MatchInput)])]), tokenize("_"))
 }
 
 #[test]
 fn tokenize_input_with_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Input, IrToken::Phone("b")])]), tokenize("a _ b"))
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a"), IrToken::CondFocus(CondType::MatchInput), IrToken::Phone("b")])]), tokenize("a _ b"))
 }
 
 #[test]
@@ -331,7 +331,7 @@ fn tokenize_and_check_simple() {
             IrToken::Phone("o"),
             IrToken::ScopeEnd(ScopeType::Selection),
 
-            IrToken::Input,
+            IrToken::CondFocus(CondType::MatchInput),
 
             IrToken::ScopeStart(ScopeType::Selection),
             IrToken::Phone("i"),
@@ -346,7 +346,7 @@ fn tokenize_and_check_simple() {
             IrToken::ScopeEnd(ScopeType::Selection),
 
             IrToken::Break(Break::Cond),
-            IrToken::Input,
+            IrToken::CondFocus(CondType::MatchInput),
 
             IrToken::ScopeStart(ScopeType::Selection),
             IrToken::Phone("l"),
@@ -356,7 +356,7 @@ fn tokenize_and_check_simple() {
 
             IrToken::Break(Break::AntiCond),
             IrToken::Phone("h"),
-            IrToken::Input,
+            IrToken::CondFocus(CondType::MatchInput),
         ]),
     ]), tokenize_and_check("##this is a comment\nDEFINE V { i, e, a, u, o }\n\n$stops{p, t, k} >> $stops{b, d, g} / @V _ @V / _ {l, r} // h _"))
 }

@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
-use sound_change_rule::{Cond, LabelType, RuleToken, ScopeId, SoundChangeRule};
+use conditions::{Cond, CondType};
+use sound_change_rule::{LabelType, RuleToken, ScopeId, SoundChangeRule};
 
 use crate::{meta_tokens::ScopeType, phones::Phone, runtime_cmds::RuntimeCmd, tokens::{ir::{Break, IrToken}, IrLine}};
 
 pub mod sound_change_rule;
+pub mod conditions;
 
 #[cfg(test)]
 mod tests;
@@ -130,15 +132,24 @@ fn ir_to_conds<'a, 's: 'a>(ir: Vec<&'a [IrToken<'s>]>) -> Result<Vec<Cond<'s>>, 
     let mut conds = Vec::new();
 
     for cond in ir {
+        let focus = if cond.contains(&IrToken::CondFocus(CondType::MatchInput)) {
+            CondType::MatchInput
+        } else if cond.contains(&IrToken::CondFocus(CondType::Equality)) {
+            CondType::Equality
+        } else {
+            return Err(RuleStructureError::NoConditionFocus);
+        };
+
         let cond_ir = &mut cond.iter();
         // takes all of the tokens before the input token and stores them in before
         // and discards the input token leaving cond_ir as the portion after it
-        let before = &mut cond_ir.take_while(|token| !matches!(token, IrToken::Input));
+        let before = &mut cond_ir.take_while(|&token| token != &IrToken::CondFocus(focus));
 
-        let cond = Cond::Match {
-            before: ir_tokens_to_rule_tokens(before, &mut None, None, None)?,
-            after: ir_tokens_to_rule_tokens(cond_ir, &mut None, None, None)?,
-        };
+        let cond = Cond::new(
+            focus,
+            ir_tokens_to_rule_tokens(before, &mut None, None, None)?,
+            ir_tokens_to_rule_tokens(cond_ir, &mut None, None, None)?,
+        );
 
         conds.push(cond);
     }
@@ -322,6 +333,7 @@ pub enum RuleStructureError<'s> {
     UnopendScope(ScopeType),
     MismatchedScopeBounds(ScopeType, ScopeType),
     UnexpectedToken(IrToken<'s>),
+    NoConditionFocus,
 }
 
 impl std::error::Error for RuleStructureError<'_> {}
@@ -339,6 +351,7 @@ impl std::fmt::Display for RuleStructureError<'_> {
                 format!("Found mismatched scope bounds '{}'..'{}'", start.fmt_start(), end.fmt_end())
             },
             Self::UnexpectedToken(ir_token) => format!("Found unexpected token '{ir_token}'"),
+            Self::NoConditionFocus => format!("Found condition without an input patern ('{}') or equality ('{}')", CondType::MatchInput, CondType::Equality),
         };
 
         write!(f, "{}", s)
