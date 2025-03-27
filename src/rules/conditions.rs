@@ -7,6 +7,9 @@ use super::sound_change_rule::RuleToken;
 pub const INPUT_STR: &str = "_";
 pub const EQUALITY_CHAR: char = '=';
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CondType {
     /// The input in a condition or anti-condition

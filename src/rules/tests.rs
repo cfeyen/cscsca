@@ -753,3 +753,31 @@ fn anti_cond_with_scope() {
         ]))
     );
 }
+
+#[test]
+fn equality_cond() {
+    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+
+    assert_eq!(
+        Ok(RuleLine::Rule(SoundChangeRule {
+            kind: shift,
+            input: vec![RuleToken::Phone(Phone::new("a"))],
+            output: vec![RuleToken::Phone(Phone::new("b"))],
+            conds: vec![Cond::new (
+                CondType::Equality,
+                vec![RuleToken::Phone(Phone::new("c"))],
+                vec![RuleToken::Phone(Phone::new("d"))],
+            )],
+            anti_conds: Vec::new(),
+        })),
+        build_rule(&IrLine::Ir(vec![
+            IrToken::Phone("a"),
+            IrToken::Break(Break::Shift(shift)),
+            IrToken::Phone("b"),
+            IrToken::Break(Break::Cond),
+            IrToken::Phone("c"),
+            IrToken::CondFocus(CondType::Equality),
+            IrToken::Phone("d"),
+        ]))
+    );
+}

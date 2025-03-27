@@ -33,15 +33,15 @@ pub struct CompileTimeData<'s> {
     pub sources: Vec<*const str>,
 }
 
-impl<'s> CompileTimeData<'s> {
+impl CompileTimeData<'_> {
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Frees all variable sources
+    /// Frees all variable sources and consumes the struct
     /// 
-    /// ## Saftey
+    /// ## Safety
     /// There should be no references remaining to any string in the source buffer
     pub unsafe fn free_sources(self) {
         self.sources.into_iter().for_each(|s| unsafe {
