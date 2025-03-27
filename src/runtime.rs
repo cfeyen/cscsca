@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
-use crate::{applier::apply, build_phone_list, colors::{BLUE, RESET}, format_error, phone_list_to_string, phones::Phone, rules::{build_rule, RuleLine}, runtime_cmds::{PrintLog, RuntimeCmd}, tokens::{token_checker::check_token_line, tokenize_line, tokenize_line_or_create_runtime_command, CompileTimeData, IrLine, GET_LINE_START}};
+use crate::{applier::apply, build_phone_list, colors::{BLUE, RESET}, format_error, phone_list_to_string, phones::Phone, rules::{build_rule, RuleLine}, runtime_cmds::{PrintLog, RuntimeCmd}, tokens::{token_checker::check_token_line, tokenize_line_or_create_runtime_command, compile_time_data::CompileTimeData, IrLine, GET_LINE_START}};
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 
@@ -175,12 +175,9 @@ impl Runtime {
             // formats the message, calls the io_put_fn callback on it, then logs it
             RuntimeCmd::Get => {
                 if let Some((name, msg)) = args.split_once(" ") {
-                    let source: &'s str = (self.io_get_fn)(msg.trim())?.leak();
+                    let source = (self.io_get_fn)(msg.trim())?;
 
-                    let tokens = tokenize_line(source, compile_time_data)?;
-
-                    compile_time_data.variables.insert(name, tokens);
-                    compile_time_data.sources.push(source as *const str);
+                    compile_time_data.set_variable(name, source)?;
                 } else {
                     return Err(Box::new(&GetFormatError));
                 }

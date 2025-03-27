@@ -27,7 +27,15 @@ impl Display for CondType {
     }
 }
 
-/// A set of tokens that represent the enviroment before and after the input pattern
+/*
+todo    GET dialect Enter dialect:
+todo    ## %dialect gets tokeinzed to IR
+todo    
+todo    h >> / # _ & %dialect = (standard)
+*/
+
+/// A pair of token lists can be compared based on the kind of the condition
+/// either to the enviroment around a phone or to each other
 #[derive(Debug, Clone, PartialEq)]
 pub struct Cond<'s> {
     kind: CondType,

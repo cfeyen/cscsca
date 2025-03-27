@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use crate::{meta_tokens::{ Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, rules::conditions::{CondType, EQUALITY_CHAR, INPUT_STR}, runtime_cmds::RuntimeCmd};
+use compile_time_data::CompileTimeData;
 use ir::{Break, IrToken, ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR};
 use prefix::{Prefix, DEFINITION_PREFIX, SELECTION_PREFIX, VARIABLE_PREFIX};
 use token_checker::{check_tokens, IrStructureError};
@@ -8,6 +7,7 @@ use token_checker::{check_tokens, IrStructureError};
 pub mod ir;
 pub mod prefix;
 pub mod token_checker;
+pub mod compile_time_data;
 
 #[cfg(test)]
 mod tests;
@@ -24,30 +24,6 @@ pub enum IrLine<'s> {
     Ir(Vec<IrToken<'s>>),
     Cmd(RuntimeCmd, &'s str),
     Empty,
-}
-
-#[derive(Debug, Default, Clone, PartialEq)]
-pub struct CompileTimeData<'s> {
-    pub definitions: HashMap<&'s str, Vec<IrToken<'s>>>,
-    pub variables: HashMap<&'s str, Vec<IrToken<'s>>>,
-    pub sources: Vec<*const str>,
-}
-
-impl CompileTimeData<'_> {
-    #[inline]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Frees all variable sources and consumes the struct
-    /// 
-    /// ## Safety
-    /// There should be no references remaining to any string in the source buffer
-    pub unsafe fn free_sources(self) {
-        self.sources.into_iter().for_each(|s| unsafe {
-            (s as *mut str).drop_in_place();
-        });
-    }
 }
 
 /// Converts source code into intermediate representation tokens,
@@ -125,7 +101,7 @@ pub fn tokenize_line_or_create_runtime_command<'s>(line: &'s str, compile_time_d
 }
 
 /// Converts a line to tokens
-pub(crate) fn tokenize_line<'s>(line: &'s str, compile_time_data: &CompileTimeData<'s>) -> Result<Vec<IrToken<'s>>, IrError<'s>> {
+fn tokenize_line<'s>(line: &'s str, compile_time_data: &CompileTimeData<'s>) -> Result<Vec<IrToken<'s>>, IrError<'s>> {
     let chars = line.chars();
     let mut tokens = Vec::new();
     let mut prefix = None;
@@ -255,12 +231,10 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
         },
         Some(Prefix::Label) => tokens.push(IrToken::Label(literal)),
         Some(Prefix::Variable) => {
-            if let Some(content) = compile_time_data.variables.get(literal) {
-                for token in content {
-                    tokens.push(*token);
-                }
-            } else {
-                return Err(IrError::UndefinedDefinition(literal))
+            let content = compile_time_data.get_variable(literal)?;
+
+            for token in content {
+                tokens.push(*token);
             }
         },
     }
@@ -335,6 +309,7 @@ impl<'s> SubString<'s> {
 pub enum IrError<'s> {
     EmptyPrefix(Prefix),
     UndefinedDefinition(&'s str),
+    UndefinedVariable(&'s str),
     EmptyDefinition,
     StructureError(IrStructureError<'s>),
 }
@@ -346,6 +321,7 @@ impl std::fmt::Display for IrError<'_> {
         let s = match self {
             Self::EmptyPrefix(prefix) => format!("Found prefix '{prefix}' without a following identifier"),
             Self::UndefinedDefinition(name) => format!("Undefined definiton '{DEFINITION_PREFIX}{name}'"),
+            Self::UndefinedVariable(name) => format!("Undefined definiton '{VARIABLE_PREFIX}{name}'"),
             Self::EmptyDefinition => format!("Found '{DEFINITION_LINE_START}' with out a following name"),
             Self::StructureError(e) => format!("{e}"),
         };
