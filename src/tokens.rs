@@ -38,6 +38,16 @@ impl<'s> CompileTimeData<'s> {
     pub fn new() -> Self {
         Self::default()
     }
+
+    /// Frees all variable sources
+    /// 
+    /// ## Saftey
+    /// There should be no references remaining to any string in the source buffer
+    pub unsafe fn free_sources(self) {
+        self.sources.into_iter().for_each(|s| unsafe {
+            (s as *mut str).drop_in_place();
+        });
+    }
 }
 
 /// Converts source code into intermediate representation tokens,
@@ -56,6 +66,9 @@ pub fn tokenize_and_check(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>,
 /// Note: these tokens may not be structurally valid and should be checked
 /// 
 /// If there is an error it is returned with the number of the line it occured on
+/// 
+/// ## Warning
+/// Any io fetched during application will be leaked to the static scope
 pub fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
     let lines = source
         .lines()

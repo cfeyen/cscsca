@@ -127,10 +127,7 @@ impl Runtime {
 
         let output = phone_list_to_string(&phones);
 
-        compile_time_data.sources.into_iter().for_each(|s| unsafe {
-            // nothing should reference these sources anymore so they should be able to be dropped
-            (s as *mut str).drop_in_place();}
-        );
+        unsafe { compile_time_data.free_sources() };
 
         Ok(output)
     }
