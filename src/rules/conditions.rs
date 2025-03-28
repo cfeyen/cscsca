@@ -28,13 +28,6 @@ impl Display for CondType {
     }
 }
 
-/*
-todo    GET dialect Enter dialect:
-todo    ## %dialect gets tokeinzed to IR
-todo    
-todo    h >> / # _ & %dialect = (standard)
-*/
-
 /// A pair of token lists can be compared based on the kind of the condition
 /// either to the enviroment around a phone or to each other
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -42,12 +35,25 @@ pub struct Cond<'s> {
     kind: CondType,
     before: Vec<RuleToken<'s>>,
     after: Vec<RuleToken<'s>>,
+    and: Option<Box<Self>>,
 }
 
 impl<'s> Cond<'s> {
     #[inline]
     pub const fn new(kind: CondType, before: Vec<RuleToken<'s>>, after: Vec<RuleToken<'s>>) -> Self {
-        Self { kind, before, after }
+        Self { kind, before, after, and: None }
+    }
+
+    /// Sets the additional required condition
+    #[inline]
+    pub fn set_and(&mut self, and: Self) {
+        self.and = Some(Box::new(and));
+    }
+
+    /// Checks if there is an additional required condition
+    #[inline]
+    pub const fn has_and(&mut self) -> bool {
+        self.and.is_some()
     }
 
     #[inline]
@@ -68,7 +74,7 @@ impl<'s> Cond<'s> {
     /// Checks if the condition matches the phones in a list around a given index
     /// assuming the input of a given size matches and based on the application direction
     pub fn eval<'a>(&'a self, phones: &[Phone<'s>], phone_index: usize, input_len: usize, choices: &mut Choices<'a, 's>, dir: Direction) -> Result<bool, MatchError<'a, 's>> {
-        match self.kind {
+        let cond_succeeds = match self.kind {
             CondType::MatchInput => {
                 let (before_phones, after_phones) = match dir {
                     Direction::LTR => (&phones[0..phone_index], &phones[phone_index + input_len..]),
@@ -86,12 +92,20 @@ impl<'s> Cond<'s> {
                 let before_matches = tokens_match_phones_from_right(&self.before, before_phones, choices)?;
                 let after_matches = tokens_match_phones_from_left(&self.after, after_phones, choices)?;
 
-                Ok(before_matches && after_matches)
+                before_matches && after_matches
             },
             CondType::Equality => {
-                Ok(self.before == self.after)
+                let accumulate_display = |acc, token| format!("{acc}{token}");
+                self.before.iter().fold(String::new(), accumulate_display) ==
+                self.after.iter().fold(String::new(), accumulate_display)
             }
-        }
+        };
+
+        Ok(cond_succeeds && if let Some(and) = &self.and {
+            and.eval(phones, phone_index, input_len, choices, dir)?
+        } else {
+            true
+        })
     }
 }
 

@@ -21,7 +21,7 @@ impl<'s> CompileTimeData<'s> {
     pub fn get_variable<'a>(&self, name: &'a str) -> Result<&Vec<IrToken<'s>>, IrError<'a>> {
         self.variables
             .get(name)
-            .ok_or_else(|| IrError::UndefinedVariable(name))
+            .ok_or(IrError::UndefinedVariable(name))
     }
 
     /// Tokenizes the source and leaks it to the static scope,

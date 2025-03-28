@@ -48,6 +48,12 @@
             
             [m]Condition Specific Tokens[-]:
             (tokens that may only be used in conditions)
+                [m]And[-]: '[g]&[-]'
+                    Acts as a seperator between two conditions that must both succeed
+                    Example: [g]h >> / {#, l, r} _ & {#, m, n} _[-]
+                        '[y]h[-]' is droped when following '[y]#[-]' as '[y]#[-]' is in both [g]{#, l, r}[-] and [g]{#, m, n}[-]
+                        Note: this is the same as [g]h >> / # _[-]
+
                 [m]Gap[-]: '[g]..[-]' a gap of 0 or more phones
                     (must have a space on both sides)
                     Gaps may be labeled to agree (see '[m]Labels[-]'), however, as they only
@@ -79,19 +85,24 @@
             In [b]conditions[-], phones are analyzed from the [b]input[-] left, then from the [b]input[-] right
         
 
-    [m]Defintions[-]:
-        Written '[g]DEFINE[-] [b]name[-] [b]contents[-]':
-        To insert the [b]contents[-] into a rule later, use '[g]@[-][b]name[-]'
-
     [m]Comments[-]: Comments are lines that start with '[g]##[-]'. They are ignored by the SCA.
 
     [m]Statements[-]:
         Written: [m]CMD[-] args
-        Executes a command at runtime
+        Non-rule commands 
+
+        [g]DEFINE[-] [b]name[-] [b]contents[-]
+            To insert the [b]contents[-] into a rule later, use '[g]@[-][b]name[-]'
 
         [g]PRINT[-] [b]label[-]:
             Prints the phones at that point in the sound change process
             with the proceeded by the [b]label[-]
+
+        [g]GET[-] [b]name[-] [b]message[-]:
+            Prints the [b]message[-] then waits for the user to input a response,
+            To insert the respone into a rule later, use '[g]%[-][b]name[-]'
+            [r]WARNING[-]: the response is treated the same as code which could result in
+            unexpected errors depending on the input
 
     [m]Other[-]:
         A '[y]#[-]' phone acts as a word boundary

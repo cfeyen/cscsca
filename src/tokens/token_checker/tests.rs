@@ -23,11 +23,11 @@ fn check_basic_shift() {
 
 #[test]
 fn check_two_shifts() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Stay };
 
     assert_eq!(
         Err((IrStructureError::ShiftAfterShift(shift), 1)),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Break(shift), IrToken::Phone("b"), IrToken::Break(shift), IrToken::Phone("c")])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Break(Break::Shift(shift)), IrToken::Phone("b"), IrToken::Break(Break::Shift(shift)), IrToken::Phone("c")])])
     );
 }
 
@@ -57,7 +57,7 @@ fn check_shift_cond_input() {
 
     assert_eq!(
         Ok(()),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::Cond), IrToken::CondFocus(CondType::MatchInput)])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::Cond), IrToken::CondType(CondType::MatchInput)])])
     );
 }
 
@@ -66,8 +66,8 @@ fn check_shift_cond_inputs() {
     let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
 
     assert_eq!(
-        Err((IrStructureError::ManyInputsInCond, 1)),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::Cond), IrToken::CondFocus(CondType::MatchInput), IrToken::CondFocus(CondType::MatchInput)])])
+        Err((IrStructureError::ManyFociInCond, 1)),
+        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::Cond), IrToken::CondType(CondType::MatchInput), IrToken::CondType(CondType::MatchInput)])])
     );
 }
 
@@ -88,7 +88,7 @@ fn check_shift_anti_cond_input_cond_input() {
 
     assert_eq!(
         Err((IrStructureError::AntiCondBeforeCond, 1)),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::AntiCond), IrToken::CondFocus(CondType::MatchInput), IrToken::Break(Break::Cond), IrToken::CondFocus(CondType::MatchInput)])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::AntiCond), IrToken::CondType(CondType::MatchInput), IrToken::Break(Break::Cond), IrToken::CondType(CondType::MatchInput)])])
     );
 }
 
@@ -98,7 +98,7 @@ fn check_shift_anti_cond_input() {
 
     assert_eq!(
         Ok(()),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::AntiCond), IrToken::CondFocus(CondType::MatchInput)])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::AntiCond), IrToken::CondType(CondType::MatchInput)])])
     );
 }
 
@@ -259,6 +259,6 @@ fn check_gap_in_cond() {
         IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })),
         IrToken::Break(Break::Cond),
         IrToken::Gap,
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
     ])));
 }

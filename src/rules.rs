@@ -3,7 +3,7 @@ use std::sync::Arc;
 use conditions::{Cond, CondType};
 use sound_change_rule::{LabelType, RuleToken, ScopeId, SoundChangeRule};
 
-use crate::{meta_tokens::ScopeType, phones::Phone, runtime_cmds::RuntimeCmd, tokens::{ir::{Break, IrToken}, IrLine}};
+use crate::{meta_tokens::ScopeType, phones::Phone, runtime_cmds::RuntimeCmd, tokens::{ir::{Break, IrToken, AND_CHAR}, token_checker::regionize_ir, IrLine}};
 
 pub mod sound_change_rule;
 pub mod conditions;
@@ -52,112 +52,93 @@ pub fn build_rule<'a, 's: 'a>(line: &'a IrLine<'s>) -> Result<RuleLine<'s>, Rule
         IrLine::Ir(tokens) => tokens
     };
 
-    let mut i = 0;
+    let mut regions = regionize_ir(line).into_iter();
 
-    // finds the end of the input by finding the index of the shift token
-    while i < line.len() && !matches!(line[i], IrToken::Break(Break::Shift(_))) {
-        i += 1;
-    }
-
-    let input_slice = &line[0..i];
-
-    // gets the shift type and move i to the start of the output
-    let kind = if let Some(IrToken::Break(Break::Shift(shift))) = line.get(i) {
-        i += 1;
-        *shift
+    let input = if let Some((None, input)) = regions.next() {
+        ir_to_input_output(&input)?
     } else {
-        // if there is no shift an error is returned
+        panic!("The first region should always match (None, _)")
+    };
+
+    let (shift, output) = if let Some((Some(Break::Shift(shift)), output)) = regions.next() {
+        (shift, ir_to_input_output(&output)?)
+    } else {
         return Err(RuleStructureError::NoShift);
     };
-    
-    let output_start = i;
 
-    // finds the end of the output
-    while i < line.len() && !matches!(line[i], IrToken::Break(Break::Cond) | IrToken::Break(Break::AntiCond)) {
-        i += 1;
-    }
+    let mut conds = Vec::new();
+    let mut anti_conds = Vec::new();
+    let mut to_anti_conds = false;
 
-    let output_slice = &line[output_start..i];
+    for (r#break, tokens) in regions {
+        match r#break {
+            Some(Break::Shift(_)) => todo!(),
+            Some(Break::Cond) => conds.push(ir_to_cond(&tokens)?),
+            Some(Break::AntiCond) => {
+                to_anti_conds = true;
+                anti_conds.push(ir_to_cond(&tokens)?);
+            },
+            Some(Break::And) => {
+                let mut cond = ir_to_cond(&tokens)?;
 
-    let mut cond_slices = Vec::new();
+                let last_cond = if to_anti_conds {
+                    &mut anti_conds
+                } else {
+                    &mut conds
+                }
+                .last_mut()
+                .ok_or(RuleStructureError::AndDoesNotFollowCond)?;
 
-    // checks that a condition is being started
-    while line.get(i) == Some(&IrToken::Break(Break::Cond)) {
-        i += 1; // moves to the start of the condition
-        let cond_start = i;
-
-        // moves to the end of the condition
-        while i < line.len() && !matches!(line[i], IrToken::Break(Break::Cond) | IrToken::Break(Break::AntiCond)) {
-            i += 1;
+                cond.set_and(std::mem::take(last_cond));
+                *last_cond = cond;
+            },
+            None => panic!("There should be no None break in regions after the first")
         }
-
-        // pushes the condition as a slice
-        cond_slices.push(&line[cond_start..i]);
     }
 
-    let mut anti_cond_slices = Vec::new();
-
-    // checks that an anti-condition is being started
-    while line.get(i) == Some(&IrToken::Break(Break::AntiCond)) {
-        i += 1; // moves to the start of the anti-condition
-        let anti_cond_start = i;
-
-        // moves to the end of the anti-condition
-        while i < line.len() && !matches!(line[i], IrToken::Break(Break::AntiCond)) {
-            i += 1;
-        }
-
-        // pushes the anti-condition as a slice
-        anti_cond_slices.push(&line[anti_cond_start..i]);
-    }
-
-    let conds = ir_to_conds(cond_slices)?;
-    
     Ok(RuleLine::Rule(SoundChangeRule {
-        kind,
-        input: ir_to_input_output(input_slice)?,
-        output: ir_to_input_output(output_slice)?,
-        conds: if conds.is_empty() { vec![Cond::default()] } else { conds},
-        anti_conds: ir_to_conds(anti_cond_slices)?,
+        kind: shift,
+        input,
+        output,
+        conds: if conds.is_empty() { vec![Cond::default()] } else { conds },
+        anti_conds,
     }))
 }
 
 /// Converts the ir tokens for the input and output of a rule to rule tokens
-fn ir_to_input_output<'a, 's: 'a>(ir: &'a [IrToken<'s>]) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
-    ir_tokens_to_rule_tokens(&mut ir.iter(), &mut Some((0, 0, 0)), None, None)
+#[inline]
+fn ir_to_input_output<'s>(ir: &[&IrToken<'s>]) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
+    ir_tokens_to_rule_tokens(
+        &mut ir.iter().copied(), 
+        &mut Some((0, 0, 0)), 
+        None, 
+        None
+    )
 }
 
 /// Converts lists of ir tokens for the (anti-)conditions of a rule to a list of Cond structs
-fn ir_to_conds<'a, 's: 'a>(ir: Vec<&'a [IrToken<'s>]>) -> Result<Vec<Cond<'s>>, RuleStructureError<'s>> {
-    let mut conds = Vec::new();
-
-    for cond in ir {
-        let focus = if cond.contains(&IrToken::CondFocus(CondType::MatchInput)) {
+fn ir_to_cond<'s:>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'s>> {
+        let focus = if ir.contains(&&IrToken::CondType(CondType::MatchInput)) {
             CondType::MatchInput
-        } else if cond.contains(&IrToken::CondFocus(CondType::Equality)) {
+        } else if ir.contains(&&IrToken::CondType(CondType::Equality)) {
             CondType::Equality
         } else {
             return Err(RuleStructureError::NoConditionFocus);
         };
 
-        let cond_ir = &mut cond.iter();
+        let cond_ir = &mut ir.iter().copied();
         // takes all of the tokens before the input token and stores them in before
         // and discards the input token leaving cond_ir as the portion after it
-        let before = &mut cond_ir.take_while(|&token| token != &IrToken::CondFocus(focus));
+        let before = &mut cond_ir.take_while(|&token| token != &IrToken::CondType(focus));
 
-        let cond = Cond::new(
+        Ok(Cond::new(
             focus,
             ir_tokens_to_rule_tokens(before, &mut None, None, None)?,
             ir_tokens_to_rule_tokens(cond_ir, &mut None, None, None)?,
-        );
-
-        conds.push(cond);
-    }
-
-    Ok(conds)
+        ))
 }
 
-/// Converts the ir tokens for the (anti-)conditions of a rule to a Cond struct
+/// Converts ir tokens to rule tokens
 fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: &mut Option<(usize, usize, usize)>, parent_scope: Option<ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
     let mut rule_tokens = Vec::new();
 
@@ -334,6 +315,7 @@ pub enum RuleStructureError<'s> {
     MismatchedScopeBounds(ScopeType, ScopeType),
     UnexpectedToken(IrToken<'s>),
     NoConditionFocus,
+    AndDoesNotFollowCond,
 }
 
 impl std::error::Error for RuleStructureError<'_> {}
@@ -352,6 +334,7 @@ impl std::fmt::Display for RuleStructureError<'_> {
             },
             Self::UnexpectedToken(ir_token) => format!("Found unexpected token '{ir_token}'"),
             Self::NoConditionFocus => format!("Found condition without an input patern ('{}') or equality ('{}')", CondType::MatchInput, CondType::Equality),
+            Self::AndDoesNotFollowCond => format!("Found '{AND_CHAR}' outside of a condition"),
         };
 
         write!(f, "{}", s)

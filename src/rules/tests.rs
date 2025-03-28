@@ -289,7 +289,7 @@ fn single_cond() {
         IrToken::Phone("b"),
         IrToken::Break(Break::Cond),
         IrToken::Phone("c"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("d"),
     ])));
 }
@@ -326,13 +326,13 @@ fn three_conds() {
         IrToken::Phone("b"),
         IrToken::Break(Break::Cond),
         IrToken::Phone("c"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Break(Break::Cond),
         IrToken::Phone("d"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("e"),
         IrToken::Break(Break::Cond),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("f"),
     ])));
 }
@@ -357,7 +357,7 @@ fn single_anti_cond() {
         IrToken::Phone("b"),
         IrToken::Break(Break::AntiCond),
         IrToken::Phone("c"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("d"),
     ])));
 }
@@ -394,13 +394,13 @@ fn three_anti_conds() {
         IrToken::Phone("b"),
         IrToken::Break(Break::AntiCond),
         IrToken::Phone("c"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Break(Break::AntiCond),
         IrToken::Phone("d"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("e"),
         IrToken::Break(Break::AntiCond),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("f"),
     ])));
 }
@@ -429,11 +429,11 @@ fn cond_and_anti_cond() {
         IrToken::Phone("b"),
         IrToken::Break(Break::Cond),
         IrToken::Phone("c"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("d"),
         IrToken::Break(Break::AntiCond),
         IrToken::Phone("e"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("f"),
     ])));
 }
@@ -486,23 +486,23 @@ fn three_conds_and_anti_conds() {
         IrToken::Phone("b"),
         IrToken::Break(Break::Cond),
         IrToken::Phone("c"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Break(Break::Cond),
         IrToken::Phone("d"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("e"),
         IrToken::Break(Break::Cond),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("f"),
         IrToken::Break(Break::AntiCond),
         IrToken::Phone("g"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Break(Break::AntiCond),
         IrToken::Phone("h"),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("i"),
         IrToken::Break(Break::AntiCond),
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
         IrToken::Phone("j"),
     ])));
 }
@@ -525,7 +525,7 @@ fn shift_cond_gap_input() {
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
         IrToken::Gap,
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
     ])));
 }
 
@@ -547,7 +547,7 @@ fn shift_anti_cond_gap_input() {
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::AntiCond),
         IrToken::Gap,
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
     ])));
 }
 
@@ -570,7 +570,7 @@ fn shift_cond_label_gap_input() {
         IrToken::Break(Break::Cond),
         IrToken::Label("label"),
         IrToken::Gap,
-        IrToken::CondFocus(CondType::MatchInput),
+        IrToken::CondType(CondType::MatchInput),
     ])));
 }
 
@@ -716,7 +716,7 @@ fn cond_with_scope() {
             IrToken::ArgSep,
             IrToken::Phone("e"),
             IrToken::ScopeEnd(ScopeType::Selection),
-            IrToken::CondFocus(CondType::MatchInput),
+            IrToken::CondType(CondType::MatchInput),
         ]))
     );
 }
@@ -748,7 +748,7 @@ fn anti_cond_with_scope() {
             IrToken::ScopeStart(ScopeType::Optional),
             IrToken::Phone("c"),
             IrToken::ScopeEnd(ScopeType::Optional),
-            IrToken::CondFocus(CondType::MatchInput),
+            IrToken::CondType(CondType::MatchInput),
             IrToken::Phone("d"),
         ]))
     );
@@ -776,8 +776,129 @@ fn equality_cond() {
             IrToken::Phone("b"),
             IrToken::Break(Break::Cond),
             IrToken::Phone("c"),
-            IrToken::CondFocus(CondType::Equality),
+            IrToken::CondType(CondType::Equality),
             IrToken::Phone("d"),
         ]))
     );
+}
+
+#[test]
+fn and_cond() {
+    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+
+    let mut cond = Cond::new(
+        CondType::MatchInput,
+        vec![RuleToken::Phone(Phone::new("c"))],
+        Vec::new(),
+    );
+
+    cond.set_and(Cond::new(
+        CondType::MatchInput,
+        vec![RuleToken::Phone(Phone::new("b"))],
+        Vec::new(),
+    ));
+
+    assert_eq!(
+        Ok(RuleLine::Rule(SoundChangeRule {
+            kind: shift,
+            input: vec![RuleToken::Phone(Phone::new("a"))],
+            output: Vec::new(),
+            conds: vec![cond],
+            anti_conds: Vec::new(),
+        })),
+        build_rule(&IrLine::Ir(vec![
+            IrToken::Phone("a"),
+            IrToken::Break(Break::Shift(shift)),
+            IrToken::Break(Break::Cond),
+            IrToken::Phone("b"),
+            IrToken::CondType(CondType::MatchInput),
+            IrToken::Break(Break::And),
+            IrToken::Phone("c"),
+            IrToken::CondType(CondType::MatchInput),
+        ]))
+    )
+}
+
+#[test]
+fn and_anticond() {
+    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+
+    let mut cond = Cond::new(
+        CondType::MatchInput,
+        vec![RuleToken::Phone(Phone::new("c"))],
+        Vec::new(),
+    );
+
+    cond.set_and(Cond::new(
+        CondType::MatchInput,
+        vec![RuleToken::Phone(Phone::new("b"))],
+        Vec::new(),
+    ));
+
+    assert_eq!(
+        Ok(RuleLine::Rule(SoundChangeRule {
+            kind: shift,
+            input: vec![RuleToken::Phone(Phone::new("a"))],
+            output: Vec::new(),
+            conds: vec![Cond::default()],
+            anti_conds: vec![cond],
+        })),
+        build_rule(&IrLine::Ir(vec![
+            IrToken::Phone("a"),
+            IrToken::Break(Break::Shift(shift)),
+            IrToken::Break(Break::AntiCond),
+            IrToken::Phone("b"),
+            IrToken::CondType(CondType::MatchInput),
+            IrToken::Break(Break::And),
+            IrToken::Phone("c"),
+            IrToken::CondType(CondType::MatchInput),
+        ]))
+    )
+}
+#[test]
+fn double_and() {
+    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+
+    let mut cond = Cond::new(
+        CondType::MatchInput,
+        vec![RuleToken::Phone(Phone::new("d"))],
+        Vec::new(),
+    );
+
+    let mut cond_2 = Cond::new(
+        CondType::MatchInput,
+        vec![RuleToken::Phone(Phone::new("c"))],
+        Vec::new(),
+    );
+
+    cond_2.set_and(Cond::new(
+        CondType::MatchInput,
+        vec![RuleToken::Phone(Phone::new("b"))],
+        Vec::new(),
+    ));
+
+    cond.set_and(cond_2);
+
+    assert_eq!(
+        Ok(RuleLine::Rule(SoundChangeRule {
+            kind: shift,
+            input: vec![RuleToken::Phone(Phone::new("a"))],
+            output: Vec::new(),
+            conds: vec![cond],
+            anti_conds: Vec::new(),
+        })),
+        build_rule(&IrLine::Ir(vec![
+            IrToken::Phone("a"),
+            IrToken::Break(Break::Shift(shift)),
+            IrToken::Break(Break::Cond),
+            IrToken::Phone("b"),
+            IrToken::CondType(CondType::MatchInput),
+            IrToken::Break(Break::And),
+            IrToken::Phone("c"),
+            IrToken::CondType(CondType::MatchInput),
+            IrToken::Break(Break::And),
+            IrToken::Phone("d"),
+            IrToken::CondType(CondType::MatchInput),
+        ]))
+    )
 }

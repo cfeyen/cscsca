@@ -24,7 +24,7 @@ pub enum IrToken<'s> {
     /// A gap of size 0 or greater that does not contain a word boundery
     Gap,
     /// The main focus and type of a condition or anti-condition
-    CondFocus(CondType),
+    CondType(CondType),
     /// The start of a scope
     ScopeStart(ScopeType),
     /// The end of a scope
@@ -38,7 +38,7 @@ impl Display for IrToken<'_> {
             Self::ArgSep => format!("{ARG_SEP_CHAR}"),
             Self::Break(r#break) => format!("{}", r#break),
             Self::Gap => GAP_STR.to_string(),
-            Self::CondFocus(focus) => format!("{focus}"),
+            Self::CondType(focus) => format!("{focus}"),
             Self::Phone(phone) => phone.to_string(),
             Self::ScopeEnd(kind) => kind.fmt_end().to_string(),
             Self::ScopeStart(kind) => kind.fmt_start().to_string(),
@@ -62,6 +62,8 @@ pub enum Break {
     Cond,
     /// Starts an anti-condition
     AntiCond,
+    /// A union between conditions where both must succeed
+    And
 }
 
 impl Display for Break {
@@ -70,6 +72,7 @@ impl Display for Break {
             Self::Shift(shift) => format!("{shift}"),
             Self::Cond => format!("{COND_CHAR}"),
             Self::AntiCond => format!("{COND_CHAR}{COND_CHAR}"),
+            Self::And => format!("{AND_CHAR}"),
         };
 
         write!(f, "{}", s)
