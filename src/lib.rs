@@ -19,8 +19,24 @@ pub const BOUND_STR: &str = "#";
 /// Applies sca source code to an input string
 /// 
 /// Returns a string of either the final text or a formatted error and the print log
+#[inline]
 pub fn apply(input: &str, code: &str) -> (String, PrintLog) {
-    let (result, log) = apply_fallible(input, code);
+    apply_with_runtime(input, code, &Runtime::default())
+}
+
+/// Applies sca source code to an input string, logging prints
+/// 
+/// Returns a result of either the final text or a formatted error
+#[inline]
+pub fn apply_fallible(input: &str, code: &str) -> (Result<String, String>, PrintLog) {
+    apply_fallible_with_runtime(input, code, &Runtime::default())
+}
+
+/// Applies sca source code to an input string
+/// 
+/// Returns a string of either the final text or a formatted error and the print log
+pub fn apply_with_runtime(input: &str, code: &str, runtime: &Runtime) -> (String, PrintLog) {
+    let (result, log) = apply_fallible_with_runtime(input, code, runtime);
 
     (result.unwrap_or_else(|e| e), log)
 }
@@ -29,8 +45,8 @@ pub fn apply(input: &str, code: &str) -> (String, PrintLog) {
 /// 
 /// Returns a result of either the final text or a formatted error
 #[inline]
-pub fn apply_fallible(input: &str, code: &str) -> (Result<String, String>, PrintLog) {
-    Runtime::default().apply(input, code)
+pub fn apply_fallible_with_runtime(input: &str, code: &str, runtime: &Runtime) -> (Result<String, String>, PrintLog) {
+    runtime.apply(input, code)
 }
 
 /// Builds a list of phones (as string slices with lifetime 's)

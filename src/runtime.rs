@@ -105,14 +105,14 @@ impl Runtime {
     }
 
     /// Applies rules to an input given the context of the runtime, errors are returned as formated strings
-    pub fn apply(&mut self, input: &str, code: &str) -> (Result<String, String>, PrintLog) {
+    pub fn apply(&self, input: &str, code: &str) -> (Result<String, String>, PrintLog) {
         let mut log = PrintLog::new();
 
         (self.apply_all_lines(input, code, &mut log), log)
     }
 
     /// Applies all lines, errors are returned as formated strings
-    fn apply_all_lines(&mut self, input: &str, code: &str, print_log: &mut PrintLog) -> Result<String, String> {
+    fn apply_all_lines(&self, input: &str, code: &str, print_log: &mut PrintLog) -> Result<String, String> {
         let lines = code
             .lines()
             .enumerate()
@@ -133,7 +133,7 @@ impl Runtime {
     }
 
     /// Applies a line within the runtime, errers are returned as formated strings
-    fn apply_line<'s>(&mut self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, print_log: &mut PrintLog, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), String> {
+    fn apply_line<'s>(&self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, print_log: &mut PrintLog, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), String> {
         // converts the line to ir
         let ir_line = tokenize_line_or_create_runtime_command(line, compile_time_data)
             .map_err(|e| format_error(&e, line, line_num))?;
