@@ -10,9 +10,10 @@ pub const EQUALITY_CHAR: char = '=';
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum CondType {
     /// The input in a condition or anti-condition
+    #[default]
     MatchInput,
     /// A deliminator for a match between to groups of tokens
     Equality,
@@ -36,7 +37,7 @@ todo    h >> / # _ & %dialect = (standard)
 
 /// A pair of token lists can be compared based on the kind of the condition
 /// either to the enviroment around a phone or to each other
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct Cond<'s> {
     kind: CondType,
     before: Vec<RuleToken<'s>>,
@@ -90,17 +91,6 @@ impl<'s> Cond<'s> {
             CondType::Equality => {
                 Ok(self.before == self.after)
             }
-        }
-    }
-}
-
-impl Default for Cond<'_> {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            kind: CondType::MatchInput,
-            before: Default::default(),
-            after: Default::default(),
         }
     }
 }
