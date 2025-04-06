@@ -86,6 +86,7 @@ impl Runtime {
     }
 
     /// Sets the `io_get_fn` callback for the runtime
+    #[inline]
     pub fn set_io_get_fn(&mut self, callback: GetFn) -> &mut Self {
         self.io_get_fn = callback;
         self
@@ -122,11 +123,15 @@ impl Runtime {
         let mut compile_time_data = CompileTimeData::new();
 
         for (line_num, line) in lines {
-            self.apply_line(line, line_num, &mut phones, print_log, &mut compile_time_data)?;
+            if let Err(e) = self.apply_line(line, line_num, &mut phones, print_log, &mut compile_time_data) {
+                unsafe { compile_time_data.free_sources() };
+                return Err(e);
+            }
         }
 
         let output = phone_list_to_string(&phones);
 
+        // as the output is a string, which owns all of its values
         unsafe { compile_time_data.free_sources() };
 
         Ok(output)
