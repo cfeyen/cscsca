@@ -1,6 +1,6 @@
-// Non rule commands executed at runtime
+/// Non rule commands when running a program
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RuntimeCmd {
+pub enum Command {
     Print,
     Get,
     // todo: GetAsPhone

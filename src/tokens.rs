@@ -1,7 +1,7 @@
 use crate::{
     meta_tokens::{Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR},
     rules::conditions::{CondType, EQUALITY_CHAR, INPUT_STR},
-    runtime_cmds::RuntimeCmd,
+    commands::Command,
 };
 use compile_time_data::CompileTimeData;
 use ir::{Break, IrToken, ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, AND_CHAR};
@@ -21,18 +21,19 @@ pub const GET_LINE_START: &str = "GET";
 pub const COMMENT_LINE_START: &str = "##";
 pub const ESCAPE_CHAR: char = '\\';
 
+/// A list of IrTokens, a command, or nothing representing a line of source code
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub enum IrLine<'s> {
     Ir(Vec<IrToken<'s>>),
-    Cmd(RuntimeCmd, &'s str),
+    Cmd(Command, &'s str),
     Empty,
 }
 
 /// Converts source code into intermediate representation tokens
 /// 
 /// Note: these tokens may not be structurally valid and should be checked
-pub fn tokenize_line_or_create_runtime_command<'s>(line: &'s str, compile_time_data: &mut CompileTimeData<'s>) -> Result<IrLine<'s>, IrError<'s>> {
+pub fn tokenize_line_or_create_command<'s>(line: &'s str, compile_time_data: &mut CompileTimeData<'s>) -> Result<IrLine<'s>, IrError<'s>> {
     Ok(if let Some(definition_content) = line.strip_prefix(DEFINITION_LINE_START) {
         // handles definitions
         let ir = tokenize_line(definition_content, compile_time_data)?;
@@ -48,10 +49,10 @@ pub fn tokenize_line_or_create_runtime_command<'s>(line: &'s str, compile_time_d
         IrLine::Empty
     } else if let Some(args) = line.strip_prefix(PRINT_LINE_START) {
         // handles print statement
-        IrLine::Cmd(RuntimeCmd::Print, args.trim())
+        IrLine::Cmd(Command::Print, args.trim())
     } else if let Some(args) = line.strip_prefix(GET_LINE_START) {
         // handles get statement
-        IrLine::Cmd(RuntimeCmd::Get, args.trim())
+        IrLine::Cmd(Command::Get, args.trim())
     } else {
         // handles rules
         let mut ir_line = IrLine::Ir(tokenize_line(line, compile_time_data)?);

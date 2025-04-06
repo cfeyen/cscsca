@@ -11,6 +11,7 @@ pub mod conditions;
 #[cfg(test)]
 mod tests;
 
+/// A rule, executed command, or nothing representing a line of source code
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub enum RuleLine<'s> {

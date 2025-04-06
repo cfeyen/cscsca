@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
-use crate::{applier::apply, ansi::{RED, BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, runtime_cmds::{PrintLog, RuntimeCmd}, tokens::{token_checker::check_token_line, tokenize_line_or_create_runtime_command, compile_time_data::CompileTimeData, IrLine, GET_LINE_START}};
+use crate::{applier::apply, ansi::{RED, BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, commands::{PrintLog, Command}, tokens::{token_checker::check_token_line, tokenize_line_or_create_command, compile_time_data::CompileTimeData, IrLine, GET_LINE_START}};
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 
@@ -150,7 +150,7 @@ impl Runtime {
     /// Applies a line within the runtime, errers are returned as formated strings
     fn apply_line<'s>(&self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, print_log: &mut PrintLog, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), String> {
         // converts the line to ir
-        let ir_line = tokenize_line_or_create_runtime_command(line, compile_time_data)
+        let ir_line = tokenize_line_or_create_command(line, compile_time_data)
             .map_err(|e| format_error(&e, line, line_num))?;
 
         match ir_line {
@@ -179,16 +179,16 @@ impl Runtime {
     }
 
     /// Handles commands to the runtime
-    fn handle_command<'s>(&self, cmd: RuntimeCmd, args: &'s str, phones: &[Phone], print_log: &mut PrintLog, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), Box<dyn Error + 's>> {
+    fn handle_command<'s>(&self, cmd: Command, args: &'s str, phones: &[Phone], print_log: &mut PrintLog, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), Box<dyn Error + 's>> {
         match cmd {
             // formats the message, calls the io_put_fn callback on it, then logs it
-            RuntimeCmd::Print => {
+            Command::Print => {
                 let msg = format!("{args} '{BLUE}{}{RESET}'", phone_list_to_string(phones));
                 (self.io_put_fn)(&msg)?;
                 print_log.log(msg);
             },
             // formats the message, calls the io_put_fn callback on it, then logs it
-            RuntimeCmd::Get => {
+            Command::Get => {
                 if let Some((name, msg)) = args.split_once(" ") {
                     let source = (self.io_get_fn)(msg.trim())?;
 

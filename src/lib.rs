@@ -1,12 +1,12 @@
 use runtime::Runtime;
-use runtime_cmds::PrintLog;
+use commands::PrintLog;
 
 pub(crate) mod tokens;
 pub mod phones;
 pub(crate) mod meta_tokens;
 pub(crate) mod rules;
 pub(crate) mod applier;
-pub(crate) mod runtime_cmds;
+pub(crate) mod commands;
 pub mod runtime;
 
 #[cfg(test)]

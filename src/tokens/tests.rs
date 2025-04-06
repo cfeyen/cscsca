@@ -21,7 +21,7 @@ fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
     let mut compile_time_data = CompileTimeData::new();
 
     for (line_num, line) in lines {
-        match tokenize_line_or_create_runtime_command(line, &mut compile_time_data) {
+        match tokenize_line_or_create_command(line, &mut compile_time_data) {
             Ok(tokens) => token_lines.push(tokens),
             Err(e) => return Err((e, line_num)),
         }
@@ -300,7 +300,7 @@ fn tokenize_input_with_contacting() {
 
 #[test]
 fn print_statement() {
-    assert_eq!(Ok(vec![IrLine::Cmd(RuntimeCmd::Print, "test message")]), tokenize("PRINT test message"))
+    assert_eq!(Ok(vec![IrLine::Cmd(Command::Print, "test message")]), tokenize("PRINT test message"))
 }
 
 #[test]
