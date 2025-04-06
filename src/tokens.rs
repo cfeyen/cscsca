@@ -6,7 +6,6 @@ use crate::{
 use compile_time_data::CompileTimeData;
 use ir::{Break, IrToken, ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, AND_CHAR};
 use prefix::{Prefix, DEFINITION_PREFIX, SELECTION_PREFIX, VARIABLE_PREFIX};
-use token_checker::{check_tokens, IrStructureError};
 
 pub mod ir;
 pub mod prefix;
@@ -28,44 +27,6 @@ pub enum IrLine<'s> {
     Ir(Vec<IrToken<'s>>),
     Cmd(RuntimeCmd, &'s str),
     Empty,
-}
-
-/// Converts source code into intermediate representation tokens,
-/// then ensures that the tokens have a valid structure according to `check_tokens`
-/// 
-/// If there is an error it is returned with the number of the line it occured on
-pub fn tokenize_and_check(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
-    let token_lines = tokenize(source)?;
-    check_tokens(&token_lines)
-        .map_err(|(e, line)| (IrError::StructureError(e), line))?;
-    Ok(token_lines)
-}
-
-/// Converts source code into intermediate representation tokens
-/// 
-/// Note: these tokens may not be structurally valid and should be checked
-/// 
-/// If there is an error it is returned with the number of the line it occured on
-/// 
-/// ## Warning
-/// Any io fetched during application will be leaked to the static scope
-pub fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
-    let lines = source
-        .lines()
-        .enumerate()
-        .map(|(num, line)| (num + 1, line.trim()));
-
-    let mut token_lines = Vec::new();
-    let mut compile_time_data = CompileTimeData::new();
-
-    for (line_num, line) in lines {
-        match tokenize_line_or_create_runtime_command(line, &mut compile_time_data) {
-            Ok(tokens) => token_lines.push(tokens),
-            Err(e) => return Err((e, line_num)),
-        }
-    }
-
-    Ok(token_lines)
 }
 
 /// Converts source code into intermediate representation tokens
@@ -316,7 +277,6 @@ pub enum IrError<'s> {
     UndefinedDefinition(&'s str),
     UndefinedVariable(&'s str),
     EmptyDefinition,
-    StructureError(IrStructureError<'s>),
 }
 
 impl std::error::Error for IrError<'_> {}
@@ -328,7 +288,6 @@ impl std::fmt::Display for IrError<'_> {
             Self::UndefinedDefinition(name) => format!("Undefined definiton '{DEFINITION_PREFIX}{name}'"),
             Self::UndefinedVariable(name) => format!("Undefined definiton '{VARIABLE_PREFIX}{name}'"),
             Self::EmptyDefinition => format!("Found '{DEFINITION_LINE_START}' with out a following name"),
-            Self::StructureError(e) => format!("{e}"),
         };
 
         write!(f, "{}", s)

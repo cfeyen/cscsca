@@ -1,10 +1,13 @@
 use super::*;
+use ansi::*;
+
+const DEMO: &'static str = include_str!("assets/demo.sca");
 
 #[test]
 fn demo_merge_n_g_and_nasals_dropped_word_finally() {
     assert_eq!(
         String::new(),
-        apply("ng", demo()).0
+        apply("ng", DEMO).0
     );
 }
 
@@ -12,7 +15,7 @@ fn demo_merge_n_g_and_nasals_dropped_word_finally() {
 fn demo_stop_voicing_and_vowel_lostt() {
     assert_eq!(
         "p ab ed dl htl ant".to_string(),
-        apply("pe apa eti tl htl ante", demo()).0
+        apply("pe apa eti tl htl ante", DEMO).0
     );
 }
 
@@ -20,7 +23,7 @@ fn demo_stop_voicing_and_vowel_lostt() {
 fn demo_stop_assimilation() {
     assert_eq!(
         "pat taga".to_string(),
-        apply("pata takan", demo()).0
+        apply("pata takan", DEMO).0
     );
 }
 
@@ -28,7 +31,7 @@ fn demo_stop_assimilation() {
 fn demo_h_loss() {
     assert_eq!(
         "h_ _".to_string(),
-        apply("h_ _h", demo()).0
+        apply("h_ _h", DEMO).0
     );
 }
 
@@ -36,7 +39,7 @@ fn demo_h_loss() {
 fn demo_palatalization() {
     assert_eq!(
         "taɲtʃil aɲi".to_string(),
-        apply("tantil anim", demo()).0
+        apply("tantil anim", DEMO).0
     );
 }
 
@@ -44,7 +47,7 @@ fn demo_palatalization() {
 fn demo_harmony() {
     assert_eq!(
         "iny iwu iwiny".to_string(),
-        apply("inuh iwuh iwinuh", demo()).0
+        apply("inuh iwuh iwinuh", DEMO).0
     );
 }
 
@@ -52,7 +55,7 @@ fn demo_harmony() {
 fn demo_print() {
     assert_eq!(
         &[format!("before h-loss: '{BLUE}pat taga{RESET}'")],
-        apply("pata takan", demo()).1.logs()
+        apply("pata takan", DEMO).1.logs()
     )
 }
 

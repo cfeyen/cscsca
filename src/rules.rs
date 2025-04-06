@@ -3,7 +3,7 @@ use std::sync::Arc;
 use conditions::{Cond, CondType};
 use sound_change_rule::{LabelType, RuleToken, ScopeId, SoundChangeRule};
 
-use crate::{meta_tokens::ScopeType, phones::Phone, runtime_cmds::RuntimeCmd, tokens::{ir::{Break, IrToken, AND_CHAR}, token_checker::regionize_ir, IrLine}};
+use crate::{meta_tokens::ScopeType, phones::Phone, tokens::{ir::{Break, IrToken, AND_CHAR}, token_checker::regionize_ir, IrLine}};
 
 pub mod sound_change_rule;
 pub mod conditions;
@@ -15,30 +15,8 @@ mod tests;
 #[derive(Debug, Clone)]
 pub enum RuleLine<'s> {
     Rule(SoundChangeRule<'s>),
-    Cmd(RuntimeCmd, &'s str),
+    Cmd,
     Empty,
-}
-
-/// Builds a sound change rules out of lines of ir tokens,
-/// if there is an error it is returned with its line number
-/// 
-/// Note: the ir tokens should be checked for proper structure before being passed to this function
-pub fn build_rules<'s>(token_lines: &'s [IrLine<'s>]) -> Result<Vec<RuleLine<'s>>, (RuleStructureError<'s>, usize)> {
-    let token_lines = token_lines
-        .iter()
-        .enumerate()
-        .map(|(num, line)| (num + 1, line));
-
-    let mut rules = Vec::new();
-
-    for (line_num, line) in token_lines {
-        match build_rule(line) {
-            Ok(rule) => rules.push(rule),
-            Err(e) => return Err((e, line_num))
-        }
-    }
-
-    Ok(rules)
 }
 
 /// Builds a sound change rule out of a line of ir tokens
@@ -47,7 +25,7 @@ pub fn build_rules<'s>(token_lines: &'s [IrLine<'s>]) -> Result<Vec<RuleLine<'s>
 pub fn build_rule<'a, 's: 'a>(line: &'a IrLine<'s>) -> Result<RuleLine<'s>, RuleStructureError<'s>> {
     let line = match line {
         IrLine::Empty => return Ok(RuleLine::Empty),
-        IrLine::Cmd(cmd, args) => return Ok(RuleLine::Cmd(*cmd, args)),
+        IrLine::Cmd(_cmd, _args) => return Ok(RuleLine::Cmd),
         IrLine::Ir(tokens) if tokens.is_empty() => return Ok(RuleLine::Empty),
         IrLine::Ir(tokens) => tokens
     };

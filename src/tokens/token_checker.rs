@@ -4,24 +4,6 @@ use super::{ir::{Break, IrToken}, IrLine};
 #[cfg(test)]
 mod tests;
 
-/// Checks a list of token lines by line to ensure proper structure
-/// 
-/// Empty lines are considered ok
-/// 
-/// For more information see `check_scopes` and `check_breaks`
-pub fn check_tokens<'s>(token_lines: &[IrLine<'s>]) -> Result<(), (IrStructureError<'s>, usize)> {
-    let token_lines = token_lines
-        .iter()
-        .enumerate()
-        .map(|(num, line)| (num + 1, line));
-
-    for (line_num, line) in token_lines {
-        check_token_line(line).map_err(|e| (e, line_num))?
-    }
-
-    Ok(())
-}
-
 /// Checks a line of tokens to ensure proper structure
 /// 
 /// Empty lines are considered ok
@@ -263,4 +245,23 @@ impl std::fmt::Display for IrStructureError<'_> {
 
         write!(f, "{}", s)
     }
+}
+
+/// Checks a list of token lines by line to ensure proper structure
+/// 
+/// Empty lines are considered ok
+/// 
+/// For more information see `check_scopes` and `check_breaks`
+#[cfg(test)]
+pub fn check_tokens<'s>(token_lines: &[IrLine<'s>]) -> Result<(), (IrStructureError<'s>, usize)> {
+    let token_lines = token_lines
+        .iter()
+        .enumerate()
+        .map(|(num, line)| (num + 1, line));
+
+    for (line_num, line) in token_lines {
+        check_token_line(line).map_err(|e| (e, line_num))?
+    }
+
+    Ok(())
 }

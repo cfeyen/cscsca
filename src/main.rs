@@ -1,6 +1,10 @@
 use std::{env, fs};
 
-use cscsca::colors::{RED, GREEN, BLUE, BOLD, RESET};
+#[cfg(not(feature = "no_ansi"))]
+use cscsca::ansi::*;
+
+#[cfg(feature = "no_ansi")]
+use no_ansi::*;
 
 const APPLY_CMD: &str = "sca";
 const APPLY_TO_FILE_CMD: &str = "apply";
@@ -108,11 +112,11 @@ fn main() {
             // prints the characters in each argument
             (CHAR_HELP_CMD, 1..) => {
                 for text in &args {
-                    cscsca::print_chars(text);
+                    print_chars(text);
                 }
             },
             // prints the help file
-            (HELP_CMD, 0) => cscsca::help(),
+            (HELP_CMD, 0) => help(),
             // creats a new template file
             (NEW_CMD, 1) => {
                 let path = if args[0].contains(".") {
@@ -121,21 +125,88 @@ fn main() {
                     &format!("{}{FILE_EXTENTION}", args[0])
                 };
                 
-                match fs::write(path, cscsca::template()) {
+                match fs::write(path, template()) {
                     Ok(()) => println!("Created {BLUE}{path}{RESET}"),
                     Err(_) => println!("{RED}Error:{RESET} Failed to create {BLUE}{path}{RESET}")
                 }
             },
             // prints the demo file
-            (DEMO_CMD, 0) => println!("{}", cscsca::demo()),
+            (DEMO_CMD, 0) => println!("{}", demo()),
             // handles unrecognized commands
             (_, arg_count) => {
                 println!("Unrecognized command '{BOLD}{cmd}{RESET}' with {arg_count} arguments");
                 println!("Run '{BOLD}cscsca help{RESET}' for more information");
             }
         }
-
     } else {
-        cscsca::help()
+        help()
     }
+}
+
+/// prints the characters in a string
+fn print_chars(text: &str) {
+    println!("Characters in '{BLUE}{text}{RESET}':");
+
+    for (i, c) in text.chars().enumerate().map(|(i, c)| (i + 1, c)) {
+        println!("{i}:\t{c} ~ '{YELLOW}{}{RESET}'", c.escape_default());
+    }
+}
+
+/// color formats then prints the help file
+fn help() {
+    let text = &mut include_str!("assets/help.txt").chars();
+    let mut help = String::new();
+
+    while let Some(c) = text.next() {
+        match c {
+            '[' => {
+                let mut content = String::new();
+
+                // gets bracket contents
+                for c in text.by_ref() {
+                    if c == ']' { break; }
+                    content.push(c)
+                }
+
+                let special = match content.as_str() {
+                    "-" => RESET,
+                    "r" => { help += BOLD; RED },
+                    "y" => YELLOW,
+                    "g" => GREEN,
+                    "b" => BLUE,
+                    "m" => { help += BOLD; MAGENTA },
+                    "!" => BOLD,
+                    content => { help = help + "[" + content; "]" },
+                };
+
+                help += special;
+            }
+            c => help.push(c)
+        }
+    }
+
+    println!("{help}");
+}
+
+/// returns the demo file
+const fn demo() -> &'static str {
+    include_str!("assets/demo.sca")
+}
+
+/// returns the template file
+const fn template() -> &'static str {
+    include_str!("assets/base.sca")
+}
+
+/// Empty colors for when the no_ansi flag is used,
+/// as cscsca::colors is private when that flag is active
+#[cfg(feature = "no_ansi")]
+mod no_ansi {
+    pub const RESET: &str = "";
+    pub const BOLD: &str = "";
+    pub const RED: &str = "";
+    pub const YELLOW: &str = "";
+    pub const GREEN: &str = "";
+    pub const BLUE: &str = "";
+    pub const MAGENTA: &str = "";
 }

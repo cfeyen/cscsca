@@ -50,27 +50,6 @@ impl<'s> Cond<'s> {
         self.and = Some(Box::new(and));
     }
 
-    /// Checks if there is an additional required condition
-    #[inline]
-    pub const fn has_and(&mut self) -> bool {
-        self.and.is_some()
-    }
-
-    #[inline]
-    pub const fn kind(&self) -> CondType {
-        self.kind
-    }
-
-    #[inline]
-    pub fn before(&self) -> &[RuleToken<'s>] {
-        &self.before
-    }
-
-    #[inline]
-    pub fn after(&self) -> &[RuleToken<'s>] {
-        &self.after
-    }
-
     /// Checks if the condition matches the phones in a list around a given index
     /// assuming the input of a given size matches and based on the application direction
     pub fn eval<'a>(&'a self, phones: &[Phone<'s>], phone_index: usize, input_len: usize, choices: &mut Choices<'a, 's>, dir: Direction) -> Result<bool, MatchError<'a, 's>> {

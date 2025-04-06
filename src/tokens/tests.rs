@@ -1,4 +1,34 @@
+use crate::tokens::token_checker::check_tokens;
+
 use super::*;
+
+/// Converts source code into intermediate representation tokens
+/// 
+/// Note: these tokens may not be structurally valid and should be checked
+/// 
+/// If there is an error it is returned with the number of the line it occured on
+/// 
+/// ## Warning
+/// Any io fetched during application will be leaked to the static scope
+#[cfg(test)]
+fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
+    let lines = source
+        .lines()
+        .enumerate()
+        .map(|(num, line)| (num + 1, line.trim()));
+
+    let mut token_lines = Vec::new();
+    let mut compile_time_data = CompileTimeData::new();
+
+    for (line_num, line) in lines {
+        match tokenize_line_or_create_runtime_command(line, &mut compile_time_data) {
+            Ok(tokens) => token_lines.push(tokens),
+            Err(e) => return Err((e, line_num)),
+        }
+    }
+
+    Ok(token_lines)
+}
 
 #[test]
 fn tokenize_nothing() {
@@ -292,6 +322,8 @@ fn escape_escape() {
 
 #[test]
 fn tokenize_and_check_simple() {
+    let tokens = tokenize("##this is a comment\nDEFINE V { i, e, a, u, o }\n\n$stops{p, t, k} >> $stops{b, d, g} / @V _ @V / _ {l, r} // h _");
+
     assert_eq!(Ok(vec![
         IrLine::Empty,
         IrLine::Empty,
@@ -358,5 +390,7 @@ fn tokenize_and_check_simple() {
             IrToken::Phone("h"),
             IrToken::CondType(CondType::MatchInput),
         ]),
-    ]), tokenize_and_check("##this is a comment\nDEFINE V { i, e, a, u, o }\n\n$stops{p, t, k} >> $stops{b, d, g} / @V _ @V / _ {l, r} // h _"))
+    ]), tokens);
+
+    assert_eq!(Ok(()), check_tokens(&tokens.unwrap()));
 }

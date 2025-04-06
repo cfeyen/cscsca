@@ -81,3 +81,46 @@ impl PartialEq for Phone<'_> {
         self.symbol == other.symbol
     }
 }
+
+/// Builds a list of phones (as string slices with lifetime 's)
+/// from an input (string slice with 's)
+/// and reformats whitespace as word bounderies
+pub fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
+    let phones = input
+        .split("")
+        .filter(|s| !s.is_empty())
+        .map(|s| if s == "\n" {
+            s
+        } else if s.trim().is_empty() {
+            BOUND_STR
+        } else {
+            s
+        })
+        .map(Phone::new);
+
+    let mut phone_list = Vec::new();
+
+    for phone in phones {
+        if phone.symbol() == "\n" {
+            phone_list.push(Phone::new_bound());
+            phone_list.push(phone);
+            phone_list.push(Phone::new_bound());
+        } else {
+            phone_list.push(phone);
+        }
+    }
+
+    phone_list
+}
+
+/// Converts a list of string slices to a string
+/// reformating word bounderies as whitespace
+pub fn phone_list_to_string(phone_list: &[Phone]) -> String {
+    phone_list
+        .iter()
+        .fold(String::new(), |acc, phone| format!("{acc}{phone}"))
+        .replace(&format!("{BOUND_STR}\n{BOUND_STR}"), "\n")
+        .replace(BOUND_STR, " ")
+        .trim()
+        .to_string()
+}

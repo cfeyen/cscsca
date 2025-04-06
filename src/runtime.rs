@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
-use crate::{applier::apply, build_phone_list, colors::{BLUE, RESET}, format_error, phone_list_to_string, phones::Phone, rules::{build_rule, RuleLine}, runtime_cmds::{PrintLog, RuntimeCmd}, tokens::{token_checker::check_token_line, tokenize_line_or_create_runtime_command, compile_time_data::CompileTimeData, IrLine, GET_LINE_START}};
+use crate::{applier::apply, ansi::{RED, BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, runtime_cmds::{PrintLog, RuntimeCmd}, tokens::{token_checker::check_token_line, tokenize_line_or_create_runtime_command, compile_time_data::CompileTimeData, IrLine, GET_LINE_START}};
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 
@@ -105,25 +105,35 @@ impl Runtime {
         self
     }
 
-    /// Applies rules to an input given the context of the runtime, errors are returned as formated strings
+    /// Applies rules to an input given the context of the runtime,
+    /// errors are returned as formated strings
+    #[inline]
     pub fn apply(&self, input: &str, code: &str) -> (Result<String, String>, PrintLog) {
+        let mut phones = build_phone_list(input);
+
+        self.apply_to_phones(&mut phones, code)
+    }
+    
+    /// Applies rules to an input given the context of the runtime,
+    /// errors are returned as formated strings
+    #[inline]
+    pub fn apply_to_phones<'s>(&self, phones: &mut Vec<Phone<'s>>, code: &'s str) -> (Result<String, String>, PrintLog) {
         let mut log = PrintLog::new();
 
-        (self.apply_all_lines(input, code, &mut log), log)
+        (self.apply_all_lines(phones, code, &mut log), log)
     }
 
     /// Applies all lines, errors are returned as formated strings
-    fn apply_all_lines(&self, input: &str, code: &str, print_log: &mut PrintLog) -> Result<String, String> {
+    fn apply_all_lines<'s>(&self, phones: &mut Vec<Phone<'s>>, code: &'s str, print_log: &mut PrintLog) -> Result<String, String> {
         let lines = code
             .lines()
             .enumerate()
             .map(|(num, line)| (num + 1, line));
 
-        let mut phones = build_phone_list(input);
         let mut compile_time_data = CompileTimeData::new();
 
         for (line_num, line) in lines {
-            if let Err(e) = self.apply_line(line, line_num, &mut phones, print_log, &mut compile_time_data) {
+            if let Err(e) = self.apply_line(line, line_num, phones, print_log, &mut compile_time_data) {
                 unsafe { compile_time_data.free_sources() };
                 return Err(e);
             }
@@ -202,4 +212,9 @@ impl Display for GetFormatError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Invalid get format, should be {GET_LINE_START} 'var_name' 'msg'")
     }
+}
+
+/// Formats an error with its enviroment
+fn format_error(e: &dyn std::error::Error, line: &str, line_num: usize) -> String {
+    format!("{RED}Error:{RESET} {e}\nLine {line_num}: {line}")
 }

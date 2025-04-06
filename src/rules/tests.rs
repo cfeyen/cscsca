@@ -1,6 +1,29 @@
 use crate::meta_tokens::{Direction, Shift, ShiftType};
 use super::*;
 
+/// Builds a sound change rules out of lines of ir tokens,
+/// if there is an error it is returned with its line number
+/// 
+/// Note: the ir tokens should be checked for proper structure before being passed to this function
+#[cfg(test)]
+fn build_rules<'s>(token_lines: &'s [IrLine<'s>]) -> Result<Vec<RuleLine<'s>>, (RuleStructureError<'s>, usize)> {
+    let token_lines = token_lines
+        .iter()
+        .enumerate()
+        .map(|(num, line)| (num + 1, line));
+
+    let mut rules = Vec::new();
+
+    for (line_num, line) in token_lines {
+        match build_rule(line) {
+            Ok(rule) => rules.push(rule),
+            Err(e) => return Err((e, line_num))
+        }
+    }
+
+    Ok(rules)
+}
+
 #[test]
 fn no_rule() {
     assert_eq!(Ok(Vec::new()), build_rules(&Vec::new()));
