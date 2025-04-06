@@ -39,18 +39,40 @@ impl<'s> CompileTimeData<'s> {
     /// 
     /// ## Warning
     /// If free_sources is never called on this struct, the input will be leaked forever
-    pub fn set_variable(&mut self, name: &'s str, mut source: String) -> Result<(), IrError<'s>> {
-        // leaking and moving the input to the sources buffer allows variable to be redefined
-        // and prevents self reference, however, it may also cause memory leaks
-        source.shrink_to_fit();
-        let source = source.leak();
-
-        self.sources.push(source as *const str);
+    pub fn set_variable_as_ir(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
+        let source = self.add_source(source);
 
         let tokens = tokenize_line(source, self)?;
 
         self.variables.insert(name, tokens);
         Ok(())
+    }
+
+    /// Leaks the source to the static scope and makes a phone out of it,
+    /// then assigns the tokens to the given name
+    /// 
+    /// ## Warning
+    /// If free_sources is never called on this struct, the input will be leaked forever
+    pub fn set_variable(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
+        let source = self.add_source(source.trim().to_string());
+
+        self.variables.insert(name, vec![IrToken::Phone(source)]);
+        Ok(())
+    }
+
+    /// Leaks a source and adds it to the sources buffer
+    /// 
+    /// ## Warning
+    /// If free_sources is never called on this struct, the source will be leaked forever
+    #[inline]
+    fn add_source<'a> (&mut self, mut source: String) -> &'a str {
+        // leaking and moving the source to the sources buffer allows variable to be redefined
+        // and prevents self reference, however, it may also cause memory leaks
+        source.shrink_to_fit();
+        let source = source.leak();
+
+        self.sources.push(source as *const str);
+        source
     }
 
     /// Frees all variable sources and consumes the struct

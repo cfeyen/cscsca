@@ -101,12 +101,17 @@
         [g]GET[-] [b]name[-] [b]message[-]:
             Prints the [b]message[-] then waits for the user to input a response,
             To insert the respone into a rule later, use '[g]%[-][b]name[-]'
-            [r]WARNING[-]: the response is treated the same as code which could result in
+            [r]IMPORTANT[-]: the response is treated as a single phone
+
+        [g]GET_AS_CODE[-] [b]name[-] [b]message[-]:
+            Prints the [b]message[-] then waits for the user to input a response,
+            To insert the respone into a rule later, use '[g]%[-][b]name[-]'
+            [r]IMPORTANT [-]: the response is treated the same as code which could result in
             unexpected errors depending on the input
 
     [m]Other[-]:
         A '[y]#[-]' phone acts as a word boundary
-        A '[y]\[-]' can escape the special effects of the following character
+        A '[y]\[-]' can escape the special effects of the following character or whitespace
 
 [m]cscsca[-] [g][!]apply[-] [b]code_file[-] [b]text_file[-]
     Prints the result of appling the code in [b]code_file[-] to [b]text_file[-]

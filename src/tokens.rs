@@ -18,6 +18,7 @@ mod tests;
 pub const DEFINITION_LINE_START: &str = "DEFINE";
 pub const PRINT_LINE_START: &str = "PRINT";
 pub const GET_LINE_START: &str = "GET";
+pub const GET_AS_CODE_LINE_START: &str = "GET_AS_CODE";
 pub const COMMENT_LINE_START: &str = "##";
 pub const ESCAPE_CHAR: char = '\\';
 
@@ -50,6 +51,9 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, compile_time_data: &mu
     } else if let Some(args) = line.strip_prefix(PRINT_LINE_START) {
         // handles print statement
         IrLine::Cmd(Command::Print, args.trim())
+    } else if let Some(args) = line.strip_prefix(GET_AS_CODE_LINE_START) {
+        // handles get statement
+        IrLine::Cmd(Command::GetAsCode, args.trim())
     } else if let Some(args) = line.strip_prefix(GET_LINE_START) {
         // handles get statement
         IrLine::Cmd(Command::Get, args.trim())

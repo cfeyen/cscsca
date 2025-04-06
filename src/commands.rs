@@ -3,7 +3,7 @@
 pub enum Command {
     Print,
     Get,
-    // todo: GetAsPhone
+    GetAsCode
 }
 
 /// A log of strings

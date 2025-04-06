@@ -188,6 +188,16 @@ impl Runtime {
                 print_log.log(msg);
             },
             // formats the message, calls the io_put_fn callback on it, then logs it
+            Command::GetAsCode => {
+                if let Some((name, msg)) = args.split_once(" ") {
+                    let source = (self.io_get_fn)(msg.trim())?;
+
+                    compile_time_data.set_variable_as_ir(name, source)?;
+                } else {
+                    return Err(Box::new(&GetFormatError));
+                }
+            },
+            // formats the message, calls the io_put_fn callback on it, then logs it
             Command::Get => {
                 if let Some((name, msg)) = args.split_once(" ") {
                     let source = (self.io_get_fn)(msg.trim())?;
