@@ -80,11 +80,26 @@ fn input() {
             .apply("a", "GET a :\n%a >> b")
             .0, Ok("b".to_string())
     );
+
     assert_eq!(
         Runtime::new()
             .set_io_get_fn(Box::new(|_| Ok(String::from("b"))))
             .apply("a", "GET a :\n%a >> b")
             .0, Ok("a".to_string())
+    );
+    
+    assert!(
+        Runtime::new()
+            .set_io_get_fn(Box::new(|_| Ok(String::from("a >> b"))))
+            .apply("a", "GET rule :\n%rule")
+            .0.is_err()
+    );
+    
+    assert_eq!(
+        Runtime::new()
+            .set_io_get_fn(Box::new(|_| Ok(String::from("a >> b"))))
+            .apply("a", "GET_AS_CODE rule :\n%rule")
+            .0, Ok("b".to_string())
     );
 }
 
