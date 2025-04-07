@@ -6,7 +6,7 @@ use crate::runtime::DEFAULT_MAX_APPLICATION_TIME;
 #[test]
 fn apply_empty_rule_to_no_phones() {
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: Vec::new(),
         output: Vec::new(),
         conds: vec![Cond::default()],
@@ -19,7 +19,7 @@ fn apply_empty_rule_to_no_phones() {
 #[test]
 fn apply_empty_rule_to_one_phone() {
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: Vec::new(),
         output: Vec::new(),
         conds: vec![Cond::default()],
@@ -32,7 +32,7 @@ fn apply_empty_rule_to_one_phone() {
 #[test]
 fn one_to_one_shift() {
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::Symbol("a"))],
         output: vec![RuleToken::Phone(Phone::Symbol("b"))],
         conds: vec![Cond::default()],
@@ -49,7 +49,7 @@ fn one_to_one_shift() {
 #[test]
 fn one_to_two_shift() {
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::Symbol("a"))],
         output: vec![
             RuleToken::Phone(Phone::Symbol("b")),
@@ -69,7 +69,7 @@ fn one_to_two_shift() {
 #[test]
 fn two_to_one_shift() {
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![
             RuleToken::Phone(Phone::Symbol("a")),
             RuleToken::Phone(Phone::Symbol("b")),
@@ -89,7 +89,7 @@ fn two_to_one_shift() {
 #[test]
 fn one_to_none_shift() {
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::Symbol("a"))],
         output: vec![],
         conds: vec![Cond::default()],
@@ -106,7 +106,7 @@ fn one_to_none_shift() {
 #[test]
 fn remove_word_final_ltr() { // also tests bound deduplication
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
         output: vec![],
         conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::Bound)])],
@@ -123,7 +123,7 @@ fn remove_word_final_ltr() { // also tests bound deduplication
 #[test]
 fn remove_word_final_rtl() { // also tests bound deduplication
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::RTL, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Rtl, kind: ShiftType::Move },
         input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
         output: vec![],
         conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::Bound)])],
@@ -140,7 +140,7 @@ fn remove_word_final_rtl() { // also tests bound deduplication
 #[test]
 fn selection_to_selection() { // also tests bound deduplication
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![
             RuleToken::SelectionScope { id: Some(ScopeId::IOUnlabeled {
                 id_num: 0,
@@ -177,7 +177,7 @@ fn selection_to_selection() { // also tests bound deduplication
 #[test]
 fn option_to_phone() { // also tests bound deduplication
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![
             RuleToken::OptionalScope { id: Some(ScopeId::IOUnlabeled {
                 id_num: 0,
@@ -200,7 +200,7 @@ fn option_to_phone() { // also tests bound deduplication
 #[test]
 fn option_phone_to_option_phone() { // also tests bound deduplication
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![
             RuleToken::OptionalScope { id: Some(ScopeId::IOUnlabeled {
                 id_num: 0,
@@ -231,7 +231,7 @@ fn option_phone_to_option_phone() { // also tests bound deduplication
 #[test]
 fn phone_to_phone_word_final_ltr() { // also tests bound deduplication
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::Symbol("a"))],
         output: vec![RuleToken::Phone(Phone::Symbol("b"))],
         conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::Bound)])],
@@ -248,7 +248,7 @@ fn phone_to_phone_word_final_ltr() { // also tests bound deduplication
 #[test]
 fn phone_to_phone_word_final_rtl() { // also tests bound deduplication
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::RTL, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Rtl, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::Symbol("a"))],
         output: vec![RuleToken::Phone(Phone::Symbol("b"))],
         conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::Bound)])],
@@ -265,7 +265,7 @@ fn phone_to_phone_word_final_rtl() { // also tests bound deduplication
 #[test]
 fn quadruple_agreement() { // also tests bound deduplication
     let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![
             RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
                 vec![RuleToken::Phone(Phone::Symbol("a"))],

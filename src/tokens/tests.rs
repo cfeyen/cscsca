@@ -134,42 +134,42 @@ fn tokenize_phones_and_labels() {
 #[test]
 fn tokenize_ltr() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Break(
-        Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay })
+        Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay })
     )])]), tokenize(">"));
 }
 
 #[test]
 fn tokenize_double_ltr() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Break(
-        Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })
+        Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move })
     )])]), tokenize(">>"));
 }
 
 #[test]
 fn tokenize_double_ltr_with_suroundings() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Break(
-        Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })
+        Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move })
     ), IrToken::Phone(Phone::Symbol("de")), IrToken::Phone(Phone::Symbol("f"))])]), tokenize("a bc>>de f"));
 }
 
 #[test]
 fn tokenize_rtl() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Break(
-        Break::Shift(Shift { dir: Direction::RTL, kind: ShiftType::Stay })
+        Break::Shift(Shift { dir: Direction::Rtl, kind: ShiftType::Stay })
     )])]), tokenize("<"));
 }
 
 #[test]
 fn tokenize_double_rtl() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Break(
-        Break::Shift(Shift { dir: Direction::RTL, kind: ShiftType::Move })
+        Break::Shift(Shift { dir: Direction::Rtl, kind: ShiftType::Move })
     )])]), tokenize("<<"));
 }
 
 #[test]
 fn tokenize_double_rtl_with_suroundings() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Break(
-        Break::Shift(Shift { dir: Direction::RTL, kind: ShiftType::Move })
+        Break::Shift(Shift { dir: Direction::Rtl, kind: ShiftType::Move })
     ), IrToken::Phone(Phone::Symbol("de")), IrToken::Phone(Phone::Symbol("f"))])]), tokenize("a bc<<de f"));
 }
 
@@ -305,13 +305,13 @@ fn print_statement() {
 
 #[test]
 fn escape_print() {
-    let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move }));
+    let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move }));
     assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("\\PRINT")), shift_token, IrToken::Phone(Phone::Symbol("escaped"))])]), tokenize("\\PRINT >> escaped"))
 }
 
 #[test]
 fn escape_definition_call() {
-    let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move }));
+    let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move }));
     assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("\\@a")), shift_token])]), tokenize("\\@a >>"))
 }
 
@@ -338,7 +338,7 @@ fn tokenize_and_check_simple() {
             IrToken::Phone(Phone::Symbol("k")),
             IrToken::ScopeEnd(ScopeType::Selection),
 
-            IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })),
+            IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move })),
 
             IrToken::Label("stops"),
             IrToken::ScopeStart(ScopeType::Selection),

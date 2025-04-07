@@ -37,7 +37,7 @@ fn empty_line() {
 
 #[test]
 fn one_to_one() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -55,7 +55,7 @@ fn one_to_one() {
 
 #[test]
 fn three_to_three() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -77,7 +77,7 @@ fn three_to_three() {
 
 #[test]
 fn selected_three_to_selected_three() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -115,7 +115,7 @@ fn selected_three_to_selected_three() {
 
 #[test]
 fn labeled_selected_three_to_selected_three() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -155,7 +155,7 @@ fn labeled_selected_three_to_selected_three() {
 
 #[test]
 fn labeled_phone_to_phone() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Err((RuleStructureError::LabelNotFollowedByScope("label"), 1)),
@@ -182,7 +182,7 @@ fn no_shift() {
 
 #[test]
 fn no_left() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -198,7 +198,7 @@ fn no_left() {
 
 #[test]
 fn single_option() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -218,7 +218,7 @@ fn single_option() {
 
 #[test]
 fn nested_scopes() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -294,7 +294,7 @@ fn nested_scopes() {
 
 #[test]
 fn single_cond() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -319,7 +319,7 @@ fn single_cond() {
 
 #[test]
 fn three_conds() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -362,7 +362,7 @@ fn three_conds() {
 
 #[test]
 fn single_anti_cond() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -387,7 +387,7 @@ fn single_anti_cond() {
 
 #[test]
 fn three_anti_conds() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -430,7 +430,7 @@ fn three_anti_conds() {
 
 #[test]
 fn cond_and_anti_cond() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -463,7 +463,7 @@ fn cond_and_anti_cond() {
 
 #[test]
 fn three_conds_and_anti_conds() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -532,7 +532,7 @@ fn three_conds_and_anti_conds() {
 
 #[test]
 fn shift_cond_gap_input() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -554,7 +554,7 @@ fn shift_cond_gap_input() {
 
 #[test]
 fn shift_anti_cond_gap_input() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -576,7 +576,7 @@ fn shift_anti_cond_gap_input() {
 
 #[test]
 fn shift_cond_label_gap_input() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule(SoundChangeRule {
         kind: shift,
@@ -599,7 +599,7 @@ fn shift_cond_label_gap_input() {
 
 #[test]
 fn any_to_any() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -619,7 +619,7 @@ fn any_to_any() {
 
 #[test]
 fn any_any_to_any_any() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -647,7 +647,7 @@ fn any_any_to_any_any() {
 
 #[test]
 fn labeled_any_to_any() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -669,7 +669,7 @@ fn labeled_any_to_any() {
 
 #[test]
 fn selections_around_any_to_any() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -709,7 +709,7 @@ fn selections_around_any_to_any() {
 
 #[test]
 fn cond_with_scope() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -746,7 +746,7 @@ fn cond_with_scope() {
 
 #[test]
 fn anti_cond_with_scope() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -779,7 +779,7 @@ fn anti_cond_with_scope() {
 
 #[test]
 fn equality_cond() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -807,7 +807,7 @@ fn equality_cond() {
 
 #[test]
 fn and_cond() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     let mut cond = Cond::new(
         CondType::MatchInput,
@@ -844,7 +844,7 @@ fn and_cond() {
 
 #[test]
 fn and_anticond() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     let mut cond = Cond::new(
         CondType::MatchInput,
@@ -880,7 +880,7 @@ fn and_anticond() {
 }
 #[test]
 fn double_and() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Move};
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     let mut cond = Cond::new(
         CondType::MatchInput,

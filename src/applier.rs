@@ -13,7 +13,7 @@ mod tests;
 pub fn apply<'a, 's>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, max_time: &Duration) -> Result<(), ApplicationError<'a, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
-    let start = Instant::now();
+    let end_time = Instant::now() + *max_time;
     
     while phone_index < phones.len() {
         if let Some((replace_len, input_len)) = apply_at(rule, phones, phone_index)? {
@@ -24,7 +24,7 @@ pub fn apply<'a, 's>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>,
 
         // returns an error if the time limit is exceeded
         // protects against infinite loops
-        if Instant::now() - start > *max_time {
+        if Instant::now() > end_time {
             return Err(ApplicationError::TimeLimitExceeded);
         }
     }
@@ -35,14 +35,14 @@ pub fn apply<'a, 's>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>,
 fn next_position(rule: &SoundChangeRule, input_len: usize, replace_len: usize, phone_index: usize, phones: &[Phone]) -> usize {
     let dir = rule.kind.dir;
     match (dir, rule.kind.kind) {
-        (Direction::LTR, ShiftType::Move) => {
+        (Direction::Ltr, ShiftType::Move) => {
             dir.change_by(phone_index, replace_len)
         }
-        (Direction::RTL, _) if phone_index >= phones.len() => {
+        (Direction::Rtl, _) if phone_index >= phones.len() => {
             // ensures removing a phone does not take the phone index out of the phone list ending the rule early
             phones.len().wrapping_sub(1)
         }
-        (Direction::RTL, ShiftType::Move) => {
+        (Direction::Rtl, ShiftType::Move) => {
             dir.change_by(phone_index, input_len)
         }
         _ => phone_index
@@ -67,7 +67,7 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
 
     let Shift { dir, kind: _} = *kind;
 
-    let matches = if dir == Direction::LTR {
+    let matches = if dir == Direction::Ltr {
         tokens_match_phones_from_left(input,&phones[phone_index..], &mut choices)?
     } else{
         tokens_match_phones_from_right(input, &phones[0..=phone_index], &mut choices)?

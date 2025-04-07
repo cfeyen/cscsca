@@ -103,24 +103,24 @@ fn tokenize_line<'s>(line: &'s str, compile_time_data: &CompileTimeData<'s>) -> 
             EQUALITY_CHAR => push_phone_and(IrToken::CondType(CondType::Equality), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             // handles compound char to token pushes
             LTR_CHAR => {
-                let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay }))) = tokens.last() {
+                let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay }))) = tokens.last() {
                     tokens.pop();
                     ShiftType::Move
                 } else {
                     ShiftType::Stay
                 };
 
-                push_phone_and(IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind })), &mut tokens, &mut slice, &mut prefix, compile_time_data)?;
+                push_phone_and(IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind })), &mut tokens, &mut slice, &mut prefix, compile_time_data)?;
             },
             RTL_CHAR => {
-                let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::RTL, kind: ShiftType::Stay }))) = tokens.last() {
+                let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::Rtl, kind: ShiftType::Stay }))) = tokens.last() {
                     tokens.pop();
                     ShiftType::Move
                 } else {
                     ShiftType::Stay
                 };
 
-                push_phone_and(IrToken::Break(Break::Shift(Shift { dir: Direction::RTL, kind })), &mut tokens, &mut slice, &mut prefix, compile_time_data)?;
+                push_phone_and(IrToken::Break(Break::Shift(Shift { dir: Direction::Rtl, kind })), &mut tokens, &mut slice, &mut prefix, compile_time_data)?;
             },
             COND_CHAR => {
                 let cond_type = if let Some(IrToken::Break(Break::Cond)) = tokens.last() {

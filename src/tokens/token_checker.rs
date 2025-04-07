@@ -126,7 +126,7 @@ fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
 /// - argument seperators are only in selection scopes
 /// - scope labels only proceed scopes, anys, gaps
 /// - only phones, scope labels, and scopes occur in scopes
-///     (and argument seperators for selection scopes)
+///   (and argument seperators for selection scopes)
 fn check_scopes<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
     let mut scope_stack = Vec::new();
     let mut selecting = None;

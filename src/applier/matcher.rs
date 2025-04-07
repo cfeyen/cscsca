@@ -18,14 +18,14 @@ mod empty_form_tests;
 /// 
 /// Note see `tokens_match_phones` for side effects
 pub fn tokens_match_phones_from_right<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'a, 's>) -> Result<bool, MatchError<'a, 's>> {
-    tokens_match_phones(tokens, phones, Direction::RTL.start_index(tokens), &mut Direction::RTL.start_index(phones), choices, Direction::RTL)
+    tokens_match_phones(tokens, phones, Direction::Rtl.start_index(tokens), &mut Direction::Rtl.start_index(phones), choices, Direction::Rtl)
 }
 
 /// Checks if tokens match phones starting from the left
 /// 
 /// Note see `tokens_match_phones` for side effects
 pub fn tokens_match_phones_from_left<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'a, 's>) -> Result<bool, MatchError<'a, 's>> {
-    tokens_match_phones(tokens, phones, 0, &mut Direction::LTR.start_index(phones), choices, Direction::LTR)
+    tokens_match_phones(tokens, phones, 0, &mut Direction::Ltr.start_index(phones), choices, Direction::Ltr)
 }
 
 /// Checks if tokens match phones moving according to the direction starting at the provided token and phone indexes

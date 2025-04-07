@@ -51,7 +51,7 @@ fn match_two_tokens_to_three_phones_from_late_start() {
     assert_eq!(Ok(true), tokens_match_phones(&[
         RuleToken::Phone(Phone::Symbol("b")),
         RuleToken::Phone(Phone::Symbol("c")),
-    ], &[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 0, &mut 1, &mut Choices::default(), Direction::LTR));
+    ], &[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 0, &mut 1, &mut Choices::default(), Direction::Ltr));
 }
 
 #[test]

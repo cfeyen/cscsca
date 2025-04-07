@@ -139,7 +139,7 @@ impl Runtime {
             }
         }
 
-        let output = phone_list_to_string(&phones);
+        let output = phone_list_to_string(phones);
 
         // as the output is a string, which owns all of its values
         unsafe { compile_time_data.free_sources() };

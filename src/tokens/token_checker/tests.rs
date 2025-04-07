@@ -3,7 +3,7 @@ use super::*;
 
 #[test]
 fn check_shift_only() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Ok(()),
@@ -13,7 +13,7 @@ fn check_shift_only() {
 
 #[test]
 fn check_basic_shift() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Ok(()),
@@ -23,7 +23,7 @@ fn check_basic_shift() {
 
 #[test]
 fn check_two_shifts() {
-    let shift = Shift { dir: Direction::LTR, kind: ShiftType::Stay };
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Stay };
 
     assert_eq!(
         Err((IrStructureError::ShiftAfterShift(shift), 1)),
@@ -33,7 +33,7 @@ fn check_two_shifts() {
 
 #[test]
 fn check_cond_shift() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Err((IrStructureError::BreakBeforeShift(Break::Cond), 1)),
@@ -43,7 +43,7 @@ fn check_cond_shift() {
 
 #[test]
 fn check_shift_cond() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Err((IrStructureError::NoFocusInCond, 1)),
@@ -53,7 +53,7 @@ fn check_shift_cond() {
 
 #[test]
 fn check_shift_cond_input() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Ok(()),
@@ -63,7 +63,7 @@ fn check_shift_cond_input() {
 
 #[test]
 fn check_shift_cond_inputs() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Err((IrStructureError::ManyFociInCond, 1)),
@@ -73,7 +73,7 @@ fn check_shift_cond_inputs() {
 
 #[test]
 fn check_shift_anti_cond_cond() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert!(
         // either of theses errors is acceptable here
@@ -84,7 +84,7 @@ fn check_shift_anti_cond_cond() {
 
 #[test]
 fn check_shift_anti_cond_input_cond_input() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Err((IrStructureError::AntiCondBeforeCond, 1)),
@@ -94,7 +94,7 @@ fn check_shift_anti_cond_input_cond_input() {
 
 #[test]
 fn check_shift_anti_cond_input() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Ok(()),
@@ -104,7 +104,7 @@ fn check_shift_anti_cond_input() {
 
 #[test]
 fn check_shift_anti_cond() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Err((IrStructureError::NoFocusInCond, 1)),
@@ -186,7 +186,7 @@ fn check_overlaping_scopes() {
 
 #[test]
 fn check_shift_in_scope() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Err((IrStructureError::DisallowedTokenInScope(IrToken::Break(shift)), 1)),
@@ -196,7 +196,7 @@ fn check_shift_in_scope() {
 
 #[test]
 fn check_shift_between_scopes() {
-    let shift = Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Stay });
+    let shift = Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay });
 
     assert_eq!(
         Ok(()),
@@ -232,7 +232,7 @@ fn check_arg_sep_in_selection() {
 fn check_any() {
     assert_eq!(Ok(()), check_token_line(&IrLine::Ir(vec![
         IrToken::Any,
-        IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })),
+        IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move })),
     ])));
 }
 
@@ -241,14 +241,14 @@ fn check_labeled_any() {
     assert_eq!(Ok(()), check_token_line(&IrLine::Ir(vec![
         IrToken::Label("label"),
         IrToken::Any,
-        IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })),
+        IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move })),
     ])));
 }
 
 #[test]
 fn check_gap() {
     assert_eq!(Err(IrStructureError::GapOutOfCond), check_token_line(&IrLine::Ir(vec![
-        IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })),
+        IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move })),
         IrToken::Gap,
     ])));
 }
@@ -256,7 +256,7 @@ fn check_gap() {
 #[test]
 fn check_gap_in_cond() {
     assert_eq!(Ok(()), check_token_line(&IrLine::Ir(vec![
-        IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })),
+        IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move })),
         IrToken::Break(Break::Cond),
         IrToken::Gap,
         IrToken::CondType(CondType::MatchInput),

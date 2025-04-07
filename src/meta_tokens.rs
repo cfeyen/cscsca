@@ -28,17 +28,17 @@ impl Display for Shift {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Direction {
     /// Left-to-Right
-    LTR,
+    Ltr,
     /// Right-to-Left
-    RTL,
+    Rtl,
 }
 
 impl Direction {
     /// Changes n by dist according to the direction (wraps instead of overflowing)
     pub fn change_by(&self, n: usize, dist: usize) -> usize {
         match self {
-            Self::LTR => n.wrapping_add(dist),
-            Self::RTL => n.wrapping_sub(dist),
+            Self::Ltr => n.wrapping_add(dist),
+            Self::Rtl => n.wrapping_sub(dist),
         }
     }
 
@@ -52,8 +52,8 @@ impl Direction {
     /// (LTR returns 0, RTL returns list length - 1)
     pub fn start_index<T>(&self, list: &[T]) -> usize {
         match self {
-            Self::LTR => 0,
-            Self::RTL => list.len().wrapping_sub(1),
+            Self::Ltr => 0,
+            Self::Rtl => list.len().wrapping_sub(1),
         }
     }
 }
@@ -61,8 +61,8 @@ impl Direction {
 impl Display for Direction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let c = match self {
-            Self::LTR => LTR_CHAR,
-            Self::RTL => RTL_CHAR,
+            Self::Ltr => LTR_CHAR,
+            Self::Rtl => RTL_CHAR,
         };
 
         write!(f, "{}", c)

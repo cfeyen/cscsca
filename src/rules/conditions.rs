@@ -56,8 +56,8 @@ impl<'s> Cond<'s> {
         let cond_succeeds = match self.kind {
             CondType::MatchInput => {
                 let (before_phones, after_phones) = match dir {
-                    Direction::LTR => (&phones[0..phone_index], &phones[phone_index + input_len..]),
-                    Direction::RTL => {
+                    Direction::Ltr => (&phones[0..phone_index], &phones[phone_index + input_len..]),
+                    Direction::Rtl => {
                         let before_phones = if input_len <= phone_index {
                             &phones[0..=phone_index - input_len]
                         } else {
