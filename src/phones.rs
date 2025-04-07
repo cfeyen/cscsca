@@ -3,7 +3,7 @@ use std::str::from_utf8_unchecked;
 use crate::{tokens::ESCAPE_CHAR, BOUND_CHAR};
 
 /// `BOUND_CHAR` as a static str
-const BOUND_STR: &'static str = unsafe { from_utf8_unchecked(&[BOUND_CHAR as u8]) }; 
+pub const BOUND_STR: &'static str = unsafe { from_utf8_unchecked(&[BOUND_CHAR as u8]) }; 
 
 /// A representation of a phoneme or word boundary
 /// 
