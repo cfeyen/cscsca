@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{meta_tokens::{ScopeType, Shift}, rules::conditions::CondType, tokens::prefix::SELECTION_PREFIX};
+use crate::{meta_tokens::{ScopeType, Shift}, phones::Phone, rules::conditions::CondType, tokens::prefix::SELECTION_PREFIX};
 
 pub const ANY_CHAR: char = '*';
 pub const ARG_SEP_CHAR: char = ',';
@@ -12,7 +12,7 @@ pub const AND_CHAR: char = '&';
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum IrToken<'s> {
     /// A phone literal
-    Phone(&'s str),
+    Phone(Phone<'s>),
     /// The identifier of a scope's selection
     Label(&'s str),
     /// A break between phone lists

@@ -12,7 +12,7 @@ fn demo_merge_n_g_and_nasals_dropped_word_finally() {
 }
 
 #[test]
-fn demo_stop_voicing_and_vowel_lostt() {
+fn demo_stop_voicing_and_vowel_lost() {
     assert_eq!(
         "p ab ed dl htl ant".to_string(),
         apply("pe apa eti tl htl ante", DEMO).0

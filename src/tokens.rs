@@ -1,7 +1,5 @@
 use crate::{
-    meta_tokens::{Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR},
-    rules::conditions::{CondType, EQUALITY_CHAR, INPUT_STR},
-    commands::Command,
+    commands::Command, meta_tokens::{Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, phones::Phone, rules::conditions::{CondType, EQUALITY_CHAR, INPUT_STR}
 };
 use compile_time_data::CompileTimeData;
 use ir::{Break, IrToken, ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, AND_CHAR};
@@ -40,7 +38,7 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, compile_time_data: &mu
         let ir = tokenize_line(definition_content, compile_time_data)?;
 
         if let Some(IrToken::Phone(name)) = ir.first() {
-            compile_time_data.definitions.insert(name, ir[1..].into());
+            compile_time_data.definitions.insert(name.as_str(), ir[1..].into());
             IrLine::Empty
         } else {
             return Err(IrError::EmptyDefinition);
@@ -190,7 +188,7 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
         None if literal == INPUT_STR => tokens.push(IrToken::CondType(CondType::MatchInput)),
         None if literal == GAP_STR => tokens.push(IrToken::Gap),
         None if literal.is_empty() => (),
-        None => tokens.push(IrToken::Phone(literal)),
+        None => tokens.push(IrToken::Phone(Phone::new(literal))),
         Some(Prefix::Definition) => {
             if let Some(content) = compile_time_data.definitions.get(literal) {
                 for token in content {

@@ -4,12 +4,12 @@ use super::*;
 fn match_input() {
     let cond = Cond::new(
         CondType::MatchInput,
-        vec!(RuleToken::Phone(Phone::new("a"))),
-        vec!(RuleToken::Phone(Phone::new("c"))),
+        vec!(RuleToken::Phone(Phone::Symbol("a"))),
+        vec!(RuleToken::Phone(Phone::Symbol("c"))),
     );
 
     assert!(cond.eval(
-        &[Phone::new("a"), Phone::new("b"), Phone::new("c")],
+        &[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")],
         1,
         1, 
         &mut Choices::default(),
@@ -17,7 +17,7 @@ fn match_input() {
     ).unwrap());
 
     assert!(cond.eval(
-        &[Phone::new("a"), Phone::new("b"), Phone::new("c")],
+        &[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")],
         1,
         1, 
         &mut Choices::default(),
@@ -25,7 +25,7 @@ fn match_input() {
     ).unwrap());
 
     assert!(!cond.eval(
-        &[Phone::new("a"), Phone::new("b")],
+        &[Phone::Symbol("a"), Phone::Symbol("b")],
         1,
         1, 
         &mut Choices::default(),
@@ -37,20 +37,20 @@ fn match_input() {
 fn equality() {
     assert!(Cond::new(
         CondType::Equality,
-        vec![RuleToken::Phone(Phone::new("a"))],
-        vec![RuleToken::Phone(Phone::new("a"))]
+        vec![RuleToken::Phone(Phone::Symbol("a"))],
+        vec![RuleToken::Phone(Phone::Symbol("a"))]
     ).eval(&[], 0, 0, &mut Choices::default(), Direction::LTR).unwrap());
 
     assert!(!Cond::new(
         CondType::Equality,
-        vec![RuleToken::Phone(Phone::new("a"))],
-        vec![RuleToken::Phone(Phone::new("b"))]
+        vec![RuleToken::Phone(Phone::Symbol("a"))],
+        vec![RuleToken::Phone(Phone::Symbol("b"))]
     ).eval(&[], 0, 0, &mut Choices::default(), Direction::LTR).unwrap());
 
     assert!(!Cond::new(
         CondType::Equality,
-        vec![RuleToken::Phone(Phone::new("a a"))],
-        vec![RuleToken::Phone(Phone::new("a")), RuleToken::Phone(Phone::new("a"))]
+        vec![RuleToken::Phone(Phone::Symbol("a a"))],
+        vec![RuleToken::Phone(Phone::Symbol("a")), RuleToken::Phone(Phone::Symbol("a"))]
     ).eval(&[], 0, 0, &mut Choices::default(), Direction::LTR).unwrap());
 }
 
@@ -58,24 +58,24 @@ fn equality() {
 fn and() {
     let mut cond = Cond::new(
         CondType::MatchInput,
-        vec![RuleToken::Phone(Phone::new("b"))],
-        vec![RuleToken::Phone(Phone::new("d"))],
+        vec![RuleToken::Phone(Phone::Symbol("b"))],
+        vec![RuleToken::Phone(Phone::Symbol("d"))],
     );
 
     let phones_1 = &[
-        Phone::new("a"),
-        Phone::new("b"),
-        Phone::new("c"),
-        Phone::new("d"),
-        Phone::new("e"),
+        Phone::Symbol("a"),
+        Phone::Symbol("b"),
+        Phone::Symbol("c"),
+        Phone::Symbol("d"),
+        Phone::Symbol("e"),
     ];
 
     let phones_2 = &[
-        Phone::new("a"),
-        Phone::new("b"),
-        Phone::new("c"),
-        Phone::new("d"),
-        Phone::new("f"),
+        Phone::Symbol("a"),
+        Phone::Symbol("b"),
+        Phone::Symbol("c"),
+        Phone::Symbol("d"),
+        Phone::Symbol("f"),
     ];
 
     assert!(cond.eval(phones_1, 2, 1, &mut Choices::default(), Direction::LTR).unwrap());
@@ -84,8 +84,8 @@ fn and() {
 
     cond.set_and(Cond::new(
         CondType::MatchInput,
-        vec![RuleToken::Phone(Phone::new("a")), RuleToken::Any { id: None }],
-        vec![RuleToken::Any { id: None }, RuleToken::Phone(Phone::new("e"))],
+        vec![RuleToken::Phone(Phone::Symbol("a")), RuleToken::Any { id: None }],
+        vec![RuleToken::Any { id: None }, RuleToken::Phone(Phone::Symbol("e"))],
     ));
 
     assert!(cond.eval(phones_1, 2, 1, &mut Choices::default(), Direction::LTR).unwrap());

@@ -1,4 +1,4 @@
-use crate::tokens::token_checker::check_tokens;
+use crate::{phones::Phone, tokens::token_checker::check_tokens};
 
 use super::*;
 
@@ -37,49 +37,49 @@ fn tokenize_nothing() {
 
 #[test]
 fn tokenize_phone() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a")])]), tokenize("a"));
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a"))])]), tokenize("a"));
 }
 
 #[test]
 fn tokenize_long_phone() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("abcdefg")])]), tokenize("abcdefg"));
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("abcdefg"))])]), tokenize("abcdefg"));
 }
 
 #[test]
 fn tokenize_phones() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Phone("bc"), IrToken::Phone("def")])]), tokenize("a bc def"));
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Phone(Phone::Symbol("def"))])]), tokenize("a bc def"));
 }
 
 #[test]
 fn tokenize_lines_of_phones() {
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Phone("bc"), IrToken::Phone("def")]),
-        IrLine::Ir(vec![IrToken::Phone("fed"), IrToken::Phone("cb"), IrToken::Phone("a")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Phone(Phone::Symbol("def"))]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("fed")), IrToken::Phone(Phone::Symbol("cb")), IrToken::Phone(Phone::Symbol("a"))]),
     ]), tokenize("a bc def\nfed cb a"));
 }
 
 #[test]
 fn tokenize_lines_of_phones_and_nothing() {
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Phone("bc"), IrToken::Phone("def")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Phone(Phone::Symbol("def"))]),
         IrLine::Empty,
-        IrLine::Ir(vec![IrToken::Phone("fed"), IrToken::Phone("cb"), IrToken::Phone("a")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("fed")), IrToken::Phone(Phone::Symbol("cb")), IrToken::Phone(Phone::Symbol("a"))]),
     ]), tokenize("a bc def\n\nfed cb a"));
 }
 
 #[test]
 fn tokenize_lines_of_phones_and_comment() {
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Phone("bc"), IrToken::Phone("def")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Phone(Phone::Symbol("def"))]),
         IrLine::Empty,
-        IrLine::Ir(vec![IrToken::Phone("fed"), IrToken::Phone("cb"), IrToken::Phone("a")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("fed")), IrToken::Phone(Phone::Symbol("cb")), IrToken::Phone(Phone::Symbol("a"))]),
     ]), tokenize("a bc def\n## this is a comment\nfed cb a"));
 }
 
 #[test]
 fn tokenize_with_def() {
     assert_eq!(
-        Ok(vec![IrLine::Empty, IrLine::Ir(vec![IrToken::Phone("b"), IrToken::Phone("cd"), IrToken::Phone("e")])]),
+        Ok(vec![IrLine::Empty, IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("b")), IrToken::Phone(Phone::Symbol("cd")), IrToken::Phone(Phone::Symbol("e"))])]),
         tokenize("DEFINE a b cd e\n@a")
     );
 }
@@ -88,9 +88,9 @@ fn tokenize_with_def() {
 fn tokenize_with_redef() {
     assert_eq!(Ok(vec![
         IrLine::Empty,
-        IrLine::Ir(vec![IrToken::Phone("b"), IrToken::Phone("cd"), IrToken::Phone("e")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("b")), IrToken::Phone(Phone::Symbol("cd")), IrToken::Phone(Phone::Symbol("e"))]),
         IrLine::Empty,
-        IrLine::Ir(vec![IrToken::Phone("new"), IrToken::Phone("content")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("new")), IrToken::Phone(Phone::Symbol("content"))]),
     ]), tokenize("DEFINE a b cd e\n@a\nDEFINE a new content\n@a"));
 }
 
@@ -102,11 +102,11 @@ fn tokenize_empty_def() {
 #[test]
 fn tokenize_late_def() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![
-        IrToken::Phone("a"),
-        IrToken::Phone("DEFINE"),
-        IrToken::Phone("a"),
-        IrToken::Phone("b"),
-        IrToken::Phone("c"),
+        IrToken::Phone(Phone::Symbol("a")),
+        IrToken::Phone(Phone::Symbol("DEFINE")),
+        IrToken::Phone(Phone::Symbol("a")),
+        IrToken::Phone(Phone::Symbol("b")),
+        IrToken::Phone(Phone::Symbol("c")),
     ])]), tokenize("a DEFINE a b c"));
 }
 
@@ -123,11 +123,11 @@ fn tokenize_label() {
 #[test]
 fn tokenize_phones_and_labels() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![
-        IrToken::Phone("a"),
+        IrToken::Phone(Phone::Symbol("a")),
         IrToken::Label("label"),
-        IrToken::Phone("phone"),
+        IrToken::Phone(Phone::Symbol("phone")),
         IrToken::Label("label_two"),
-        IrToken::Phone("b")
+        IrToken::Phone(Phone::Symbol("b"))
     ])]), tokenize("a $label phone$label_two b"));
 }
 
@@ -147,9 +147,9 @@ fn tokenize_double_ltr() {
 
 #[test]
 fn tokenize_double_ltr_with_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Phone("bc"), IrToken::Break(
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Break(
         Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })
-    ), IrToken::Phone("de"), IrToken::Phone("f")])]), tokenize("a bc>>de f"));
+    ), IrToken::Phone(Phone::Symbol("de")), IrToken::Phone(Phone::Symbol("f"))])]), tokenize("a bc>>de f"));
 }
 
 #[test]
@@ -168,9 +168,9 @@ fn tokenize_double_rtl() {
 
 #[test]
 fn tokenize_double_rtl_with_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Phone("bc"), IrToken::Break(
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Break(
         Break::Shift(Shift { dir: Direction::RTL, kind: ShiftType::Move })
-    ), IrToken::Phone("de"), IrToken::Phone("f")])]), tokenize("a bc<<de f"));
+    ), IrToken::Phone(Phone::Symbol("de")), IrToken::Phone(Phone::Symbol("f"))])]), tokenize("a bc<<de f"));
 }
 
 #[test]
@@ -186,22 +186,22 @@ fn tokenize_anti_cond() {
 #[test]
 fn tokenize_cond_with_suroundings() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![
-        IrToken::Phone("a"),
-        IrToken::Phone("bc"),
+        IrToken::Phone(Phone::Symbol("a")),
+        IrToken::Phone(Phone::Symbol("bc")),
         IrToken::Break(Break::Cond),
-        IrToken::Phone("de"),
-        IrToken::Phone("f")
+        IrToken::Phone(Phone::Symbol("de")),
+        IrToken::Phone(Phone::Symbol("f"))
     ])]), tokenize("a bc/de f"));
 }
 
 #[test]
 fn tokenize_anti_cond_with_suroundings() {
     assert_eq!(Ok(vec![IrLine::Ir(vec![
-        IrToken::Phone("a"),
-        IrToken::Phone("bc"),
+        IrToken::Phone(Phone::Symbol("a")),
+        IrToken::Phone(Phone::Symbol("bc")),
         IrToken::Break(Break::AntiCond),
-        IrToken::Phone("de"),
-        IrToken::Phone("f")
+        IrToken::Phone(Phone::Symbol("de")),
+        IrToken::Phone(Phone::Symbol("f"))
     ])]), tokenize("a bc//de f"));
 }
 
@@ -227,19 +227,19 @@ fn tokenize_scope_bounds() {
 #[test]
 fn tokenize_scope_bounds_with_suroundings() {
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::ScopeStart(ScopeType::Optional), IrToken::Phone("b")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::ScopeStart(ScopeType::Optional), IrToken::Phone(Phone::Symbol("b"))]),
     ]), tokenize("a(b"));
 
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::ScopeEnd(ScopeType::Optional), IrToken::Phone("b")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::ScopeEnd(ScopeType::Optional), IrToken::Phone(Phone::Symbol("b"))]),
     ]), tokenize("a)b"));
 
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::ScopeStart(ScopeType::Selection), IrToken::Phone("b")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::ScopeStart(ScopeType::Selection), IrToken::Phone(Phone::Symbol("b"))]),
     ]), tokenize("a{b"));
 
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::ScopeEnd(ScopeType::Selection), IrToken::Phone("b")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::ScopeEnd(ScopeType::Selection), IrToken::Phone(Phone::Symbol("b"))]),
     ]), tokenize("a}b"));
 }
 
@@ -251,12 +251,12 @@ fn tokenize_gap() {
 
 #[test]
 fn tokenize_gap_with_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Gap, IrToken::Phone("b"),])]), tokenize("a .. b"));
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Gap, IrToken::Phone(Phone::Symbol("b")),])]), tokenize("a .. b"));
 }
 
 #[test]
 fn tokenize_gap_with_close_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a..b")])]), tokenize("a..b"));
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a..b"))])]), tokenize("a..b"));
 }
 
 #[test]
@@ -267,7 +267,7 @@ fn tokenize_any() {
 #[test]
 fn tokenize_any_with_suroundings() {
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Any, IrToken::Phone("b")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Any, IrToken::Phone(Phone::Symbol("b"))]),
     ]), tokenize("a*b"));
 }
 
@@ -279,7 +279,7 @@ fn tokenize_sep() {
 #[test]
 fn tokenize_sep_with_suroundings() {
     assert_eq!(Ok(vec![
-        IrLine::Ir(vec![IrToken::Phone("a"), IrToken::ArgSep, IrToken::Phone("b")]),
+        IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::ArgSep, IrToken::Phone(Phone::Symbol("b"))]),
     ]), tokenize("a,b"));
 }
 
@@ -290,12 +290,12 @@ fn tokenize_input() {
 
 #[test]
 fn tokenize_input_with_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a"), IrToken::CondType(CondType::MatchInput), IrToken::Phone("b")])]), tokenize("a _ b"))
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::CondType(CondType::MatchInput), IrToken::Phone(Phone::Symbol("b"))])]), tokenize("a _ b"))
 }
 
 #[test]
 fn tokenize_input_with_contacting() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("a_b")])]), tokenize("a_b"))
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a_b"))])]), tokenize("a_b"))
 }
 
 #[test]
@@ -306,13 +306,13 @@ fn print_statement() {
 #[test]
 fn escape_print() {
     let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move }));
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("\\PRINT"), shift_token, IrToken::Phone("escaped")])]), tokenize("\\PRINT >> escaped"))
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("\\PRINT")), shift_token, IrToken::Phone(Phone::Symbol("escaped"))])]), tokenize("\\PRINT >> escaped"))
 }
 
 #[test]
 fn escape_definition_call() {
     let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move }));
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone("\\@a"), shift_token])]), tokenize("\\@a >>"))
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("\\@a")), shift_token])]), tokenize("\\@a >>"))
 }
 
 #[test]
@@ -331,63 +331,63 @@ fn tokenize_and_check_simple() {
         IrLine::Ir(vec![
             IrToken::Label("stops"),
             IrToken::ScopeStart(ScopeType::Selection),
-            IrToken::Phone("p"),
+            IrToken::Phone(Phone::Symbol("p")),
             IrToken::ArgSep,
-            IrToken::Phone("t"),
+            IrToken::Phone(Phone::Symbol("t")),
             IrToken::ArgSep,
-            IrToken::Phone("k"),
+            IrToken::Phone(Phone::Symbol("k")),
             IrToken::ScopeEnd(ScopeType::Selection),
 
             IrToken::Break(Break::Shift(Shift { dir: Direction::LTR, kind: ShiftType::Move })),
 
             IrToken::Label("stops"),
             IrToken::ScopeStart(ScopeType::Selection),
-            IrToken::Phone("b"),
+            IrToken::Phone(Phone::Symbol("b")),
             IrToken::ArgSep,
-            IrToken::Phone("d"),
+            IrToken::Phone(Phone::Symbol("d")),
             IrToken::ArgSep,
-            IrToken::Phone("g"),
+            IrToken::Phone(Phone::Symbol("g")),
             IrToken::ScopeEnd(ScopeType::Selection),
 
             IrToken::Break(Break::Cond),
 
             IrToken::ScopeStart(ScopeType::Selection),
-            IrToken::Phone("i"),
+            IrToken::Phone(Phone::Symbol("i")),
             IrToken::ArgSep,
-            IrToken::Phone("e"),
+            IrToken::Phone(Phone::Symbol("e")),
             IrToken::ArgSep,
-            IrToken::Phone("a"),
+            IrToken::Phone(Phone::Symbol("a")),
             IrToken::ArgSep,
-            IrToken::Phone("u"),
+            IrToken::Phone(Phone::Symbol("u")),
             IrToken::ArgSep,
-            IrToken::Phone("o"),
+            IrToken::Phone(Phone::Symbol("o")),
             IrToken::ScopeEnd(ScopeType::Selection),
 
             IrToken::CondType(CondType::MatchInput),
 
             IrToken::ScopeStart(ScopeType::Selection),
-            IrToken::Phone("i"),
+            IrToken::Phone(Phone::Symbol("i")),
             IrToken::ArgSep,
-            IrToken::Phone("e"),
+            IrToken::Phone(Phone::Symbol("e")),
             IrToken::ArgSep,
-            IrToken::Phone("a"),
+            IrToken::Phone(Phone::Symbol("a")),
             IrToken::ArgSep,
-            IrToken::Phone("u"),
+            IrToken::Phone(Phone::Symbol("u")),
             IrToken::ArgSep,
-            IrToken::Phone("o"),
+            IrToken::Phone(Phone::Symbol("o")),
             IrToken::ScopeEnd(ScopeType::Selection),
 
             IrToken::Break(Break::Cond),
             IrToken::CondType(CondType::MatchInput),
 
             IrToken::ScopeStart(ScopeType::Selection),
-            IrToken::Phone("l"),
+            IrToken::Phone(Phone::Symbol("l")),
             IrToken::ArgSep,
-            IrToken::Phone("r"),
+            IrToken::Phone(Phone::Symbol("r")),
             IrToken::ScopeEnd(ScopeType::Selection),
 
             IrToken::Break(Break::AntiCond),
-            IrToken::Phone("h"),
+            IrToken::Phone(Phone::Symbol("h")),
             IrToken::CondType(CondType::MatchInput),
         ]),
     ]), tokens);

@@ -12,7 +12,7 @@ pub mod runtime;
 #[cfg(test)]
 mod tests;
 
-pub const BOUND_STR: &str = "#";
+pub const BOUND_CHAR: char = '#';
 
 /// Applies sca source code to an input string
 /// 

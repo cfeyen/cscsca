@@ -1,4 +1,4 @@
-use crate::meta_tokens::{Direction, Shift, ShiftType};
+use crate::{meta_tokens::{Direction, Shift, ShiftType}, phones::Phone};
 use super::*;
 
 #[test]
@@ -17,7 +17,7 @@ fn check_basic_shift() {
 
     assert_eq!(
         Ok(()),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Break(shift), IrToken::Phone("b")])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Break(shift), IrToken::Phone(Phone::Symbol("b"))])])
     );
 }
 
@@ -27,7 +27,7 @@ fn check_two_shifts() {
 
     assert_eq!(
         Err((IrStructureError::ShiftAfterShift(shift), 1)),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Phone("a"), IrToken::Break(Break::Shift(shift)), IrToken::Phone("b"), IrToken::Break(Break::Shift(shift)), IrToken::Phone("c")])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Break(Break::Shift(shift)), IrToken::Phone(Phone::Symbol("b")), IrToken::Break(Break::Shift(shift)), IrToken::Phone(Phone::Symbol("c"))])])
     );
 }
 

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::phones::Phone;
+
 use super::{ir::IrToken, tokenize_line, IrError};
 
 /// Data that is created in the tokenization/compilation process
@@ -56,7 +58,7 @@ impl<'s> CompileTimeData<'s> {
     pub fn set_variable(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
         let source = self.add_source(source.trim().to_string());
 
-        self.variables.insert(name, vec![IrToken::Phone(source)]);
+        self.variables.insert(name, vec![IrToken::Phone(Phone::new(source))]);
         Ok(())
     }
 

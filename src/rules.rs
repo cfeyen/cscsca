@@ -3,7 +3,7 @@ use std::sync::Arc;
 use conditions::{Cond, CondType};
 use sound_change_rule::{LabelType, RuleToken, ScopeId, SoundChangeRule};
 
-use crate::{meta_tokens::ScopeType, phones::Phone, tokens::{ir::{Break, IrToken, AND_CHAR}, token_checker::regionize_ir, IrLine}};
+use crate::{meta_tokens::ScopeType, tokens::{ir::{Break, IrToken, AND_CHAR}, token_checker::regionize_ir, IrLine}};
 
 pub mod sound_change_rule;
 pub mod conditions;
@@ -123,7 +123,7 @@ fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToke
 
     while let Some(ir_token) = ir.next() {
         let rule_token = match ir_token {
-            IrToken::Phone(phone) => RuleToken::Phone(Phone::new(phone)),
+            IrToken::Phone(phone) => RuleToken::Phone(*phone),
             IrToken::Any => RuleToken::Any { id: any_id(default_scope_ids, parent_scope.clone()) },
             IrToken::Gap => RuleToken::Gap { id: None },
             // starts a default labeled option scope

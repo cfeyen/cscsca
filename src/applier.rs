@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError};
 
-use crate::{meta_tokens::{Direction, Shift, ShiftType}, phones::Phone, rules::sound_change_rule::{RuleToken, SoundChangeRule}, tokens::ir::IrToken, BOUND_STR};
+use crate::{meta_tokens::{Direction, Shift, ShiftType}, phones::Phone, rules::sound_change_rule::{RuleToken, SoundChangeRule}, tokens::ir::IrToken};
 
 pub(crate) mod matcher;
 
@@ -121,12 +121,12 @@ fn replace_input<'a, 's: 'a>(phones: &mut Vec<Phone<'s>>, index: usize, input_le
     // discards the input
     phone_iter.take(input_len).for_each(|_| ()); // since take is lazy, the for each causes it to be used
 
-    // number of duplicated bound strs removed
+    // number of duplicated bounds removed
     let mut reductions = 0;
 
     // adds the output
     for phone in tokens_to_phones(output, choices)? {
-        if shifted_phones.last() == Some(&Phone::new(BOUND_STR)) && phone == Phone::new(BOUND_STR) {
+        if shifted_phones.last() == Some(&Phone::Bound) && phone == Phone::Bound {
             reductions += 1;
         } else {
             shifted_phones.push(phone);
@@ -142,7 +142,7 @@ fn replace_input<'a, 's: 'a>(phones: &mut Vec<Phone<'s>>, index: usize, input_le
 
     // prevents bounds from doubling up
     for phone in shifted_phones {
-        if !(new_phones.last() == Some(&Phone::new(BOUND_STR)) && phone == Phone::new(BOUND_STR)) {
+        if !(new_phones.last() == Some(&Phone::Bound) && phone == Phone::Bound) {
             new_phones.push(phone);
         }
     }

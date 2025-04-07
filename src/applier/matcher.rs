@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{meta_tokens::Direction, phones::Phone, rules::sound_change_rule::{RuleToken, ScopeId}, tokens::ir::IrToken, BOUND_STR};
+use crate::{meta_tokens::Direction, phones::Phone, rules::sound_change_rule::{RuleToken, ScopeId}, tokens::ir::IrToken};
 
 #[cfg(test)]
 mod ltr_tests;
@@ -42,7 +42,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
 
     match token {
         // if the phone matches, check the next token with the next index, else return false
-        RuleToken::Phone(phone) => if phone.matches(phones.get(*phone_index).unwrap_or(&Phone::new(BOUND_STR))) {
+        RuleToken::Phone(phone) => if phone.matches(phones.get(*phone_index).unwrap_or(&Phone::Bound)) {
             *phone_index = direction.change_by_one(*phone_index);
             tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
         } else {
@@ -116,10 +116,10 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
             Ok(false)
         }
         RuleToken::Any { id: None } => {
-            let bound_phone = Phone::new(BOUND_STR);
+            let bound_phone = Phone::Bound;
             let phone = phones.get(*phone_index).unwrap_or(&bound_phone);
 
-            if phone != &Phone::new(BOUND_STR) {
+            if phone != &Phone::Bound {
                 *phone_index = direction.change_by_one(*phone_index);
                 tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
             } else {
@@ -127,7 +127,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
             }
         },
         RuleToken::Any { id: Some(id) } => {
-            let bound_phone = Phone::new(BOUND_STR);
+            let bound_phone = Phone::Bound;
             let phone = phones.get(*phone_index).unwrap_or(&bound_phone);
 
             if let Some(choice) = choices.any_choices.get(id) {
@@ -137,7 +137,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
                 } else {
                     Ok(false)
                 }
-            } else if phone != &Phone::new(BOUND_STR) {
+            } else if phone != &Phone::Bound {
                 *phone_index = direction.change_by_one(*phone_index);
                 choices.any_choices.insert(id, *phone);
                 tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
@@ -149,7 +149,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
             while let Some(phone) = phones.get(*phone_index) {
                 let starting_index = *phone_index;
 
-                if *phone == Phone::new(BOUND_STR) {
+                if *phone == Phone::Bound {
                     break;
                 } else if tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)? {
                     return Ok(true);
@@ -171,7 +171,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
                     choices.gap_choices.insert(id, len);
                 }
 
-                if target_len.map(|t| len > t) == Some(true) || phone == &Phone::new(BOUND_STR) {
+                if target_len.map(|t| len > t) == Some(true) || phone == &Phone::Bound {
                     break;
                 } else if tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)? {
                     return Ok(true);

@@ -26,44 +26,44 @@ fn apply_empty_rule_to_one_phone() {
         anti_conds: Vec::new(),
     };
     
-    assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut vec![Phone::new("a")], &DEFAULT_MAX_APPLICATION_TIME));
+    assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut vec![Phone::Symbol("a")], &DEFAULT_MAX_APPLICATION_TIME));
 }
 
 #[test]
 fn one_to_one_shift() {
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
-        input: vec![RuleToken::Phone(Phone::new("a"))],
-        output: vec![RuleToken::Phone(Phone::new("b"))],
+        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
+        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
         conds: vec![Cond::default()],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("c"), Phone::new("a")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
     
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
 
-    assert_eq!(vec![Phone::new("b"), Phone::new("c"), Phone::new("b")], phones);
+    assert_eq!(vec![Phone::Symbol("b"), Phone::Symbol("c"), Phone::Symbol("b")], phones);
 }
 
 #[test]
 fn one_to_two_shift() {
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
-        input: vec![RuleToken::Phone(Phone::new("a"))],
+        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
         output: vec![
-            RuleToken::Phone(Phone::new("b")),
-            RuleToken::Phone(Phone::new("c")),
+            RuleToken::Phone(Phone::Symbol("b")),
+            RuleToken::Phone(Phone::Symbol("c")),
         ],
         conds: vec![Cond::default()],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("d"), Phone::new("a")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("d"), Phone::Symbol("a")];
     
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
 
-    assert_eq!(vec![Phone::new("b"), Phone::new("c"), Phone::new("d"), Phone::new("b"), Phone::new("c")], phones);
+    assert_eq!(vec![Phone::Symbol("b"), Phone::Symbol("c"), Phone::Symbol("d"), Phone::Symbol("b"), Phone::Symbol("c")], phones);
 }
 
 #[test]
@@ -71,36 +71,36 @@ fn two_to_one_shift() {
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
         input: vec![
-            RuleToken::Phone(Phone::new("a")),
-            RuleToken::Phone(Phone::new("b")),
+            RuleToken::Phone(Phone::Symbol("a")),
+            RuleToken::Phone(Phone::Symbol("b")),
         ],
-        output: vec![RuleToken::Phone(Phone::new("c"))],
+        output: vec![RuleToken::Phone(Phone::Symbol("c"))],
         conds: vec![Cond::default()],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("b"), Phone::new("d"), Phone::new("a"), Phone::new("b")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("d"), Phone::Symbol("a"), Phone::Symbol("b")];
     
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
 
-    assert_eq!(vec![Phone::new("c"), Phone::new("d"), Phone::new("c")], phones);
+    assert_eq!(vec![Phone::Symbol("c"), Phone::Symbol("d"), Phone::Symbol("c")], phones);
 }
 
 #[test]
 fn one_to_none_shift() {
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
-        input: vec![RuleToken::Phone(Phone::new("a"))],
+        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
         output: vec![],
         conds: vec![Cond::default()],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("b"), Phone::new("a")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("a")];
 
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
 
-    assert_eq!(vec![Phone::new("b")], phones);
+    assert_eq!(vec![Phone::Symbol("b")], phones);
 }
 
 #[test]
@@ -109,15 +109,15 @@ fn remove_word_final_ltr() { // also tests bound deduplication
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
         input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
         output: vec![],
-        conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::new_bound())])],
+        conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::Bound)])],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("b"), Phone::new("c"), Phone::new_bound(), Phone::new("e"), Phone::new_bound(), Phone::new("f"), Phone::new("g")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Bound, Phone::Symbol("e"), Phone::Bound, Phone::Symbol("f"), Phone::Symbol("g")];
     
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
 
-    assert_eq!(vec![Phone::new("a"), Phone::new("b"), Phone::new_bound(), Phone::new("f")], phones);
+    assert_eq!(vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("f")], phones);
 }
 
 #[test]
@@ -126,15 +126,15 @@ fn remove_word_final_rtl() { // also tests bound deduplication
         kind: Shift { dir: Direction::RTL, kind: ShiftType::Move },
         input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
         output: vec![],
-        conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::new_bound())])],
+        conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::Bound)])],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("b"), Phone::new("c"), Phone::new_bound(), Phone::new("e"), Phone::new_bound(), Phone::new("f"), Phone::new("g")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Bound, Phone::Symbol("e"), Phone::Bound, Phone::Symbol("f"), Phone::Symbol("g")];
     
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
     
-    assert_eq!(vec![Phone::new_bound()], phones);
+    assert_eq!(vec![Phone::Bound], phones);
 }
 
 #[test]
@@ -147,9 +147,9 @@ fn selection_to_selection() { // also tests bound deduplication
                 label_type: LabelType::Scope(ScopeType::Selection),
                 parent: None
             }), options: vec![
-                vec![RuleToken::Phone(Phone::new("a"))],
-                vec![RuleToken::Phone(Phone::new("b"))],
-                vec![RuleToken::Phone(Phone::new("c"))],
+                vec![RuleToken::Phone(Phone::Symbol("a"))],
+                vec![RuleToken::Phone(Phone::Symbol("b"))],
+                vec![RuleToken::Phone(Phone::Symbol("c"))],
             ] }
         ],
         output: vec![
@@ -158,20 +158,20 @@ fn selection_to_selection() { // also tests bound deduplication
                 label_type: LabelType::Scope(ScopeType::Selection),
                 parent: None
             }), options: vec![
-                vec![RuleToken::Phone(Phone::new("d"))],
-                vec![RuleToken::Phone(Phone::new("e"))],
-                vec![RuleToken::Phone(Phone::new("f"))],
+                vec![RuleToken::Phone(Phone::Symbol("d"))],
+                vec![RuleToken::Phone(Phone::Symbol("e"))],
+                vec![RuleToken::Phone(Phone::Symbol("f"))],
             ] }
         ],
         conds: vec![Cond::default()],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("b"), Phone::new("c"), Phone::new("d")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Symbol("d")];
 
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
     
-    assert_eq!(vec![Phone::new("d"), Phone::new("e"), Phone::new("f"), Phone::new("d")], phones);
+    assert_eq!(vec![Phone::Symbol("d"), Phone::Symbol("e"), Phone::Symbol("f"), Phone::Symbol("d")], phones);
 }
 
 #[test]
@@ -183,16 +183,16 @@ fn option_to_phone() { // also tests bound deduplication
                 id_num: 0,
                 label_type: LabelType::Scope(ScopeType::Optional),
                 parent: None
-            }), content: vec![RuleToken::Phone(Phone::new("a"))] },
+            }), content: vec![RuleToken::Phone(Phone::Symbol("a"))] },
         ],
         output: vec![
-            RuleToken::Phone(Phone::new("b")),
+            RuleToken::Phone(Phone::Symbol("b")),
         ],
         conds: vec![Cond::default()],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("b"), Phone::new("c")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")];
     
     assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
 }
@@ -206,60 +206,60 @@ fn option_phone_to_option_phone() { // also tests bound deduplication
                 id_num: 0,
                 label_type: LabelType::Scope(ScopeType::Optional),
                 parent: None
-            }), content: vec![RuleToken::Phone(Phone::new("a"))] },
-            RuleToken::Phone(Phone::new("b")),
+            }), content: vec![RuleToken::Phone(Phone::Symbol("a"))] },
+            RuleToken::Phone(Phone::Symbol("b")),
         ],
         output: vec![
             RuleToken::OptionalScope { id: Some(ScopeId::IOUnlabeled {
                 id_num: 0,
                 label_type: LabelType::Scope(ScopeType::Optional),
                 parent: None
-            }), content: vec![RuleToken::Phone(Phone::new("c"))] },
-            RuleToken::Phone(Phone::new("d")),
+            }), content: vec![RuleToken::Phone(Phone::Symbol("c"))] },
+            RuleToken::Phone(Phone::Symbol("d")),
         ],
         conds: vec![Cond::default()],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("b"), Phone::new("e"), Phone::new("b"), Phone::new("e")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("e"), Phone::Symbol("b"), Phone::Symbol("e")];
     
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME  ));
   
-    assert_eq!(vec![Phone::new("c"), Phone::new("d"), Phone::new("e"), Phone::new("d"), Phone::new("e")], phones);
+    assert_eq!(vec![Phone::Symbol("c"), Phone::Symbol("d"), Phone::Symbol("e"), Phone::Symbol("d"), Phone::Symbol("e")], phones);
 }
 
 #[test]
 fn phone_to_phone_word_final_ltr() { // also tests bound deduplication
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
-        input: vec![RuleToken::Phone(Phone::new("a"))],
-        output: vec![RuleToken::Phone(Phone::new("b"))],
-        conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::new_bound())])],
+        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
+        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
+        conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::Bound)])],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("c"), Phone::new("a")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
     
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
     
-    assert_eq!(vec![Phone::new("a"), Phone::new("c"), Phone::new("b")], phones);
+    assert_eq!(vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("b")], phones);
 }
 
 #[test]
 fn phone_to_phone_word_final_rtl() { // also tests bound deduplication
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::RTL, kind: ShiftType::Move },
-        input: vec![RuleToken::Phone(Phone::new("a"))],
-        output: vec![RuleToken::Phone(Phone::new("b"))],
-        conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::new_bound())])],
+        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
+        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
+        conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![RuleToken::Phone(Phone::Bound)])],
         anti_conds: Vec::new(),
     };
 
-    let mut phones = vec![Phone::new("a"), Phone::new("c"), Phone::new("a")];
+    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
 
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
     
-    assert_eq!(vec![Phone::new("a"), Phone::new("c"), Phone::new("b")], phones);
+    assert_eq!(vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("b")], phones);
 }
 
 #[test]
@@ -268,63 +268,63 @@ fn quadruple_agreement() { // also tests bound deduplication
         kind: Shift { dir: Direction::LTR, kind: ShiftType::Move },
         input: vec![
             RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
-                vec![RuleToken::Phone(Phone::new("a"))],
-                vec![RuleToken::Phone(Phone::new("b"))],
-                vec![RuleToken::Phone(Phone::new("c"))],
+                vec![RuleToken::Phone(Phone::Symbol("a"))],
+                vec![RuleToken::Phone(Phone::Symbol("b"))],
+                vec![RuleToken::Phone(Phone::Symbol("c"))],
             ] }
         ],
         output: vec![
             RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
-                vec![RuleToken::Phone(Phone::new("d"))],
-                vec![RuleToken::Phone(Phone::new("e"))],
-                vec![RuleToken::Phone(Phone::new("f"))],
+                vec![RuleToken::Phone(Phone::Symbol("d"))],
+                vec![RuleToken::Phone(Phone::Symbol("e"))],
+                vec![RuleToken::Phone(Phone::Symbol("f"))],
             ] }
         ],
         conds: vec![Cond::new(CondType::MatchInput, Vec::new(), vec![
             RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
-                vec![RuleToken::Phone(Phone::new("g"))],
-                vec![RuleToken::Phone(Phone::new("h"))],
-                vec![RuleToken::Phone(Phone::new("i"))],
+                vec![RuleToken::Phone(Phone::Symbol("g"))],
+                vec![RuleToken::Phone(Phone::Symbol("h"))],
+                vec![RuleToken::Phone(Phone::Symbol("i"))],
             ] }
         ] )],
         anti_conds: vec![Cond::new(CondType::MatchInput, vec![
             RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
-                vec![RuleToken::Phone(Phone::new("j"))],
-                vec![RuleToken::Phone(Phone::new("k"))],
-                vec![RuleToken::Phone(Phone::new("l"))],
+                vec![RuleToken::Phone(Phone::Symbol("j"))],
+                vec![RuleToken::Phone(Phone::Symbol("k"))],
+                vec![RuleToken::Phone(Phone::Symbol("l"))],
             ] }
         ], Vec::new() )],
     };
 
     let mut phones = vec![
-        Phone::new("a"),
-        Phone::new("g"),
-        Phone::new("a"),
-        Phone::new("h"),
-        Phone::new("b"),
-        Phone::new("h"),
-        Phone::new("j"),
-        Phone::new("c"),
-        Phone::new("i"),
-        Phone::new("l"),
-        Phone::new("c"),
-        Phone::new("i"),
+        Phone::Symbol("a"),
+        Phone::Symbol("g"),
+        Phone::Symbol("a"),
+        Phone::Symbol("h"),
+        Phone::Symbol("b"),
+        Phone::Symbol("h"),
+        Phone::Symbol("j"),
+        Phone::Symbol("c"),
+        Phone::Symbol("i"),
+        Phone::Symbol("l"),
+        Phone::Symbol("c"),
+        Phone::Symbol("i"),
     ];
     
     assert_eq!(Ok(()), apply(&rule, &mut phones, &DEFAULT_MAX_APPLICATION_TIME));
     
     assert_eq!(vec![
-        Phone::new("d"),
-        Phone::new("g"),
-        Phone::new("a"),
-        Phone::new("h"),
-        Phone::new("e"),
-        Phone::new("h"),
-        Phone::new("j"),
-        Phone::new("f"),
-        Phone::new("i"),
-        Phone::new("l"),
-        Phone::new("c"),
-        Phone::new("i")
+        Phone::Symbol("d"),
+        Phone::Symbol("g"),
+        Phone::Symbol("a"),
+        Phone::Symbol("h"),
+        Phone::Symbol("e"),
+        Phone::Symbol("h"),
+        Phone::Symbol("j"),
+        Phone::Symbol("f"),
+        Phone::Symbol("i"),
+        Phone::Symbol("l"),
+        Phone::Symbol("c"),
+        Phone::Symbol("i")
     ], phones);
 }
