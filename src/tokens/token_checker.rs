@@ -19,26 +19,26 @@ pub fn check_token_line<'s>(line: &IrLine<'s>) -> Result<(), IrStructureError<'s
     Ok(())
 }
 
-/// Converts a line of ir into regions where each (except the first) starts with a break
-/// 
-/// ## Invariant
-/// - The first Break is None and all others are Some
-/// - There is always at least one region
-// ! The invariants must be upheld
-pub fn regionize_ir<'s, 'a>(tokens: &'a [IrToken<'s>]) -> Vec<(Option<Break>, Vec<&'a IrToken<'s>>)> {
-    let mut regions = vec![(None, Vec::new())];
+/// Converts a line of ir into regions, all regions after the first are proceeded by a break
+pub fn regionize_ir<'s, 'a>(tokens: &'a [IrToken<'s>]) -> (Vec<&'a IrToken<'s>>, Vec<(Break, Vec<&'a IrToken<'s>>)>) {
+    let mut input_region = Vec::new();
+    let mut other_regions = Vec::new();
+    let mut after_input = false;
 
     for token in tokens {
         if let IrToken::Break(r#break) = token {
-            // Only the first region should have None break
-            regions.push((Some(*r#break), Vec::new()));
+            other_regions.push((*r#break, Vec::new()));
+            after_input = true;
+        } else if after_input {
+            // for after_input to be true, other_regions must have a length of at least one
+            let last_index = other_regions.len() - 1;
+            other_regions[last_index].1.push(token);
         } else {
-            let last_index = regions.len() - 1;
-            regions[last_index].1.push(token);
+            input_region.push(token);
         }
     }
 
-    regions
+    (input_region, other_regions)
 }
 
 
@@ -51,16 +51,16 @@ pub fn regionize_ir<'s, 'a>(tokens: &'a [IrToken<'s>]) -> Vec<(Option<Break>, Ve
 /// - each (anti-)condition had exactally one focus
 /// - gaps do not occur out of (anti-)conditions
 fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
-    let regions = regionize_ir(line);
+    let (_, regions) = regionize_ir(line);
 
     // ensures that the second region starts with a shift
-    if let Some((r#break, _)) = regions.get(1) {
-        if !matches!(r#break, Some(Break::Shift(_))) {
+    if let Some((r#break, _)) = regions.first() {
+        if !matches!(r#break, Break::Shift(_)) {
             return if regions.iter()
-                .filter(|(r#break, _)| matches!(r#break, Some(Break::Shift(_))))
+                .filter(|(r#break, _)| matches!(r#break, Break::Shift(_)))
                 .count() > 0 {
                     // returns if there is a break
-                    Err(IrStructureError::BreakBeforeShift(r#break.expect("only the first region should have None break")))
+                    Err(IrStructureError::BreakBeforeShift(*r#break))
             } else {
                 Err(IrStructureError::NoShift)
             };
@@ -73,23 +73,22 @@ fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
     let mut found_anti_conds = false;
 
     // otherwise check break order
-    if let Some(conds) = regions.get(2..) {
+    if let Some(conds) = regions.get(1..) {
         for region in conds {
             match region.0 {
-                Some(Break::Shift(shift)) => Err(IrStructureError::ShiftAfterShift(shift)),
-                Some(Break::Cond) if found_anti_conds => Err(IrStructureError::AntiCondBeforeCond),
-                Some(Break::Cond) => {
+                Break::Shift(shift) => Err(IrStructureError::ShiftAfterShift(shift)),
+                Break::Cond if found_anti_conds => Err(IrStructureError::AntiCondBeforeCond),
+                Break::Cond => {
                     found_conds = true;
                     Ok(())
                 },
-                Some(Break::AntiCond) => {
+                Break::AntiCond => {
                     found_conds = true;
                     found_anti_conds = true;
                     Ok(())
                 },
-                Some(Break::And) if found_conds => Ok(()),
-                Some(Break::And) => Err(IrStructureError::AndOutOfCond),
-                None => panic!("There should be no region after the first will a None break"),
+                Break::And if found_conds => Ok(()),
+                Break::And => Err(IrStructureError::AndOutOfCond),
             }?;
         }
     }
@@ -101,19 +100,18 @@ fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
             .iter()
             .filter(|t| matches!(t, IrToken::CondType(_)));
 
-        match r#break {
-            None | Some(Break::Shift(_)) => if let Some(IrToken::CondType(focus)) = foci.next() {
+        if let Break::Shift(_) = r#break {
+            if let Some(IrToken::CondType(focus)) = foci.next() {
                 return Err(IrStructureError::FocusOutOfCond(*focus));
             } else if tokens.contains(&&IrToken::Gap) {
-                return Err(IrStructureError::GapOutOfCond)
-            },
-            _ => {
-                let foci = foci.count();
-                if foci == 0 {
-                    return Err(IrStructureError::NoFocusInCond);
-                } else if foci > 1 {
-                    return Err(IrStructureError::ManyFociInCond);
-                }
+                return Err(IrStructureError::GapOutOfCond);
+            }
+        } else {
+            let foci = foci.count();
+            if foci == 0 {
+                return Err(IrStructureError::NoFocusInCond);
+            } else if foci > 1 {
+                return Err(IrStructureError::ManyFociInCond);
             }
         }
     }

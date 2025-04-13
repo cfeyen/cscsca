@@ -1,3 +1,5 @@
+// todo &mut Option<...> -> Option<&mut ...>
+
 use std::sync::Arc;
 
 use conditions::{Cond, CondType};
@@ -31,15 +33,12 @@ pub fn build_rule<'a, 's: 'a>(line: &'a IrLine<'s>) -> Result<RuleLine<'s>, Rule
         IrLine::Ir(tokens) => tokens
     };
 
-    let mut regions = regionize_ir(line).into_iter();
+    let (input_region, other_regions) = regionize_ir(line);
+    let mut other_regions = other_regions.into_iter();
 
-    let input = if let Some((None, input)) = regions.next() {
-        ir_to_input_output(&input)?
-    } else {
-        panic!("The first region should always match (None, _)")
-    };
+    let input = ir_to_input_output(&input_region)?;
 
-    let (shift, output) = if let Some((Some(Break::Shift(shift)), output)) = regions.next() {
+    let (shift, output) = if let Some((Break::Shift(shift), output)) = other_regions.next() {
         (shift, ir_to_input_output(&output)?)
     } else {
         return Err(RuleStructureError::NoShift);
@@ -49,15 +48,15 @@ pub fn build_rule<'a, 's: 'a>(line: &'a IrLine<'s>) -> Result<RuleLine<'s>, Rule
     let mut anti_conds = Vec::new();
     let mut to_anti_conds = false;
 
-    for (r#break, tokens) in regions {
+    for (r#break, tokens) in other_regions {
         match r#break {
-            Some(Break::Shift(_)) => todo!(),
-            Some(Break::Cond) => conds.push(ir_to_cond(&tokens)?),
-            Some(Break::AntiCond) => {
+            Break::Shift(_) => todo!(),
+            Break::Cond => conds.push(ir_to_cond(&tokens)?),
+            Break::AntiCond => {
                 to_anti_conds = true;
                 anti_conds.push(ir_to_cond(&tokens)?);
             },
-            Some(Break::And) => {
+            Break::And => {
                 let mut cond = ir_to_cond(&tokens)?;
 
                 let last_cond = if to_anti_conds {
@@ -70,8 +69,7 @@ pub fn build_rule<'a, 's: 'a>(line: &'a IrLine<'s>) -> Result<RuleLine<'s>, Rule
 
                 cond.set_and(std::mem::take(last_cond));
                 *last_cond = cond;
-            },
-            None => panic!("There should be no None break in regions after the first")
+            }
         }
     }
 

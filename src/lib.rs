@@ -3,6 +3,7 @@
 #![warn(clippy::complexity)]
 #![warn(clippy::perf)]
 #![warn(clippy::pedantic)]
+#![warn(clippy::panic)]
 #![warn(clippy::style)]
 
 use std::error::Error;
