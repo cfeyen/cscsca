@@ -36,7 +36,7 @@ impl Display for IrToken<'_> {
         let s = match self {
             Self::Any => format!("{ANY_CHAR}"),
             Self::ArgSep => format!("{ARG_SEP_CHAR}"),
-            Self::Break(r#break) => format!("{}", r#break),
+            Self::Break(r#break) => format!("{break}"),
             Self::Gap => GAP_STR.to_string(),
             Self::CondType(focus) => format!("{focus}"),
             Self::Phone(phone) => phone.to_string(),
@@ -45,13 +45,13 @@ impl Display for IrToken<'_> {
             Self::Label(name) => format!("{SELECTION_PREFIX}{name}"),
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
 /// Breaks in phone lists
 /// 
-/// Seperate input, output, conditions and anti_conditions
+/// Seperate input, output, conditions and anti-conditions
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Break {
     /// Seperates input and output
@@ -75,6 +75,6 @@ impl Display for Break {
             Self::And => format!("{AND_CHAR}"),
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }

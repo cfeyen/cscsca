@@ -77,13 +77,13 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
 
     let input_len = match_len(input, &choices)?;
 
-    'cond_loop: for cond in conds.iter() {
+    'cond_loop: for cond in conds {
         // saves choices to reset between conditions
         // ? this process could probably be optimized
         let initial_choices = choices.clone();
 
         if cond.eval(phones, phone_index, input_len, &mut choices, dir)? {
-            for anti_cond in anti_conds.iter() {
+            for anti_cond in anti_conds {
                 // saves choices to reset between anti-conditions
                 let initial_choices = choices.clone();
 
@@ -105,7 +105,7 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
     Ok(None)
 }
 
-/// Replaces the slice phones[index..input_len] with the output as phones
+/// Replaces the slice `phones[index..input_len]` with the output as phones
 /// 
 /// Return: (the length of the output, the length of what it replaced)
 fn replace_input<'a, 's: 'a>(phones: &mut Vec<Phone<'s>>, index: usize, input_len: usize, output: &'a [RuleToken<'s>], choices: &Choices<'a, 's>) -> Result<Option<(usize, usize)>, ApplicationError<'a, 's>> {
@@ -163,14 +163,14 @@ fn tokens_to_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], choices: &Choices<'
         match token {
             RuleToken::Phone(phone) => phones.push(*phone),
             RuleToken::Any { id: Some(id) } => {
-                if let Some(phone) = choices.any_choices.get(id) {
+                if let Some(phone) = choices.any.get(id) {
                     phones.push(*phone);
                 } else {
                     return Err(ApplicationError::UnmatchedTokenInOutput(token));
                 }
             },
             RuleToken::OptionalScope { id: Some(id), content } => {
-                if let Some(insert) = choices.optional_choices.get(id) {
+                if let Some(insert) = choices.optional.get(id) {
                     if *insert {
                         for phone in tokens_to_phones(content, choices)? {
                             phones.push(phone);
@@ -181,7 +181,7 @@ fn tokens_to_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], choices: &Choices<'
                 }
             },
             RuleToken::SelectionScope { id: Some(id), options } => {
-                if let Some(choice) = choices.selection_choices.get(id) {
+                if let Some(choice) = choices.selection.get(id) {
                     if let Some(content) = options.get(*choice) {
                         for phone in tokens_to_phones(content, choices)? {
                             phones.push(phone);
@@ -194,7 +194,7 @@ fn tokens_to_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], choices: &Choices<'
                 }
             },
             _ => return Err(ApplicationError::UnmatchedTokenInOutput(token))
-        };
+        }
     }
 
     Ok(phones)
@@ -231,6 +231,6 @@ impl std::fmt::Display for ApplicationError<'_, '_> {
             Self::TimeLimitExceeded => "Could not apply changes in allotted time".to_string()
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }

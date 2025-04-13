@@ -12,7 +12,7 @@ use super::{ir::IrToken, tokenize_line, IrError};
 ///     - variables
 /// 
 /// ## Warning
-/// If variable io is used and free_sources is never called on this struct,
+/// If variable io is used and `free_sources` is never called on this struct,
 /// a memory leak will occur
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct CompileTimeData<'s> {
@@ -52,7 +52,7 @@ impl<'s> CompileTimeData<'s> {
     /// then assigns the tokens to the given name
     /// 
     /// ## Warning
-    /// If free_sources is never called on this struct, the input will be leaked forever
+    /// If `free_sources` is never called on this struct, the input will be leaked forever
     pub fn set_variable_as_ir(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
         let source = self.add_source(source);
 
@@ -66,25 +66,24 @@ impl<'s> CompileTimeData<'s> {
     /// then assigns the tokens to the given name
     /// 
     /// ## Warning
-    /// If free_sources is never called on this struct, the input will be leaked forever
-    pub fn set_variable(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
+    /// If `free_sources` is never called on this struct, the input will be leaked forever
+    pub fn set_variable(&mut self, name: &'s str, source: String) {
         let source = self.add_source(source);
 
         self.variables.insert(name, vec![IrToken::Phone(Phone::new(source))]);
-        Ok(())
     }
 
     /// Leaks a source and adds it to the sources buffer
     /// 
     /// ## Warning
-    /// If free_sources is never called on this struct, the source will be leaked forever
+    /// If `free_sources` is never called on this struct, the source will be leaked forever
     fn add_source<'a> (&mut self, mut source: String) -> &'a str {
         // leaking and moving the source to the sources buffer allows variable to be redefined
         // and prevents self reference, however, it may also cause memory leaks
         source.shrink_to_fit();
         let source = source.leak();
 
-        self.sources.push(source as *const str);
+        self.sources.push(std::ptr::from_ref(source));
         source
     }
 
@@ -94,7 +93,7 @@ impl<'s> CompileTimeData<'s> {
     /// There should be no references remaining to any string in the sources buffer
     pub unsafe fn free_sources(self) {
         self.sources.into_iter().for_each(|s| unsafe {
-            (s as *mut str).drop_in_place();
+            s.cast_mut().drop_in_place();
         });
     }
 }

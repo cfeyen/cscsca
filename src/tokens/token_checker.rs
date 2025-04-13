@@ -31,7 +31,7 @@ pub fn regionize_ir<'s, 'a>(tokens: &'a [IrToken<'s>]) -> Vec<(Option<Break>, Ve
     for token in tokens {
         if let IrToken::Break(r#break) = token {
             // Only the first region should have None break
-            regions.push((Some(*r#break), Vec::new())) 
+            regions.push((Some(*r#break), Vec::new()));
         } else {
             let last_index = regions.len() - 1;
             regions[last_index].1.push(token);
@@ -135,7 +135,7 @@ fn check_scopes<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
         match token {
             IrToken::ScopeStart(kind) => {
                 selecting = None;
-                scope_stack.push(*kind)
+                scope_stack.push(*kind);
             },
             IrToken::Any | IrToken::Gap => if selecting.is_some() {
                 selecting = None;
@@ -218,7 +218,7 @@ impl std::fmt::Display for IrStructureError<'_> {
                 format!("Found anti-conditon (denoted '{}') before a condition (denoted '{}')", Break::AntiCond, Break::Cond)
             },
             Self::BreakBeforeShift(r#break) => {
-                format!("Found token '{}' in the input of a sound change", r#break)
+                format!("Found token '{break}' in the input of a sound change")
             },
             Self::NoShift => {
                 format!("Found rule with no shift token, consider commenting it out with '{COMMENT_LINE_START}'")
@@ -243,7 +243,7 @@ impl std::fmt::Display for IrStructureError<'_> {
             }
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

@@ -1,3 +1,10 @@
+#![warn(clippy::correctness)]
+#![warn(clippy::suspicious)]
+#![warn(clippy::complexity)]
+#![warn(clippy::perf)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::style)]
+
 use std::error::Error;
 
 use runtime::Runtime;
@@ -16,15 +23,17 @@ pub const BOUND_CHAR: char = '#';
 
 /// Applies sca source code to an input string
 /// 
-/// Returns a string of either the final text or a formatted error and the print log
+/// Returns a string of either the final text or a formatted error
 #[inline]
+#[must_use]
 pub fn apply(input: &str, code: &str) -> String {
     apply_with_runtime(input, code, &Runtime::default())
 }
 
-/// Applies sca source code to an input string, logging prints
+/// Applies sca source code to an input string
 /// 
-/// Returns a result of either the final text or a formatted error
+/// ## Errors
+/// Errors are the result of providing invalid code, failed io, or application timing out
 #[inline]
 pub fn apply_fallible(input: &str, code: &str) -> Result<String, ScaError> {
     apply_fallible_with_runtime(input, code, &Runtime::default())
@@ -32,16 +41,18 @@ pub fn apply_fallible(input: &str, code: &str) -> Result<String, ScaError> {
 
 /// Applies sca source code to an input string
 /// 
-/// Returns a string of either the final text or a formatted error and the print log
+/// Returns a string of either the final text or a formatted error
 #[inline]
+#[must_use]
 pub fn apply_with_runtime(input: &str, code: &str, runtime: &Runtime) -> String {
     apply_fallible_with_runtime(input, code, runtime)
         .unwrap_or_else(|e| e.to_string())
 }
 
-/// Applies sca source code to an input string, logging prints
+/// Applies sca source code to an input string,
 /// 
-/// Returns a result of either the final text or a formatted error
+/// ## Errors
+/// Errors are the result of providing invalid code, failed io, or application timing out
 #[inline]
 pub fn apply_fallible_with_runtime(input: &str, code: &str, runtime: &Runtime) -> Result<String, ScaError> {
     runtime.apply(input, code)

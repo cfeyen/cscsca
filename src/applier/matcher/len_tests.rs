@@ -45,7 +45,7 @@ fn unlabeled_optional() {
 #[test]
 fn inserted_optional() {
     let mut choices = Choices::default();
-    choices.optional_choices = HashMap::from_iter([(&ScopeId::Name("label"), true)]);
+    choices.optional = HashMap::from_iter([(&ScopeId::Name("label"), true)]);
 
     let scope = RuleToken::OptionalScope { id: Some(ScopeId::Name("label")), content: vec![
         RuleToken::Phone(Phone::Symbol("a")),
@@ -58,7 +58,7 @@ fn inserted_optional() {
 #[test]
 fn non_inserted_optional() {
     let mut choices = Choices::default();
-    choices.optional_choices = HashMap::from_iter([(&ScopeId::Name("label"), false)]);
+    choices.optional = HashMap::from_iter([(&ScopeId::Name("label"), false)]);
 
     let scope = RuleToken::OptionalScope { id: Some(ScopeId::Name("label")), content: vec![
         RuleToken::Phone(Phone::Symbol("a")),
@@ -83,7 +83,7 @@ fn unlabeled_selection() {
 #[test]
 fn first_in_selection() {
     let mut choices = Choices::default();
-    choices.selection_choices = HashMap::from_iter([(&ScopeId::Name("label"), 0)]);
+    choices.selection = HashMap::from_iter([(&ScopeId::Name("label"), 0)]);
 
     let scope = RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
         vec![RuleToken::Phone(Phone::Symbol("a"))],
@@ -96,7 +96,7 @@ fn first_in_selection() {
 #[test]
 fn second_in_selection() {
     let mut choices = Choices::default();
-    choices.selection_choices = HashMap::from_iter([(&ScopeId::Name("label"), 1)]);
+    choices.selection = HashMap::from_iter([(&ScopeId::Name("label"), 1)]);
 
     let scope = RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
         vec![RuleToken::Phone(Phone::Symbol("a"))],

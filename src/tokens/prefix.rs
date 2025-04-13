@@ -21,6 +21,6 @@ impl std::fmt::Display for Prefix {
             Self::Variable => VARIABLE_PREFIX
         };
 
-        write!(f, "{}", c)
+        write!(f, "{c}")
     }
 }

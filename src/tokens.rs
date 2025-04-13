@@ -20,7 +20,7 @@ pub const GET_AS_CODE_LINE_START: &str = "GET_AS_CODE";
 pub const COMMENT_LINE_START: &str = "##";
 pub const ESCAPE_CHAR: char = '\\';
 
-/// A list of IrTokens, a command, or nothing representing a line of source code
+/// A list of `IrTokens`, a command, or nothing representing a line of source code
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub enum IrLine<'s> {
@@ -85,7 +85,7 @@ fn tokenize_line<'s>(line: &'s str, compile_time_data: &CompileTimeData<'s>) -> 
             },
             ESCAPE_CHAR => {
                 slice.grow(c);
-                escape = true
+                escape = true;
             },
             // handles prefixes
             DEFINITION_PREFIX => start_prefix(Prefix::Definition, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
@@ -153,10 +153,10 @@ fn tokenize_line<'s>(line: &'s str, compile_time_data: &CompileTimeData<'s>) -> 
 fn start_prefix<'s>(new_prefix: Prefix, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, compile_time_data: &CompileTimeData<'s>) -> Result<(), IrError<'s>> {
     if prefix.is_some() && slice.is_empty() { 
         return Err(IrError::EmptyPrefix(prefix.unwrap()))
-    } else {
-        push_phone(tokens, slice, prefix, compile_time_data)?;
-        slice.skip_byte();
     }
+
+    push_phone(tokens, slice, prefix, compile_time_data)?;
+    slice.skip_byte();
 
     *prefix = Some(new_prefix);
     Ok(())
@@ -222,38 +222,38 @@ struct SubString<'s> {
 }
 
 impl<'s> SubString<'s> {
-    /// Creates a new SliceData
+    /// Creates a new `SubString`
     #[inline]
     pub const fn new(source: &'s str) -> Self {
         Self { source, start: 0, len: 0 }
     }
 
-    /// Returns if the slice has 0 length
+    /// Returns if the substring has 0 length
     #[inline]
     pub const fn is_empty(&self) -> bool {
         self.len == 0
     }
 
-    /// Retreives the internal slice (may be done any number of times)
+    /// Retreives the internal substring (may be done any number of times)
     #[inline]
     pub fn take_slice(&self) -> &'s str {
         &self.source[self.start..self.start + self.len]
     }
 
-    /// Increments the internal slice length by the size of c in utf-8
+    /// Increments the internal substring length by the size of c in utf-8
     #[inline]
     pub const fn grow(&mut self, c: char) {
         self.len += c.len_utf8();
     }
 
-    /// Moves the slice start to the index after the slice ends and resets the length
+    /// Moves the substring start to the index after the slice ends and resets the length
     #[inline]
     pub const fn move_after (&mut self) {
         self.start += self.len;
         self.len = 0;
     }
     
-    /// Moves the slice start to the index after the slice ends and resets the length
+    /// Moves the substring start to the index after the slice ends and resets the length
     /// then moves skipping a byte
     #[inline]
     pub const fn skip_byte(&mut self) {
@@ -261,8 +261,8 @@ impl<'s> SubString<'s> {
         self.start += 1;
     }
 
-    /// Moves the slice start to the index after the slice ends and resets the length
-    /// then moves skipping a slice the size of c in utf-8
+    /// Moves the substring start to the index after the substring ends and resets the length
+    /// then moves skipping a substring the size of c in utf-8
     #[inline]
     pub const fn skip(&mut self, c: char) {
         self.move_after();
@@ -291,7 +291,7 @@ impl std::fmt::Display for IrError<'_> {
             Self::EmptyDefinition => format!("Found '{DEFINITION_LINE_START}' with out a following name"),
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
  

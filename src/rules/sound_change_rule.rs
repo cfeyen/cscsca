@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::fmt::Display;
+use std::fmt::{Display, Write as _};
 
 use crate::{meta_tokens::{ScopeType, Shift}, phones::Phone, tokens::ir::{Break, IrToken}};
 
@@ -35,12 +35,12 @@ impl Display for SoundChangeRule<'_> {
 
         let mut conds = String::new();
         for cond in &self.conds {
-            conds += &format!(" {} {cond}", IrToken::Break(Break::Cond));
+            _ = write!(conds, " {} {cond}", IrToken::Break(Break::Cond));
         }
 
         let mut anti_conds = String::new();
         for anti_cond in &self.anti_conds {
-            anti_conds += &format!(" {} {anti_cond}", IrToken::Break(Break::AntiCond));
+            _ = write!(anti_conds, " {} {anti_cond}", IrToken::Break(Break::AntiCond));
         }
         
         write!(f, "{} {} {}{}{}", input, &self.kind, output, conds, anti_conds)
@@ -89,7 +89,7 @@ impl Display for RuleToken<'_> {
                 format!("{} {s} {}", ScopeType::Optional.fmt_start(), ScopeType::Optional.fmt_end())
             }
             Self::OptionalScope { id: Some(id), content } => {
-                format!("{}{}", id, Self::OptionalScope { id: None, content: content.to_vec() })
+                format!("{}{}", id, Self::OptionalScope { id: None, content: content.clone() })
             }
             Self::SelectionScope { id: None, options } => {
                 let s = options
@@ -107,11 +107,11 @@ impl Display for RuleToken<'_> {
                 format!("{} {s} {}", ScopeType::Selection.fmt_start(), ScopeType::Selection.fmt_end())
             }
             Self::SelectionScope { id: Some(id), options } => {
-                format!("{}{}", id, Self::SelectionScope { id: None, options: options.to_vec() })
+                format!("{}{}", id, Self::SelectionScope { id: None, options: options.clone() })
             }
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -139,7 +139,7 @@ impl Display for ScopeId<'_> {
             Self::Name(name) => { format!("{}", IrToken::Label(name)) }
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -156,6 +156,6 @@ impl Display for LabelType {
             Self::Any => format!("{}", RuleToken::Any { id: None }),
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }

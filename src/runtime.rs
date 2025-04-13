@@ -18,10 +18,11 @@ pub type PutFn = dyn Fn(&str) -> Result<(), Box<dyn Error>>;
 /// A callback function for fetching input
 pub type GetFn = dyn Fn(&str) -> Result<String, Box<dyn Error>>;
 
-/// Returns the default function for the runtime's io_put_fn callback
+/// Returns the default function for the runtime's `io_put_fn` callback
 /// 
 /// Prints to stdout
 #[inline]
+#[must_use]
 pub fn default_io_put_fn() -> Box<PutFn> {
     Box::new(|msg| {
         println!("{msg}");
@@ -29,10 +30,11 @@ pub fn default_io_put_fn() -> Box<PutFn> {
     })
 }
 
-/// Returns the default function for the runtime's io_put_fn callback
+/// Returns the default function for the runtime's `io_put_fn` callback
 /// 
 /// Reads from stdin
 #[inline]
+#[must_use]
 pub fn default_io_get_fn() -> Box<GetFn> {
     Box::new(|msg| {
         print!("{msg} ");
@@ -72,8 +74,9 @@ impl Default for Runtime {
 }
 
 impl Runtime {
-    #[inline]
     /// Creates a default runtime
+    #[inline]
+    #[must_use]
     pub fn new() -> Self {
         Self {
             io_put_fn: default_io_put_fn(),
@@ -101,6 +104,7 @@ impl Runtime {
 
     /// Returns the runtime's maximum application time per line
     #[inline]
+    #[must_use]
     pub const fn max_line_application_time(&self) -> &Duration {
         &self.max_line_application_time
     }
@@ -112,8 +116,10 @@ impl Runtime {
         self
     }
 
-    /// Applies rules to an input given the context of the runtime,
-    /// errors are returned as formated strings
+    /// Applies rules to an input given the context of the runtime
+    /// 
+    /// ## Errors
+    /// Errors are the result of providing invalid code, failed io, or application timing out
     #[inline]
     pub fn apply(&self, input: &str, code: &str) -> Result<String, ScaError> {
         let phones = build_phone_list(input);
@@ -121,8 +127,10 @@ impl Runtime {
         self.apply_to_phones(phones, code)
     }
     
-    /// Applies rules to an input given the context of the runtime,
-    /// errors are returned as formated strings
+    /// Applies rules to an input given the context of the runtime
+    /// 
+    /// ## Errors
+    /// Errors are the result of providing invalid code, failed io, or application timing out
     #[inline]
     pub fn apply_to_phones<'s>(&self, phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
         self.apply_all_lines(phones, code)
@@ -141,8 +149,8 @@ impl Runtime {
         for (line_num, line) in lines {
             if let Err(e) = self.apply_line(line, line_num, &mut phones, &mut compile_time_data) {
                 drop(phones);
-                // Since the output is a string, which owns all of its values,
-                // and phones is dropped,
+                // Safety: Since the output is a ScaError,
+                // which owns all of its values, and phones is dropped,
                 // no references remain to the souces buffer in `compile_time_data`
                 unsafe { compile_time_data.free_sources() };
                 return Err(e);
@@ -152,8 +160,8 @@ impl Runtime {
         let output = phone_list_to_string(&phones);
 
         drop(phones);
-        // Since the output is a string, which owns all of its values,
-        // and phones is dropped,
+        // Safety: Since the output is a String,
+        // which owns all of its values, and phones is dropped,
         // no references remain to the souces buffer in `compile_time_data`
         unsafe { compile_time_data.free_sources() };
 
@@ -201,7 +209,7 @@ impl Runtime {
             },
             // formats the message, calls the io_put_fn callback on it, then logs it
             Command::GetAsCode => {
-                if let Some((name, msg)) = args.split_once(" ") {
+                if let Some((name, msg)) = args.split_once(' ') {
                     let source = (self.io_get_fn)(msg.trim())?;
 
                     compile_time_data.set_variable_as_ir(name, source)?;
@@ -211,10 +219,10 @@ impl Runtime {
             },
             // formats the message, calls the io_put_fn callback on it, then logs it
             Command::Get => {
-                if let Some((name, msg)) = args.split_once(" ") {
+                if let Some((name, msg)) = args.split_once(' ') {
                     let source = (self.io_get_fn)(msg.trim())?;
 
-                    compile_time_data.set_variable(name, source)?;
+                    compile_time_data.set_variable(name, source);
                 } else {
                     return Err(Box::new(&GetFormatError));
                 }

@@ -34,9 +34,7 @@ pub fn tokens_match_phones_from_left<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], ph
 /// - if there are the tokens match, the provided hash maps contain agreements
 /// - if there are errors there may be bad data in the maps
 fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<'s>], token_index: usize, phone_index: &mut usize, choices: &mut Choices<'a, 's>, direction: Direction) -> Result<bool, MatchError<'a, 's>> {
-    let token = if let Some(token) = tokens.get(token_index) {
-        token
-    } else {
+    let Some(token) = tokens.get(token_index) else {
         return Ok(true);
     };
 
@@ -51,8 +49,8 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
         RuleToken::SelectionScope {
             id: Some(id), options
         // if the id is alredy defined, try to access the index
-        } if choices.selection_choices.contains_key(id) => {
-            let choice = choices.selection_choices[id];
+        } if choices.selection.contains_key(id) => {
+            let choice = choices.selection[id];
             // if the index can be accessed use the contents at that index
             if let Some(content) = options.get(choice) {
                 // if those contents can be matched, continue checking, otherwise return false
@@ -77,7 +75,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
         // if the id is not defined, try to define it
         } => {
             for (num, option) in options.iter().enumerate() {
-                choices.selection_choices.insert(id, num);
+                choices.selection.insert(id, num);
                 let starting_phone_index = *phone_index;
 
                 let start_index = direction.start_index(option);
@@ -90,7 +88,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
                 }
 
                 *phone_index = starting_phone_index;
-                choices.selection_choices.remove(id);
+                choices.selection.remove(id);
             }
 
             Ok(false)
@@ -98,7 +96,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
         RuleToken::SelectionScope {
             id: None, options
         } => {
-            for option in options.iter() {
+            for option in options {
                 let starting_phone_index = *phone_index;
 
                 let start_index = direction.start_index(option);
@@ -119,18 +117,18 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
             let bound_phone = Phone::Bound;
             let phone = phones.get(*phone_index).unwrap_or(&bound_phone);
 
-            if phone != &Phone::Bound {
+            if phone == &Phone::Bound {
+                Ok(false)
+            } else {
                 *phone_index = direction.change_by_one(*phone_index);
                 tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
-            } else {
-                Ok(false)
             }
         },
         RuleToken::Any { id: Some(id) } => {
             let bound_phone = Phone::Bound;
             let phone = phones.get(*phone_index).unwrap_or(&bound_phone);
 
-            if let Some(choice) = choices.any_choices.get(id) {
+            if let Some(choice) = choices.any.get(id) {
                 if choice == phone {
                     *phone_index = direction.change_by_one(*phone_index);
                     tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
@@ -139,7 +137,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
                 }
             } else if phone != &Phone::Bound {
                 *phone_index = direction.change_by_one(*phone_index);
-                choices.any_choices.insert(id, *phone);
+                choices.any.insert(id, *phone);
                 tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
             } else {
                 Ok(false)
@@ -161,14 +159,14 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
             Ok(false)
         },
         RuleToken::Gap { id: Some(id) } => {
-            let target_len = choices.gap_choices.get(id).copied();
+            let target_len = choices.gap.get(id).copied();
             let mut len = 0;
 
             while let Some(phone) = phones.get(*phone_index) {
                 let starting_index = *phone_index;
 
                 if target_len.is_none() {
-                    choices.gap_choices.insert(id, len);
+                    choices.gap.insert(id, len);
                 }
 
                 if target_len.map(|t| len > t) == Some(true) || phone == &Phone::Bound {
@@ -185,8 +183,8 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
         },
         RuleToken::OptionalScope {
             id: Some(id), content
-        } if choices.optional_choices.contains_key(id) => {
-            let choice = choices.optional_choices[id];
+        } if choices.optional.contains_key(id) => {
+            let choice = choices.optional[id];
 
             let start_index = direction.start_index(content);
             if choice {
@@ -205,7 +203,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
             let starting_phone_index = *phone_index;
             let start_index = direction.start_index(content);
 
-            choices.optional_choices.insert(id, true);
+            choices.optional.insert(id, true);
 
             let content_matches = tokens_match_phones(content, phones, start_index, phone_index, choices, direction)?;
             let following_matches = tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)?;
@@ -214,7 +212,7 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
                 Ok(true)
             } else {
                 *phone_index = starting_phone_index;
-                choices.optional_choices.insert(id, false);
+                choices.optional.insert(id, false);
                 tokens_match_phones(tokens, phones, direction.change_by_one(token_index), phone_index, choices, direction)
             }
         },
@@ -243,25 +241,23 @@ fn tokens_match_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], phones: &[Phone<
 pub fn match_len<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], choices: &Choices<'a, 's>) -> Result<usize, MatchError<'a, 's>> {
     let mut len = 0;
 
-    for token in tokens.iter() {
+    for token in tokens {
         match token {
-            RuleToken::Any { id: Some(_) } => len += 1,
-            RuleToken::Any { id: None } => return Err(MatchError::UnlabeledScope(token)), // note: while the length of this is knowable, an unnamed any should never be in an input or output
-            RuleToken::Phone(_) => len += 1,
+            RuleToken::Phone(_) | RuleToken::Any { id: _ } => len += 1,
             RuleToken::Gap { id: _ } => return Err(MatchError::CannotCheckLenOfGap),
             RuleToken::OptionalScope { id: Some(id), content } => {
-                if let Some(choice) = choices.optional_choices.get(id) {
+                if let Some(choice) = choices.optional.get(id) {
                     if *choice {
-                        len += match_len(content, choices)?
+                        len += match_len(content, choices)?;
                     }
                 } else {
                     return Err(MatchError::UnlabeledScope(token));
                 }
             },
             RuleToken::SelectionScope { id: Some(id), options } => {
-                if let Some(choice) = choices.selection_choices.get(id) {
+                if let Some(choice) = choices.selection.get(id) {
                     if let Some(content) = options.get(*choice) {
-                        len += match_len(content, choices)?
+                        len += match_len(content, choices)?;
                     } else {
                         let name = if let ScopeId::Name(name) = id {
                             Some(*name)
@@ -304,10 +300,10 @@ pub fn has_empty_form(tokens: &[RuleToken]) -> bool {
 
 #[derive(Debug, Clone, Default)]
 pub struct Choices<'a, 's: 'a> {
-    pub selection_choices: HashMap<&'a ScopeId<'s>, usize>,
-    pub optional_choices: HashMap<&'a ScopeId<'s>, bool>,
-    pub any_choices: HashMap<&'a ScopeId<'s>, Phone<'s>>,
-    pub gap_choices: HashMap<&'s str, usize>,
+    pub selection: HashMap<&'a ScopeId<'s>, usize>,
+    pub optional: HashMap<&'a ScopeId<'s>, bool>,
+    pub any: HashMap<&'a ScopeId<'s>, Phone<'s>>,
+    pub gap: HashMap<&'s str, usize>,
 }
 
 /// Errors that occur when trying to match tokens to phones
@@ -339,6 +335,6 @@ impl std::fmt::Display for MatchError<'_, '_> {
             Self::CannotCheckLenOfGap => format!("Cannot check the length of '{}'", RuleToken::Gap { id: None })
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }

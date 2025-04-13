@@ -18,6 +18,7 @@ impl<'s> Phone<'s> {
     /// Creates a new phone that is either a symbol or a bound
     /// depending on the input
     #[inline]
+    #[must_use]
     pub fn new(symbol: &'s str) -> Self {
         if symbol == BOUND_STR {
             Self::Bound
@@ -28,6 +29,7 @@ impl<'s> Phone<'s> {
 
     /// Returns the phone's symbol.
     /// If the phone is a boundary, `BOUND_STR` is returned
+    #[must_use]
     pub fn as_str(&self) -> &'s str {
         match self {
             Self::Symbol(symbol) => symbol,
@@ -56,6 +58,7 @@ impl<'s> Phone<'s> {
     /// assert!(!Phone::Bound.matches(&Phone::Symbol(&format!("\\{BOUND_STR}"))));
     /// assert!(Phone::Symbol("\\ ").matches(&Phone::Symbol(" ")));
     /// ```
+    #[must_use]
     pub fn matches(&self, other: &Self) -> bool {
         let symbol = self.as_str();
         let other_symbol = other.as_str();
@@ -91,12 +94,12 @@ impl<'s> Phone<'s> {
                     if other_char.to_string() == BOUND_STR || other_char.is_whitespace() {
                         in_whitespace = true;
                         continue;
-                    } else {
-                        return false
                     }
-                } else {
-                    in_whitespace = false;
+                    
+                    return false;
                 }
+                
+                in_whitespace = false;
 
                 if phone_char != other_char { return false; }
             } else {
@@ -117,6 +120,7 @@ impl std::fmt::Display for Phone<'_> {
 /// Builds a list of phones (as string slices with lifetime 's)
 /// from an input (string slice with 's)
 /// and reformats whitespace as word bounderies
+#[must_use]
 pub fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
     let phones = input
         .split("")
@@ -146,6 +150,7 @@ pub fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
 
 /// Converts a list of string slices to a string
 /// reformating word bounderies as whitespace
+#[must_use]
 pub fn phone_list_to_string(phone_list: &[Phone]) -> String {
     phone_list
         .iter()

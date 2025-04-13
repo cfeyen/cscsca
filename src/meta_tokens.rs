@@ -20,7 +20,7 @@ impl Display for Shift {
             Self { dir, kind: ShiftType::Move } => format!("{dir}{dir}"),
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 
@@ -35,7 +35,7 @@ pub enum Direction {
 
 impl Direction {
     /// Changes n by dist according to the direction (wraps instead of overflowing)
-    pub fn change_by(&self, n: usize, dist: usize) -> usize {
+    pub fn change_by(self, n: usize, dist: usize) -> usize {
         match self {
             Self::Ltr => n.wrapping_add(dist),
             Self::Rtl => n.wrapping_sub(dist),
@@ -43,14 +43,14 @@ impl Direction {
     }
 
     /// Changes n by 1 according to the direction (wraps instead of overflowing)
-    pub fn change_by_one(&self, n: usize) -> usize {
+    pub fn change_by_one(self, n: usize) -> usize {
         self.change_by(n, 1)
     }
 
     /// Returns the first index required for traversing a list according to direction
     /// 
     /// (LTR returns 0, RTL returns list length - 1)
-    pub fn start_index<T>(&self, list: &[T]) -> usize {
+    pub fn start_index<T>(self, list: &[T]) -> usize {
         match self {
             Self::Ltr => 0,
             Self::Rtl => list.len().wrapping_sub(1),
@@ -65,7 +65,7 @@ impl Display for Direction {
             Self::Rtl => RTL_CHAR,
         };
 
-        write!(f, "{}", c)
+        write!(f, "{c}")
     }
 }
 
@@ -88,14 +88,14 @@ pub enum ScopeType {
 }
 
 impl ScopeType {
-    pub fn fmt_start(&self) -> char {
+    pub fn fmt_start(self) -> char {
         match self {
             ScopeType::Optional => OPTIONAL_START_CHAR,
             ScopeType::Selection => SELECTION_START_CHAR,
         }
     }
 
-    pub fn fmt_end(&self) -> char {
+    pub fn fmt_end(self) -> char {
         match self {
             ScopeType::Optional => OPTIONAL_END_CHAR,
             ScopeType::Selection => SELECTION_END_CHAR,

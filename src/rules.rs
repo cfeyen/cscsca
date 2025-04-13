@@ -118,29 +118,29 @@ fn ir_to_cond<'s:>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'
 }
 
 /// Converts ir tokens to rule tokens
-fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: &mut Option<(usize, usize, usize)>, parent_scope: Option<ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
+fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: &mut Option<(usize, usize, usize)>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
     let mut rule_tokens = Vec::new();
 
     while let Some(ir_token) = ir.next() {
         let rule_token = match ir_token {
             IrToken::Phone(phone) => RuleToken::Phone(*phone),
-            IrToken::Any => RuleToken::Any { id: any_id(default_scope_ids, parent_scope.clone()) },
+            IrToken::Any => RuleToken::Any { id: any_id(default_scope_ids, parent_scope.cloned()) },
             IrToken::Gap => RuleToken::Gap { id: None },
             // starts a default labeled option scope
             IrToken::ScopeStart(ScopeType::Optional) => {
-                let id = optional_id(default_scope_ids, parent_scope.clone());
+                let id = optional_id(default_scope_ids, parent_scope.cloned());
 
                 RuleToken::OptionalScope {
-                    content: ir_tokens_to_rule_tokens(ir, default_scope_ids, id.clone(), Some(ScopeType::Optional))?,
+                    content: ir_tokens_to_rule_tokens(ir, default_scope_ids, id.as_ref(), Some(ScopeType::Optional))?,
                     id,
                 }
             },
             // starts a default labeled selection scope
             IrToken::ScopeStart(ScopeType::Selection) => {
-                let id = selection_id(default_scope_ids, parent_scope.clone());
+                let id = selection_id(default_scope_ids, parent_scope.cloned());
 
                 RuleToken::SelectionScope {
-                    options: selection_contents_to_rule_tokens(ir, default_scope_ids, id.clone())?,
+                    options: selection_contents_to_rule_tokens(ir, default_scope_ids, id.as_ref())?,
                     id,
                 }
             },
@@ -152,11 +152,11 @@ fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToke
                 if let Some(IrToken::ScopeStart(kind)) = next {
                     match kind {
                         ScopeType::Optional => RuleToken::OptionalScope {
-                            content: ir_tokens_to_rule_tokens(ir, default_scope_ids, id.clone(), Some(ScopeType::Optional))?,
+                            content: ir_tokens_to_rule_tokens(ir, default_scope_ids, id.as_ref(), Some(ScopeType::Optional))?,
                             id,
                         },
                         ScopeType::Selection => RuleToken::SelectionScope {
-                            options: selection_contents_to_rule_tokens(ir, default_scope_ids, id.clone())?,
+                            options: selection_contents_to_rule_tokens(ir, default_scope_ids, id.as_ref())?,
                             id,
                         }
                     }
@@ -188,8 +188,8 @@ fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToke
 
 /// Converts the ir tokens in a selection scope to a list of rule token lists
 /// where each is an option to be selected by the scope: 
-/// (options are seperated by the ArgSep token)
-fn selection_contents_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: &mut Option<(usize, usize, usize)>, scope: Option<ScopeId<'s>>) -> Result<Vec<Vec<RuleToken<'s>>>, RuleStructureError<'s>> {
+/// (options are seperated by the `ArgSep` token)
+fn selection_contents_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: &mut Option<(usize, usize, usize)>, scope: Option<&ScopeId<'s>>) -> Result<Vec<Vec<RuleToken<'s>>>, RuleStructureError<'s>> {
     let mut options = Vec::new();
     // scope_stack tracks which scope the function is analyzing to determine when to seperate options and return
     let mut scope_stack = Vec::new();
@@ -218,7 +218,7 @@ fn selection_contents_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &
                             let mut items = Vec::new();
 
                             for item in options {
-                                items.push(ir_tokens_to_rule_tokens(&mut item.into_iter(), default_scope_ids, scope.clone(), None)?)
+                                items.push(ir_tokens_to_rule_tokens(&mut item.into_iter(), default_scope_ids, scope, None)?);
                             }
 
                             return Ok(items);
@@ -282,7 +282,7 @@ fn any_id<'s>(default_scope_ids: &mut Option<(usize, usize, usize)>, parent: Opt
 
 /// An error that occurs when converting ir tokens to rule tokens
 /// 
-/// Some of these errors are duplicates of TokenStructureErrors
+/// Some of these errors are duplicates of `TokenStructureError`s
 /// that should be caught when the ir is checked
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -316,6 +316,6 @@ impl std::fmt::Display for RuleStructureError<'_> {
             Self::AndDoesNotFollowCond => format!("Found '{AND_CHAR}' outside of a condition"),
         };
 
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }

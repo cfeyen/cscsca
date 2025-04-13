@@ -93,7 +93,7 @@ fn match_option_to_phone_and_check_mapping() {
 
     _ = tokens_match_phones_from_left(&scope, &[Phone::Symbol("a")], &mut choices);
 
-    assert_eq!(Some(&true), choices.optional_choices.get(&id))
+    assert_eq!(Some(&true), choices.optional.get(&id))
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn fail_match_same_labeled_optional_scopes_where_the_first_could_match_but_the_s
 
     assert_eq!(Ok(false), tokens_match_phones_from_left(&tokens, &[Phone::Symbol("a"),Phone::Symbol("b"), Phone::Symbol("d")], &mut choices));
 
-    assert_eq!(Some(&false), choices.optional_choices.get(&id))
+    assert_eq!(Some(&false), choices.optional.get(&id))
 }
 
 #[test]
@@ -329,7 +329,7 @@ fn match_different_labeled_selection() {
 
     assert_eq!(Ok(true), tokens_match_phones_from_left(&tokens, &[Phone::Symbol("a"), Phone::Symbol("e")], &mut choices));
 
-    assert_eq!(choices.selection_choices.get(&ScopeId::Name("label_1")), Some(&0));
+    assert_eq!(choices.selection.get(&ScopeId::Name("label_1")), Some(&0));
 
-    assert_eq!(choices.selection_choices.get(&ScopeId::Name("label_2")), Some(&1));
+    assert_eq!(choices.selection.get(&ScopeId::Name("label_2")), Some(&1));
 }
