@@ -48,7 +48,7 @@ fn main() {
                 println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
 
                 let output = cscsca::apply(text, code);
-                println!("{}", output.0);
+                println!("{}", output);
             },
             // prints the result of appling code from one file to text in another
             (APPLY_TO_FILE_CMD, 2) => {
@@ -74,7 +74,7 @@ fn main() {
                 println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
 
                 let output = cscsca::apply(text, code);
-                println!("{}", output.0);
+                println!("{}", output);
             },
             // stores the result of appling code from one file to text in another in a third
             // (either by overwriting its contents or creating a new one)
@@ -102,9 +102,9 @@ fn main() {
                 println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
 
                 let output = cscsca::apply(text, code);
-                println!("{}", output.0);
+                println!("{}", output);
 
-                match fs::write(dest, output.0) {
+                match fs::write(dest, output) {
                     Ok(()) => println!("Done"),
                     Err(_) => println!("Could not create file '{dest}'")
                 }

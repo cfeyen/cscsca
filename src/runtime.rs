@@ -1,23 +1,28 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
-use crate::{applier::apply, ansi::{RED, BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, commands::{PrintLog, Command}, tokens::{token_checker::check_token_line, tokenize_line_or_create_command, compile_time_data::CompileTimeData, IrLine, GET_LINE_START}};
+use crate::{applier::apply, ansi::{BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, tokens::{token_checker::check_token_line, tokenize_line_or_create_command, compile_time_data::CompileTimeData, IrLine, GET_LINE_START}, ScaError};
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 
-/// A callback function for logging
-/// 
-/// Should send the printed message to an io device
-/// unless all outputs are to be retrieved from the print log after execution
-pub type PutFn = Box<fn(&str) -> Result<(), Box<dyn Error>>>;
+/// Non rule commands executed by the runtime
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Command {
+    Print,
+    Get,
+    GetAsCode
+}
+
+/// A callback function for logging output
+pub type PutFn = dyn Fn(&str) -> Result<(), Box<dyn Error>>;
 
 /// A callback function for fetching input
-pub type GetFn = Box<fn(&str) -> Result<String, Box<dyn Error>>>;
+pub type GetFn = dyn Fn(&str) -> Result<String, Box<dyn Error>>;
 
 /// Returns the default function for the runtime's io_put_fn callback
 /// 
 /// Prints to stdout
 #[inline]
-pub fn default_io_put_fn() -> PutFn {
+pub fn default_io_put_fn() -> Box<PutFn> {
     Box::new(|msg| {
         println!("{msg}");
         Ok(())
@@ -28,14 +33,14 @@ pub fn default_io_put_fn() -> PutFn {
 /// 
 /// Reads from stdin
 #[inline]
-pub fn default_io_get_fn() -> GetFn {
+pub fn default_io_get_fn() -> Box<GetFn> {
     Box::new(|msg| {
         print!("{msg} ");
         let mut input = String::new();
         _ = stdout().flush();
         stdin().read_line(&mut input)?;
 
-        let input = input.trim_end_matches(&['\r', '\n']).to_string();
+        let input = input.trim_end_matches(['\r', '\n']).to_string();
 
         Ok(input)
     })
@@ -52,9 +57,9 @@ pub struct Runtime {
     ///
     /// Should send the printed message to an io device
     /// unless all outputs are to be retrieved from the print log after execution
-    io_put_fn: PutFn,
+    io_put_fn: Box<PutFn>,
     /// The function called to fetch input
-    io_get_fn: GetFn,
+    io_get_fn: Box<GetFn>,
     /// The maximum amount of time allotted to apply changes to a line
     max_line_application_time: Duration,
 }
@@ -82,14 +87,14 @@ impl Runtime {
     /// Should send the printed message to an io device
     /// unless all outputs are to be retrieved from the print log after execution
     #[inline]
-    pub fn set_io_put_fn(&mut self, callback: PutFn) -> &mut Self {
+    pub fn set_io_put_fn(&mut self, callback: Box<PutFn>) -> &mut Self {
         self.io_put_fn = callback;
         self
     }
 
     /// Sets the `io_get_fn` callback for the runtime
     #[inline]
-    pub fn set_io_get_fn(&mut self, callback: GetFn) -> &mut Self {
+    pub fn set_io_get_fn(&mut self, callback: Box<GetFn>) -> &mut Self {
         self.io_get_fn = callback;
         self
     }
@@ -110,7 +115,7 @@ impl Runtime {
     /// Applies rules to an input given the context of the runtime,
     /// errors are returned as formated strings
     #[inline]
-    pub fn apply(&self, input: &str, code: &str) -> (Result<String, String>, PrintLog) {
+    pub fn apply(&self, input: &str, code: &str) -> Result<String, ScaError> {
         let phones = build_phone_list(input);
 
         self.apply_to_phones(phones, code)
@@ -119,15 +124,13 @@ impl Runtime {
     /// Applies rules to an input given the context of the runtime,
     /// errors are returned as formated strings
     #[inline]
-    pub fn apply_to_phones<'s>(&self, phones: Vec<Phone<'s>>, code: &'s str) -> (Result<String, String>, PrintLog) {
-        let mut log = PrintLog::new();
-
-        (self.apply_all_lines(phones, code, &mut log), log)
+    pub fn apply_to_phones<'s>(&self, phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
+        self.apply_all_lines(phones, code)
     }
 
     /// Applies all lines, errors are returned as formated strings
     // ! must take ownership of phones so that the input sources can safely be freed to prevent memory leaks
-    fn apply_all_lines<'s>(&self, mut phones: Vec<Phone<'s>>, code: &'s str, print_log: &mut PrintLog) -> Result<String, String> {
+    fn apply_all_lines<'s>(&self, mut phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
         let lines = code
             .lines()
             .enumerate()
@@ -136,7 +139,7 @@ impl Runtime {
         let mut compile_time_data = CompileTimeData::new();
 
         for (line_num, line) in lines {
-            if let Err(e) = self.apply_line(line, line_num, &mut phones, print_log, &mut compile_time_data) {
+            if let Err(e) = self.apply_line(line, line_num, &mut phones, &mut compile_time_data) {
                 drop(phones);
                 // Since the output is a string, which owns all of its values,
                 // and phones is dropped,
@@ -158,27 +161,27 @@ impl Runtime {
     }
 
     /// Applies a line within the runtime, errers are returned as formated strings
-    fn apply_line<'s>(&self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, print_log: &mut PrintLog, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), String> {
+    fn apply_line<'s>(&self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), ScaError> {
         // converts the line to ir
         let ir_line = tokenize_line_or_create_command(line, compile_time_data)
-            .map_err(|e| format_error(&e, line, line_num))?;
+            .map_err(|e| ScaError::from_error(&e, line, line_num))?;
 
         match ir_line {
             IrLine::Cmd(cmd, args) => {
-                self.handle_command(cmd, args, phones, print_log, compile_time_data)
-                    .map_err(|e| format_error(&*e, line, line_num))?
+                self.handle_command(cmd, args, phones, compile_time_data)
+                    .map_err(|e| ScaError::from_error(&*e, line, line_num))?;
             },
             // checks ir, builds a rule, and applies it
             IrLine::Ir(_) => {
                 check_token_line(&ir_line)
-                    .map_err(|e| format_error(&e, line, line_num))?;
+                    .map_err(|e| ScaError::from_error(&e, line, line_num))?;
 
                 let rule_line = build_rule(&ir_line)
-                    .map_err(|e| format_error(&e, line, line_num))?;
+                    .map_err(|e| ScaError::from_error(&e, line, line_num))?;
 
                 if let RuleLine::Rule(rule) = rule_line {
                     apply(&rule, phones, &self.max_line_application_time)
-                        .map_err(|e| format_error(&e, line, line_num))?;
+                        .map_err(|e| ScaError::from_error(&e, line, line_num))?;
                 }
             },
             // ignores empty lines
@@ -189,13 +192,12 @@ impl Runtime {
     }
 
     /// Handles commands to the runtime
-    fn handle_command<'s>(&self, cmd: Command, args: &'s str, phones: &[Phone], print_log: &mut PrintLog, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), Box<dyn Error + 's>> {
+    fn handle_command<'s>(&self, cmd: Command, args: &'s str, phones: &[Phone], compile_time_data: &mut CompileTimeData<'s>) -> Result<(), Box<dyn Error + 's>> {
         match cmd {
             // formats the message, calls the io_put_fn callback on it, then logs it
             Command::Print => {
                 let msg = format!("{args} '{BLUE}{}{RESET}'", phone_list_to_string(phones));
                 (self.io_put_fn)(&msg)?;
-                print_log.log(msg);
             },
             // formats the message, calls the io_put_fn callback on it, then logs it
             Command::GetAsCode => {
@@ -232,9 +234,4 @@ impl Display for GetFormatError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Invalid get format, should be {GET_LINE_START} 'var_name' 'msg'")
     }
-}
-
-/// Formats an error with its enviroment
-fn format_error(e: &dyn std::error::Error, line: &str, line_num: usize) -> String {
-    format!("{RED}Error:{RESET} {e}\nLine {line_num}: {line}")
 }

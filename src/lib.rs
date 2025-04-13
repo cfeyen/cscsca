@@ -1,12 +1,12 @@
+use std::error::Error;
+
 use runtime::Runtime;
-use commands::PrintLog;
 
 pub(crate) mod tokens;
 pub mod phones;
 pub(crate) mod meta_tokens;
 pub(crate) mod rules;
 pub(crate) mod applier;
-pub(crate) mod commands;
 pub mod runtime;
 
 #[cfg(test)]
@@ -18,7 +18,7 @@ pub const BOUND_CHAR: char = '#';
 /// 
 /// Returns a string of either the final text or a formatted error and the print log
 #[inline]
-pub fn apply(input: &str, code: &str) -> (String, PrintLog) {
+pub fn apply(input: &str, code: &str) -> String {
     apply_with_runtime(input, code, &Runtime::default())
 }
 
@@ -26,25 +26,43 @@ pub fn apply(input: &str, code: &str) -> (String, PrintLog) {
 /// 
 /// Returns a result of either the final text or a formatted error
 #[inline]
-pub fn apply_fallible(input: &str, code: &str) -> (Result<String, String>, PrintLog) {
+pub fn apply_fallible(input: &str, code: &str) -> Result<String, ScaError> {
     apply_fallible_with_runtime(input, code, &Runtime::default())
 }
 
 /// Applies sca source code to an input string
 /// 
 /// Returns a string of either the final text or a formatted error and the print log
-pub fn apply_with_runtime(input: &str, code: &str, runtime: &Runtime) -> (String, PrintLog) {
-    let (result, log) = apply_fallible_with_runtime(input, code, runtime);
-
-    (result.unwrap_or_else(|e| e), log)
+#[inline]
+pub fn apply_with_runtime(input: &str, code: &str, runtime: &Runtime) -> String {
+    apply_fallible_with_runtime(input, code, runtime)
+        .unwrap_or_else(|e| e.to_string())
 }
 
 /// Applies sca source code to an input string, logging prints
 /// 
 /// Returns a result of either the final text or a formatted error
 #[inline]
-pub fn apply_fallible_with_runtime(input: &str, code: &str, runtime: &Runtime) -> (Result<String, String>, PrintLog) {
+pub fn apply_fallible_with_runtime(input: &str, code: &str, runtime: &Runtime) -> Result<String, ScaError> {
     runtime.apply(input, code)
+}
+
+#[cfg_attr(test, derive(PartialEq))]
+#[derive(Debug)]
+pub struct ScaError(String);
+
+impl Error for ScaError {}
+
+impl ScaError {
+    fn from_error<E: Error + ?Sized>(e: &E, line: &str, line_num: usize) -> Self {
+        Self(format!("{}Error:{} {e}\nLine {line_num}: {line}", ansi::RED, ansi::RESET))
+    }
+}
+
+impl std::fmt::Display for ScaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 /// ANSI color codes
