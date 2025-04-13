@@ -16,7 +16,7 @@ use super::{ir::IrToken, tokenize_line, IrError};
 /// a memory leak will occur
 #[derive(Debug, Default, Clone, PartialEq)]
 pub struct CompileTimeData<'s> {
-    pub definitions: HashMap<&'s str, Vec<IrToken<'s>>>,
+    definitions: HashMap<&'s str, Vec<IrToken<'s>>>,
     variables: HashMap<&'s str, Vec<IrToken<'s>>>,
     sources: Vec<*const str>,
 }
@@ -25,6 +25,17 @@ impl<'s> CompileTimeData<'s> {
     #[inline]
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Fetches the tokens associated with a definition's name
+    /// 
+    /// Returns an error if there is no definition of the given name
+    pub fn get_definition<'a>(&self, name: &'a str) -> Result<&Vec<IrToken<'s>>, IrError<'a>> {
+        self.definitions.get(name).ok_or(IrError::UndefinedDefinition(name))
+    }
+
+    pub fn set_definition(&mut self, name: &'s str, content: Vec<IrToken<'s>>) {
+        self.definitions.insert(name, content);
     }
 
     /// Fetches the tokens associated with a variable's name
