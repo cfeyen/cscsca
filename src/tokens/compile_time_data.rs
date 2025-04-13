@@ -34,6 +34,7 @@ impl<'s> CompileTimeData<'s> {
         self.definitions.get(name).ok_or(IrError::UndefinedDefinition(name))
     }
 
+    /// Sets a definition
     pub fn set_definition(&mut self, name: &'s str, content: Vec<IrToken<'s>>) {
         self.definitions.insert(name, content);
     }
