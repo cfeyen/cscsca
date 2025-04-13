@@ -109,22 +109,23 @@ impl Runtime {
     /// errors are returned as formated strings
     #[inline]
     pub fn apply(&self, input: &str, code: &str) -> (Result<String, String>, PrintLog) {
-        let mut phones = build_phone_list(input);
+        let phones = build_phone_list(input);
 
-        self.apply_to_phones(&mut phones, code)
+        self.apply_to_phones(phones, code)
     }
     
     /// Applies rules to an input given the context of the runtime,
     /// errors are returned as formated strings
     #[inline]
-    pub fn apply_to_phones<'s>(&self, phones: &mut Vec<Phone<'s>>, code: &'s str) -> (Result<String, String>, PrintLog) {
+    pub fn apply_to_phones<'s>(&self, phones: Vec<Phone<'s>>, code: &'s str) -> (Result<String, String>, PrintLog) {
         let mut log = PrintLog::new();
 
         (self.apply_all_lines(phones, code, &mut log), log)
     }
 
     /// Applies all lines, errors are returned as formated strings
-    fn apply_all_lines<'s>(&self, phones: &mut Vec<Phone<'s>>, code: &'s str, print_log: &mut PrintLog) -> Result<String, String> {
+    // ! must take ownership of phones so that the input sources can safely be freed to prevent memory leaks
+    fn apply_all_lines<'s>(&self, mut phones: Vec<Phone<'s>>, code: &'s str, print_log: &mut PrintLog) -> Result<String, String> {
         let lines = code
             .lines()
             .enumerate()
@@ -133,15 +134,22 @@ impl Runtime {
         let mut compile_time_data = CompileTimeData::new();
 
         for (line_num, line) in lines {
-            if let Err(e) = self.apply_line(line, line_num, phones, print_log, &mut compile_time_data) {
+            if let Err(e) = self.apply_line(line, line_num, &mut phones, print_log, &mut compile_time_data) {
+                drop(phones);
+                // Since the output is a string, which owns all of its values,
+                // and phones is dropped,
+                // no references remain to the souces buffer in `compile_time_data`
                 unsafe { compile_time_data.free_sources() };
                 return Err(e);
             }
         }
 
-        let output = phone_list_to_string(phones);
+        let output = phone_list_to_string(&phones);
 
-        // as the output is a string, which owns all of its values
+        drop(phones);
+        // Since the output is a string, which owns all of its values,
+        // and phones is dropped,
+        // no references remain to the souces buffer in `compile_time_data`
         unsafe { compile_time_data.free_sources() };
 
         Ok(output)
