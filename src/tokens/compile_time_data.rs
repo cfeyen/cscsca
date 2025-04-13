@@ -56,7 +56,7 @@ impl<'s> CompileTimeData<'s> {
     /// ## Warning
     /// If free_sources is never called on this struct, the input will be leaked forever
     pub fn set_variable(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
-        let source = self.add_source(source.trim().to_string());
+        let source = self.add_source(source);
 
         self.variables.insert(name, vec![IrToken::Phone(Phone::new(source))]);
         Ok(())
@@ -66,7 +66,6 @@ impl<'s> CompileTimeData<'s> {
     /// 
     /// ## Warning
     /// If free_sources is never called on this struct, the source will be leaked forever
-    #[inline]
     fn add_source<'a> (&mut self, mut source: String) -> &'a str {
         // leaking and moving the source to the sources buffer allows variable to be redefined
         // and prevents self reference, however, it may also cause memory leaks

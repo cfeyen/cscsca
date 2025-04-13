@@ -35,6 +35,8 @@ pub fn default_io_get_fn() -> GetFn {
         _ = stdout().flush();
         stdin().read_line(&mut input)?;
 
+        let input = input.trim_end_matches(&['\r', '\n']).to_string();
+
         Ok(input)
     })
 }
