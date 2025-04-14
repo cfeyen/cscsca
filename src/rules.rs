@@ -1,6 +1,4 @@
-// todo &mut Option<...> -> Option<&mut ...>
-
-use std::sync::Arc;
+use std::{cell::RefCell, sync::Arc};
 
 use conditions::{Cond, CondType};
 use sound_change_rule::{LabelType, RuleToken, ScopeId, SoundChangeRule};
@@ -20,6 +18,14 @@ pub enum RuleLine<'s> {
     Rule(SoundChangeRule<'s>),
     Cmd,
     Empty,
+}
+
+/// Default ids for unlabled scopes
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+struct DefaultScopeIds {
+    optional: usize,
+    selection: usize,
+    any: usize,
 }
 
 /// Builds a sound change rule out of a line of ir tokens
@@ -87,7 +93,7 @@ pub fn build_rule<'a, 's: 'a>(line: &'a IrLine<'s>) -> Result<RuleLine<'s>, Rule
 fn ir_to_input_output<'s>(ir: &[&IrToken<'s>]) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
     ir_tokens_to_rule_tokens(
         &mut ir.iter().copied(), 
-        &mut Some((0, 0, 0)), 
+        Some(&RefCell::default()),
         None, 
         None
     )
@@ -110,13 +116,13 @@ fn ir_to_cond<'s:>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'
 
         Ok(Cond::new(
             focus,
-            ir_tokens_to_rule_tokens(before, &mut None, None, None)?,
-            ir_tokens_to_rule_tokens(cond_ir, &mut None, None, None)?,
+            ir_tokens_to_rule_tokens(before, None, None, None)?,
+            ir_tokens_to_rule_tokens(cond_ir, None, None, None)?,
         ))
 }
 
 /// Converts ir tokens to rule tokens
-fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: &mut Option<(usize, usize, usize)>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
+fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
     let mut rule_tokens = Vec::new();
 
     while let Some(ir_token) = ir.next() {
@@ -187,7 +193,7 @@ fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToke
 /// Converts the ir tokens in a selection scope to a list of rule token lists
 /// where each is an option to be selected by the scope: 
 /// (options are seperated by the `ArgSep` token)
-fn selection_contents_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: &mut Option<(usize, usize, usize)>, scope: Option<&ScopeId<'s>>) -> Result<Vec<Vec<RuleToken<'s>>>, RuleStructureError<'s>> {
+fn selection_contents_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, scope: Option<&ScopeId<'s>>) -> Result<Vec<Vec<RuleToken<'s>>>, RuleStructureError<'s>> {
     let mut options = Vec::new();
     // scope_stack tracks which scope the function is analyzing to determine when to seperate options and return
     let mut scope_stack = Vec::new();
@@ -246,10 +252,11 @@ fn selection_contents_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &
 }
 
 /// Creates a default id for an optional scope and mutates the next default
-fn optional_id<'s>(default_scope_ids: &mut Option<(usize, usize, usize)>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
-    if let Some((optional, _selection, _any)) = default_scope_ids {
-        let id_num = *optional;
-        *optional += 1;
+fn optional_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
+    if let Some(ids) = default_scope_ids {
+        let mut ids = ids.borrow_mut();
+        let id_num = ids.optional;
+        ids.optional += 1;
         Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Scope(ScopeType::Optional) })
     } else {
         None
@@ -257,10 +264,11 @@ fn optional_id<'s>(default_scope_ids: &mut Option<(usize, usize, usize)>, parent
 }
 
 /// Creates a default id for an selection scope and mutates the next default
-fn selection_id<'s>(default_scope_ids: &mut Option<(usize, usize, usize)>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
-    if let Some((_optional, selection, _any)) = default_scope_ids {
-        let id_num = *selection;
-        *selection += 1;
+fn selection_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
+    if let Some(ids) = default_scope_ids {
+        let mut ids = ids.borrow_mut();
+        let id_num = ids.selection;
+        ids.selection += 1;
         Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Scope(ScopeType::Selection) })
     } else {
         None
@@ -268,10 +276,11 @@ fn selection_id<'s>(default_scope_ids: &mut Option<(usize, usize, usize)>, paren
 }
 
 /// Creates a default id for an selection scope and mutates the next default
-fn any_id<'s>(default_scope_ids: &mut Option<(usize, usize, usize)>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
-    if let Some((_optional, _selection, any)) = default_scope_ids {
-        let id_num = *any;
-        *any += 1;
+fn any_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
+    if let Some(ids) = default_scope_ids {
+        let mut ids = ids.borrow_mut();
+        let id_num = ids.any;
+        ids.any += 1;
         Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Any })
     } else {
         None
