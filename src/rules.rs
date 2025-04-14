@@ -263,7 +263,7 @@ fn optional_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent:
     }
 }
 
-/// Creates a default id for an selection scope and mutates the next default
+/// Creates a default id for a selection scope and mutates the next default
 fn selection_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
     if let Some(ids) = default_scope_ids {
         let mut ids = ids.borrow_mut();
@@ -275,7 +275,7 @@ fn selection_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent
     }
 }
 
-/// Creates a default id for an selection scope and mutates the next default
+/// Creates a default id for an an scope and mutates the next default
 fn any_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
     if let Some(ids) = default_scope_ids {
         let mut ids = ids.borrow_mut();
