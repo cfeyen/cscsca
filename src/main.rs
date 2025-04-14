@@ -22,7 +22,6 @@ const FILE_EXTENTION: &str = ".sca";
 /// - new 'name' - creates a template file with the name 'name'
 /// - chars 'text'+ - prints each character in each 'text'+
 /// - sca 'path' 'text'+ - applies the rules in the file at 'path' to 'text'+
-/// - sca_lim 'time' 'path' 'text'+ - applies the rules in the file at 'path' to 'text'+ for maximally 'time' seconds (only available with async_apply)
 /// - apply 'src' 'path' - applies the code at 'src' to the text in 'path' and prints the result
 /// - apply 'src' 'path' 'dest' - applies the code at 'src' to the text in 'path' and stores the result in 'dest'
 fn main() {
