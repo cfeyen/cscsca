@@ -2,6 +2,9 @@
 name = "cscsca"
 version = "0.4.4"
 edition = "2024"
+description = "Charles' Super Cool Sound Change Applier - A tool for simulating phonemic evolution"
+readme = "README.md"
+authors = ["Charles Feyen"]
 
 [features]
 no_ansi = []

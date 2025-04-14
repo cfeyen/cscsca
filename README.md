@@ -1,0 +1,179 @@
+# CSCSCA - Charles' Super Cool Sound Change Applier
+
+A sound change applier based on linguistic sound change notation.
+
+## Writing Sound Change Rules with CSCSCA
+### Phones
+A phone is a group of non-special characters seperated by spaces
+
+Examples: `a` `ts` `á` `litteraly_a_phone`
+
+notes: the phone `#` is a word boundary
+
+### Shifts
+A shift tells the SCA how changes are to applied and seperates inputs from outputs
+- `>>`: Left to right
+- `<<`: Right to left
+- `>`: Left to right, attempts to reapply the rule to the output of the last successful change
+- `<`: Right to left, attempts to reapply the rule to the output of the last successful change
+
+warning: it is technically possible to create an infinite loop with `>` or `<`. If applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
+
+### Rules
+A sound change
+
+Structured *input* *shift* *output* where *input* and *output* are phones (*input* must be at least one phone) and *shift* is a shift token
+
+Examples:
+```cscsca
+## x becomes h
+x >> h
+
+## a t j cluster becomes c
+t j >> c
+
+## h is lost
+h >>
+```
+
+note: a line starting with `##` is a comment
+
+### Scopes
+Scopes are a way to ...
+There are two types of scopes.
+- optional `(`...`)`: a phone or group of phones that is optional
+- selection `{`...`,`...`}`: a list of phones or group of phones that selects on phone or group of phones in that list
+
+Examples:
+    ## l and l j become j
+    l (j) >> j
+
+    ## f and x merge to h
+    {f, x} >> h
+
+    ## p and b become f and v respectively
+    {p, b} >> {f, v}
+
+### Labels
+As seen in the example above corresponding scopes in the input and output try to agree in what they choose however there are times when we want this behavior to be expanded.
+
+To force scopes to agree we can use labels. A label has a name that starts with `$` and proceeds a scope.
+
+Examples:
+```cscsca
+## i and u merge with proceeding h or x into j i and w u
+{h, x} $label{i, u} >> $label{j i, w u}
+```
+
+### Conditions and Anti-Conditions
+To apply rules conditionally add a condition after it
+
+A condition starts with a `/` and comes in two flavors: pattern and equality
+
+- Pattern: *before* `_` *after*, checks if the rule's input is proceeded by *before* and followed by *after*
+- Equality: *left* `=` *right*, checks if *left* is the same as *right* (most useful with variable)
+
+A rule executes if any condition matches, to make a rule execute only if two conditions apply replace the start of the second with `&`
+
+Anti-Conditions  (conditions that stop rules from applying) are the same but start with `//`
+
+Examples:
+```cscsca
+## h is lost word-initially
+h >> / # _
+
+## h is lost when not word-initial
+h >> // # _ 
+
+## stops are voiced intervocalically or after nasals
+{p, t, k} >> {b, d, g} / {i, e, a, u, o} _ {i, e, a, u, o} / {m, n} _
+
+## stops are voiced intervocalically but using and this time
+{p, t, k} >> {b, d, g} / {i, e, a, u, o} _ & _ {i, e, a, u, o}
+```
+
+### Definitions
+Oftentimes we want to group phones by attributes, while CSCSCA does not (yet) have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code.
+
+To define a *Definition* type `DEFINE` at the start of a line, followed by the name, then its contents.
+To access the contents later type the name prefixed with `@`
+
+Examples:
+```cscsca
+DEFINE N {m, n}
+DEFINE Pv- {p, t, k}
+DEFINE Pv+ {b, d, g}
+DEFINE V {i, e, a, u, o}
+
+## stops are voiced intervocalically or after nasals
+## (same as the example above)
+@Pv- >> @Pv+ / @V _ @V / @N _
+```
+
+### Special Characters
+- `*`: represents any non-boundary phone, may be proceeded by a label to agree in what phone is represented
+- `..`: a gap of zero or more non-boundary phones (notes: must have a space on both sides, only allowed in conditions), may be proceeded by a label to limit gap length to less than or equal to the length of the first gap with the same label
+- `#`: a phone representing a word boundary
+- `\`: escapes the effects of the following character
+
+### IO and Variables
+To print the current phonetic form, type `PRINT` at the start of a line followed by the message you would like to print with it
+
+To get input at runtime, type `GET` *variable_name* *message* where *message* is what you want to display to prompt input. To access the input later prefix *variable_name* with `%`
+
+note: here the content of *variable_name* will be a single phone, spaces incuded, if you wish to check equality with something that has spaces, use `\` to escape them in your code
+
+You may replace `GET` with `GET_AS_CODE` to interpret the variable contents as code
+
+Examples:
+
+```cscsca
+GET dialect enter dialect:
+
+## h is lost in the northern dialect
+h >> / %dialect = northern
+
+PRINT h-loss
+```
+
+
+## Command Line Interface
+All CLI commands are proceeded by the path to CSCSCA's executable binary.
+Bellow this is represended with `cscsca`
+
+### cscsca help
+Prints the help file
+
+### cscsca demo
+Prints the demo file
+
+### cscsca new *path*
+Creates a basic `.sca` file at *path*
+
+### cscsca sca *file* *text*
+Applies the rules in *file* to *text* and prints the result
+
+### cscsca apply *rule_file* *src_file*
+Applies the rules in *rule_file* to the text in *src_file* and prints the result
+
+### cscsca apply *rule_file* *src_file* *dst_file*
+Applies the rules in *rule_file* to the text in *src_file* and writes the result to *dst_file*
+
+### cscsca chars *text*
+`á` is not `á`. The first (`á`) is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
+
+
+## Library API
+### Crate Features
+- `no_ansi`: removes ANSI color codes from IO. This is ideal for printing in enviroments where ANSI is not rendered as color/formatting
+
+### Fallible and Infallible Application
+There are both fallible and infallable variants of the crates API functions. The fallible variants return a `Result<String, ScaError>` and the infallible variants format any errors into a `String` and does not distinguish between successful and failed application
+
+### Runtimes
+Runtimes allow you to control some of CSCSCA's runtime behavior.
+- User Input: Allows you to control where input is fetched from
+- Output: Allows you to control how printing works
+- Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time applying a a rule can take. This limit may be set via runtimes
+
+The default runtime uses standard IO, removes all ending newlines from input, and uses a 100ms time limit
