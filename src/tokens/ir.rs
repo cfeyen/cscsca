@@ -9,7 +9,7 @@ pub const GAP_STR: &str = "..";
 pub const AND_CHAR: char = '&';
 
 /// Tokens that make up the intermediate representation of sound shifts
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IrToken<'s> {
     /// A phone literal
     Phone(Phone<'s>),
@@ -52,7 +52,7 @@ impl Display for IrToken<'_> {
 /// Breaks in phone lists
 /// 
 /// Seperate input, output, conditions and anti-conditions
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Break {
     /// Seperates input and output
     /// 

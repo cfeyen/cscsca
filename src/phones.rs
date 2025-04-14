@@ -6,7 +6,7 @@ pub const BOUND_STR: &str = unsafe { std::str::from_utf8_unchecked(&[BOUND_CHAR 
 /// A representation of a phoneme or word boundary
 /// 
 /// Stores the phoneme's symbol as a reference to the origional text or rules
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Phone<'s> {
     /// A symbol representing a phoneme
     Symbol(&'s str),

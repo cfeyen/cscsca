@@ -10,7 +10,7 @@ pub const EQUALITY_CHAR: char = '=';
 #[cfg(test)]
 mod tests;
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CondType {
     /// The input in a condition or anti-condition
     #[default]
@@ -30,7 +30,7 @@ impl Display for CondType {
 
 /// A pair of token lists can be compared based on the kind of the condition
 /// either to the enviroment around a phone or to each other
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Cond<'s> {
     kind: CondType,
     before: Vec<RuleToken<'s>>,

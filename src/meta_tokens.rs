@@ -7,7 +7,7 @@ pub const OPTIONAL_END_CHAR: char = ')';
 pub const SELECTION_START_CHAR: char = '{';
 pub const SELECTION_END_CHAR: char = '}';
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Shift {
     pub dir: Direction,
     pub kind: ShiftType,
@@ -25,7 +25,7 @@ impl Display for Shift {
 }
 
 /// The direction a sound change applies to the word in
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
     /// Left-to-Right
     Ltr,
@@ -56,6 +56,11 @@ impl Direction {
             Self::Rtl => list.len().wrapping_sub(1),
         }
     }
+
+    /// Returns whether or not the direction is left-to-right
+    pub fn ltr(self) -> bool {
+        self == Self::Ltr
+    }
 }
 
 impl Display for Direction {
@@ -70,7 +75,7 @@ impl Display for Direction {
 }
 
 /// The type of shift
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ShiftType {
     /// The next phones analyzed are before/after the newly inserted phones
     Move,

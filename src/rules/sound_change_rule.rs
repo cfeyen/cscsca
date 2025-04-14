@@ -6,7 +6,7 @@ use crate::{meta_tokens::{ScopeType, Shift}, phones::Phone, tokens::ir::{Break, 
 use super::conditions::Cond;
 
 /// A collection of data that define a sound change rule
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SoundChangeRule<'s> {
     pub kind: Shift,
     /// The tokens that represent an input
@@ -47,7 +47,7 @@ impl Display for SoundChangeRule<'_> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RuleToken<'s> {
     /// A phone literal
     Phone(Phone<'s>),

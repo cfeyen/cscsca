@@ -131,3 +131,9 @@ fn matches_with_selection_that_can_insert_first_but_should_insert_second() {
         apply("adeg", "a >> $env{b, c} / _ $env{d e, d} $env{f, e g}")
     );
 }
+
+#[test]
+fn multi_phone_shift() {
+    assert_eq!("efg", apply("abc", "a b c >> e f g"));
+    assert_eq!("efg", apply("abc", "a b c << e f g"));
+}

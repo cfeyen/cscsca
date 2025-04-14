@@ -67,7 +67,7 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
 
     let Shift { dir, kind: _} = *kind;
 
-    let matches = if dir == Direction::Ltr {
+    let matches = if dir.ltr() {
         tokens_match_phones_from_left(input,&phones[phone_index..], &mut choices)?
     } else{
         tokens_match_phones_from_right(input, &phones[0..=phone_index], &mut choices)?
@@ -95,7 +95,7 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
                 choices = initial_choices;
             }
 
-            return replace_input(phones, phone_index, input_len, output, &choices);
+            return replace_input(phones, phone_index, input_len, output, &choices, kind.dir);
         }
 
         // resets choices between conditions
@@ -108,13 +108,19 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
 /// Replaces the slice `phones[index..input_len]` with the output as phones
 /// 
 /// Return: (the length of the output, the length of what it replaced)
-fn replace_input<'a, 's: 'a>(phones: &mut Vec<Phone<'s>>, index: usize, input_len: usize, output: &'a [RuleToken<'s>], choices: &Choices<'a, 's>) -> Result<Option<(usize, usize)>, ApplicationError<'a, 's>> {
+fn replace_input<'a, 's: 'a>(phones: &mut Vec<Phone<'s>>, index: usize, input_len: usize, output: &'a [RuleToken<'s>], choices: &Choices<'a, 's>, dir: Direction) -> Result<Option<(usize, usize)>, ApplicationError<'a, 's>> {
     let mut shifted_phones = Vec::new();
 
     let phone_iter = &mut phones.iter();
 
     // adds the proceeding phones to the new phones
-    for &phone in phone_iter.take(index) {
+    let input_start = if dir.ltr() {
+        index
+    } else {
+        index + 1 - input_len
+    };
+
+    for &phone in phone_iter.take(input_start) {
         shifted_phones.push(phone);
     }
 
