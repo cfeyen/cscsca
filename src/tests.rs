@@ -136,4 +136,10 @@ fn matches_with_selection_that_can_insert_first_but_should_insert_second() {
 fn multi_phone_shift() {
     assert_eq!("efg", apply("abc", "a b c >> e f g"));
     assert_eq!("efg", apply("abc", "a b c << e f g"));
+
+    assert_eq!("zefg", apply("zabc", "a b c >> e f g / z _"));
+    assert_eq!("zefg", apply("zabc", "a b c << e f g / z _"));
+    
+    assert_eq!("efgz", apply("abcz", "a b c >> e f g / _ z"));
+    assert_eq!("efgz", apply("abcz", "a b c << e f g / _ z"));
 }
