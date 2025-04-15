@@ -39,8 +39,8 @@ h >>
 note: a line starting with `##` is a comment
 
 ### Scopes
-Scopes are a way to ...
-There are two types of scopes.
+Scopes are a way to dynamically determine which phone, group of phones, or lack there of exists in a rule.
+There are two types of scopes
 - optional `(`...`)`: a phone or group of phones that is optional
 - selection `{`...`,`...`}`: a list of phones or group of phones that selects on phone or group of phones in that list
 
@@ -55,9 +55,9 @@ Examples:
     {p, b} >> {f, v}
 
 ### Labels
-As seen in the example above corresponding scopes in the input and output try to agree in what they choose however there are times when we want this behavior to be expanded.
+As seen in the example above corresponding scopes in the input and output try to agree in what they choose however there are times when we want this behavior to be expanded
 
-To force scopes to agree we can use labels. A label has a name that starts with `$` and proceeds a scope.
+To force scopes to agree in what they choose, we can use labels. A label has a name that starts with `$` and proceeds a scope
 
 Examples:
 ```cscsca
@@ -93,7 +93,7 @@ h >> // # _
 ```
 
 ### Definitions
-Oftentimes we want to group phones by attributes, while CSCSCA does not (yet) have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code.
+Oftentimes we want to group phones by attributes, while CSCSCA does not have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code
 
 To define a *Definition* type `DEFINE` at the start of a line, followed by the name, then its contents.
 To access the contents later type the name prefixed with `@`
@@ -171,7 +171,7 @@ Applies the rules in *rule_file* to the text in *src_file* and writes the result
 There are both fallible and infallable variants of the crates API functions. The fallible variants return a `Result<String, ScaError>` and the infallible variants format any errors into a `String` and does not distinguish between successful and failed application
 
 ### Runtimes
-Runtimes allow you to control some of CSCSCA's runtime behavior.
+Runtimes allow you to control some of CSCSCA's runtime behavior
 - User Input: Allows you to control where input is fetched from
 - Output: Allows you to control how printing works
 - Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time applying a a rule can take. This limit may be set via runtimes
