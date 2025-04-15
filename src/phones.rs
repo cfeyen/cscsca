@@ -1,4 +1,4 @@
-use crate::{tokens::ESCAPE_CHAR, BOUND_CHAR};
+use crate::{ir::ESCAPE_CHAR, BOUND_CHAR};
 
 /// `BOUND_CHAR` as a static str
 pub const BOUND_STR: &str = unsafe { std::str::from_utf8_unchecked(&[BOUND_CHAR as u8]) };

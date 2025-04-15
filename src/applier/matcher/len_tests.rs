@@ -1,4 +1,4 @@
-use crate::rules::sound_change_rule::LabelType;
+use crate::rules::tokens::LabelType;
 
 use super::*;
 

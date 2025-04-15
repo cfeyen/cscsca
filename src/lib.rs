@@ -10,9 +10,9 @@ use std::error::Error;
 
 use runtime::Runtime;
 
-pub(crate) mod tokens;
+pub(crate) mod ir;
 pub mod phones;
-pub(crate) mod meta_tokens;
+pub(crate) mod tokens;
 pub(crate) mod rules;
 pub(crate) mod applier;
 pub mod runtime;

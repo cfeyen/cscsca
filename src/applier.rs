@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError};
 
-use crate::{meta_tokens::{Direction, Shift, ShiftType}, phones::Phone, rules::sound_change_rule::{RuleToken, SoundChangeRule}, tokens::ir::IrToken};
+use crate::{tokens::{Direction, Shift, ShiftType}, phones::Phone, rules::{tokens::RuleToken, sound_change_rule::SoundChangeRule}, ir::tokens::IrToken};
 
 pub(crate) mod matcher;
 

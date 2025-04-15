@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use crate::phones::Phone;
 
-use super::{ir::IrToken, tokenize_line, IrError};
+use super::{tokens::IrToken, tokenize_line, IrError};
 
-/// Data that is created in the tokenization/compilation process
+/// Data that is created in the tokenization process
 /// and lasts longer than the tokenization of a single line
 /// 
 /// Includes:
@@ -15,13 +15,13 @@ use super::{ir::IrToken, tokenize_line, IrError};
 /// If variable io is used and `free_sources` is never called on this struct,
 /// a memory leak will occur
 #[derive(Debug, Default, Clone, PartialEq)]
-pub struct CompileTimeData<'s> {
+pub struct TokenizationData<'s> {
     definitions: HashMap<&'s str, Vec<IrToken<'s>>>,
     variables: HashMap<&'s str, Vec<IrToken<'s>>>,
     sources: Vec<*const str>,
 }
 
-impl<'s> CompileTimeData<'s> {
+impl<'s> TokenizationData<'s> {
     #[inline]
     pub fn new() -> Self {
         Self::default()

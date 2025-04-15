@@ -1,4 +1,6 @@
-use crate::{meta_tokens::{Direction, Shift, ShiftType}, phones::Phone};
+use std::rc::Rc;
+
+use crate::{tokens::{Direction, Shift, ShiftType}, phones::Phone};
 use super::*;
 
 /// Builds a sound change rules out of lines of ir tokens,
@@ -229,11 +231,11 @@ fn nested_scopes() {
                     options: vec![
                         vec![RuleToken::Phone(Phone::Symbol("a"))],
                         vec![RuleToken::OptionalScope {
-                            id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Arc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
+                            id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
                             content: vec![RuleToken::Phone(Phone::Symbol("b"))],
                         }],
                         vec![RuleToken::OptionalScope {
-                            id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Arc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
+                            id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
                             content: vec![RuleToken::Phone(Phone::Symbol("c"))],
                         }],
                         vec![RuleToken::Phone(Phone::Symbol("d"))],
@@ -246,11 +248,11 @@ fn nested_scopes() {
                     options: vec![
                         vec![RuleToken::Phone(Phone::Symbol("e"))],
                         vec![RuleToken::OptionalScope {
-                            id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Arc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
+                            id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
                             content: vec![RuleToken::Phone(Phone::Symbol("f"))],
                         }],
                         vec![RuleToken::OptionalScope {
-                            id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Arc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
+                            id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
                             content: vec![RuleToken::Phone(Phone::Symbol("g"))],
                         }],
                         vec![RuleToken::Phone(Phone::Symbol("h"))],

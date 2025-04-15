@@ -1,4 +1,4 @@
-use crate::{phones::Phone, tokens::token_checker::check_tokens};
+use crate::{phones::Phone, ir::token_checker::check_tokens};
 
 use super::*;
 
@@ -18,10 +18,10 @@ fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
         .map(|(num, line)| (num + 1, line.trim()));
 
     let mut token_lines = Vec::new();
-    let mut compile_time_data = CompileTimeData::new();
+    let mut tokenization_data = TokenizationData::new();
 
     for (line_num, line) in lines {
-        match tokenize_line_or_create_command(line, &mut compile_time_data) {
+        match tokenize_line_or_create_command(line, &mut tokenization_data) {
             Ok(tokens) => token_lines.push(tokens),
             Err(e) => return Err((e, line_num)),
         }

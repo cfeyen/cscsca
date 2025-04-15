@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use crate::{applier::matcher::{tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, meta_tokens::Direction, phones::Phone};
+use crate::{applier::matcher::{tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, tokens::Direction, phones::Phone};
 
-use super::sound_change_rule::RuleToken;
+use super::tokens::RuleToken;
 
 pub const INPUT_PATERN_STR: &str = "_";
 pub const MATCH_CHAR: char = '=';

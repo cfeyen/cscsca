@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{meta_tokens::{ScopeType, Shift}, phones::Phone, rules::conditions::CondType, tokens::prefix::SELECTION_PREFIX};
+use crate::{tokens::{ScopeType, Shift}, phones::Phone, rules::conditions::CondType, ir::prefix::SELECTION_PREFIX};
 
 pub const ANY_CHAR: char = '*';
 pub const ARG_SEP_CHAR: char = ',';

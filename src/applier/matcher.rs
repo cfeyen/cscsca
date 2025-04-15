@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{meta_tokens::Direction, phones::Phone, rules::{conditions::MATCH_CHAR, sound_change_rule::{RuleToken, ScopeId}}, tokens::ir::IrToken};
+use crate::{tokens::Direction, phones::Phone, rules::{conditions::MATCH_CHAR, tokens::{RuleToken, ScopeId}}, ir::tokens::IrToken};
 
 #[cfg(test)]
 mod ltr_tests;

@@ -1,12 +1,14 @@
-use std::{cell::RefCell, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 
 use conditions::{Cond, CondType};
-use sound_change_rule::{LabelType, RuleToken, ScopeId, SoundChangeRule};
+use sound_change_rule::SoundChangeRule;
+use tokens::{LabelType, RuleToken, ScopeId};
 
-use crate::{meta_tokens::ScopeType, tokens::{ir::{Break, IrToken, AND_CHAR}, token_checker::regionize_ir, IrLine}};
+use crate::{tokens::ScopeType, ir::{tokens::{Break, IrToken, AND_CHAR}, token_checker::regionize_ir, IrLine}};
 
 pub mod sound_change_rule;
 pub mod conditions;
+pub mod tokens;
 
 #[cfg(test)]
 mod tests;
@@ -257,7 +259,7 @@ fn optional_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent:
         let mut ids = ids.borrow_mut();
         let id_num = ids.optional;
         ids.optional += 1;
-        Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Scope(ScopeType::Optional) })
+        Some(ScopeId::IOUnlabeled { parent: parent.map(Rc::new), id_num, label_type: LabelType::Scope(ScopeType::Optional) })
     } else {
         None
     }
@@ -269,7 +271,7 @@ fn selection_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent
         let mut ids = ids.borrow_mut();
         let id_num = ids.selection;
         ids.selection += 1;
-        Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Scope(ScopeType::Selection) })
+        Some(ScopeId::IOUnlabeled { parent: parent.map(Rc::new), id_num, label_type: LabelType::Scope(ScopeType::Selection) })
     } else {
         None
     }
@@ -281,7 +283,7 @@ fn any_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Opti
         let mut ids = ids.borrow_mut();
         let id_num = ids.any;
         ids.any += 1;
-        Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Any })
+        Some(ScopeId::IOUnlabeled { parent: parent.map(Rc::new), id_num, label_type: LabelType::Any })
     } else {
         None
     }

@@ -1,5 +1,5 @@
-use crate::{meta_tokens::{ScopeType, Shift}, rules::conditions::CondType, tokens::COMMENT_LINE_START};
-use super::{ir::{Break, IrToken}, IrLine};
+use crate::{tokens::{ScopeType, Shift}, rules::conditions::CondType, ir::COMMENT_LINE_START};
+use super::{tokens::{Break, IrToken}, IrLine};
 
 #[cfg(test)]
 mod tests;

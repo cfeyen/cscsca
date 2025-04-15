@@ -1,4 +1,4 @@
-use crate::{meta_tokens::ScopeType, rules::{conditions::{Cond, CondType}, sound_change_rule::{LabelType, ScopeId}}};
+use crate::{tokens::ScopeType, rules::{conditions::{Cond, CondType}, tokens::{LabelType, ScopeId}}};
 use super::*;
 
 use crate::runtime::DEFAULT_MAX_APPLICATION_TIME;

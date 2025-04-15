@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
-use crate::{applier::apply, ansi::{BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, tokens::{token_checker::check_token_line, tokenize_line_or_create_command, compile_time_data::CompileTimeData, IrLine, GET_LINE_START}, ScaError};
+use crate::{applier::apply, ansi::{BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, ir::{token_checker::check_token_line, tokenize_line_or_create_command, tokenization_data::TokenizationData, IrLine, GET_LINE_START}, ScaError};
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 
@@ -144,15 +144,15 @@ impl Runtime {
             .enumerate()
             .map(|(num, line)| (num + 1, line));
 
-        let mut compile_time_data = CompileTimeData::new();
+        let mut tokenization_data = TokenizationData::new();
 
         for (line_num, line) in lines {
-            if let Err(e) = self.apply_line(line, line_num, &mut phones, &mut compile_time_data) {
+            if let Err(e) = self.apply_line(line, line_num, &mut phones, &mut tokenization_data) {
                 drop(phones);
                 // Safety: Since the output is a ScaError,
                 // which owns all of its values, and phones is dropped,
-                // no references remain to the souces buffer in `compile_time_data`
-                unsafe { compile_time_data.free_sources() };
+                // no references remain to the souces buffer in `tokenization_data`
+                unsafe { tokenization_data.free_sources() };
                 return Err(e);
             }
         }
@@ -162,21 +162,21 @@ impl Runtime {
         drop(phones);
         // Safety: Since the output is a String,
         // which owns all of its values, and phones is dropped,
-        // no references remain to the souces buffer in `compile_time_data`
-        unsafe { compile_time_data.free_sources() };
+        // no references remain to the souces buffer in `tokenization_data`
+        unsafe { tokenization_data.free_sources() };
 
         Ok(output)
     }
 
     /// Applies a line within the runtime, errers are returned as formated strings
-    fn apply_line<'s>(&self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, compile_time_data: &mut CompileTimeData<'s>) -> Result<(), ScaError> {
+    fn apply_line<'s>(&self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, tokenization_data: &mut TokenizationData<'s>) -> Result<(), ScaError> {
         // converts the line to ir
-        let ir_line = tokenize_line_or_create_command(line, compile_time_data)
+        let ir_line = tokenize_line_or_create_command(line, tokenization_data)
             .map_err(|e| ScaError::from_error(&e, line, line_num))?;
 
         match ir_line {
             IrLine::Cmd(cmd, args) => {
-                self.handle_command(cmd, args, phones, compile_time_data)
+                self.handle_command(cmd, args, phones, tokenization_data)
                     .map_err(|e| ScaError::from_error(&*e, line, line_num))?;
             },
             // checks ir, builds a rule, and applies it
@@ -200,7 +200,7 @@ impl Runtime {
     }
 
     /// Handles commands to the runtime
-    fn handle_command<'s>(&self, cmd: Command, args: &'s str, phones: &[Phone], compile_time_data: &mut CompileTimeData<'s>) -> Result<(), Box<dyn Error + 's>> {
+    fn handle_command<'s>(&self, cmd: Command, args: &'s str, phones: &[Phone], tokenization_data: &mut TokenizationData<'s>) -> Result<(), Box<dyn Error + 's>> {
         match cmd {
             // formats the message, calls the io_put_fn callback on it, then logs it
             Command::Print => {
@@ -212,7 +212,7 @@ impl Runtime {
                 if let Some((name, msg)) = args.split_once(' ') {
                     let source = (self.io_get_fn)(msg.trim())?;
 
-                    compile_time_data.set_variable_as_ir(name, source)?;
+                    tokenization_data.set_variable_as_ir(name, source)?;
                 } else {
                     return Err(Box::new(&GetFormatError));
                 }
@@ -222,7 +222,7 @@ impl Runtime {
                 if let Some((name, msg)) = args.split_once(' ') {
                     let source = (self.io_get_fn)(msg.trim())?;
 
-                    compile_time_data.set_variable(name, source);
+                    tokenization_data.set_variable(name, source);
                 } else {
                     return Err(Box::new(&GetFormatError));
                 }

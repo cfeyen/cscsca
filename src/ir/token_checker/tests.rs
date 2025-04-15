@@ -1,4 +1,4 @@
-use crate::{meta_tokens::{Direction, Shift, ShiftType}, phones::Phone};
+use crate::{tokens::{Direction, Shift, ShiftType}, phones::Phone};
 use super::*;
 
 #[test]
