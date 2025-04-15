@@ -101,10 +101,10 @@ fn ir_to_input_output<'s>(ir: &[&IrToken<'s>]) -> Result<Vec<RuleToken<'s>>, Rul
 
 /// Converts lists of ir tokens for the (anti-)conditions of a rule to a list of Cond structs
 fn ir_to_cond<'s:>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'s>> {
-        let focus = if ir.contains(&&IrToken::CondType(CondType::MatchInput)) {
-            CondType::MatchInput
-        } else if ir.contains(&&IrToken::CondType(CondType::Equality)) {
-            CondType::Equality
+        let focus = if ir.contains(&&IrToken::CondType(CondType::Pattern)) {
+            CondType::Pattern
+        } else if ir.contains(&&IrToken::CondType(CondType::Match)) {
+            CondType::Match
         } else {
             return Err(RuleStructureError::NoConditionFocus);
         };
@@ -319,7 +319,7 @@ impl std::fmt::Display for RuleStructureError<'_> {
                 format!("Found mismatched scope bounds '{}'..'{}'", start.fmt_start(), end.fmt_end())
             },
             Self::UnexpectedToken(ir_token) => format!("Found unexpected token '{ir_token}'"),
-            Self::NoConditionFocus => format!("Found condition without an input patern ('{}') or equality ('{}')", CondType::MatchInput, CondType::Equality),
+            Self::NoConditionFocus => format!("Found condition without an input patern ('{}') or equality ('{}')", CondType::Pattern, CondType::Match),
             Self::AndDoesNotFollowCond => format!("Found '{AND_CHAR}' outside of a condition"),
         };
 

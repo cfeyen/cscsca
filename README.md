@@ -71,7 +71,7 @@ To apply rules conditionally add a condition after it
 A condition starts with a `/` and comes in two flavors: pattern and equality
 
 - Pattern: *before* `_` *after*, checks if the rule's input is proceeded by *before* and followed by *after*
-- Equality: *left* `=` *right*, checks if *left* is the same as *right* (most useful with variable)
+- Match: *left* `=` *right*, checks if the token in *right* match the phones in *left* (most useful with variables)
 
 A rule executes if any condition matches, to make a rule execute only if two conditions apply replace the start of the second with `&`
 
@@ -131,7 +131,7 @@ Examples:
 GET dialect enter dialect:
 
 ## h is lost in the northern dialect
-h >> / %dialect = northern
+h >> / %dialect = {northern, north-west}
 
 PRINT h-loss
 ```

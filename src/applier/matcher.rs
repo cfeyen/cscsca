@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{meta_tokens::Direction, phones::Phone, rules::sound_change_rule::{RuleToken, ScopeId}, tokens::ir::IrToken};
+use crate::{meta_tokens::Direction, phones::Phone, rules::{conditions::MATCH_CHAR, sound_change_rule::{RuleToken, ScopeId}}, tokens::ir::IrToken};
 
 #[cfg(test)]
 mod ltr_tests;
@@ -314,6 +314,7 @@ pub enum MatchError<'a, 's: 'a> {
     InvalidSelectionChoice(Option<&'s str>, usize),
     UnlabeledScope(&'a RuleToken<'s>),
     CannotCheckLenOfGap,
+    LeftMustBePhones(&'a RuleToken<'s>),
 }
 
 impl std::error::Error for MatchError<'_, '_> {}
@@ -332,7 +333,8 @@ impl std::fmt::Display for MatchError<'_, '_> {
             Self::UnlabeledScope(scope) => {
                 format!("Cannot resove scope as a value\nTry adding a label '{}' before the scope and ensuring it is used in the input\nScope:\t{scope}", IrToken::Label("name"))
             },
-            Self::CannotCheckLenOfGap => format!("Cannot check the length of '{}'", RuleToken::Gap { id: None })
+            Self::CannotCheckLenOfGap => format!("Cannot check the length of '{}'", RuleToken::Gap { id: None }),
+            Self::LeftMustBePhones(token) => format!("Left side of '{MATCH_CHAR}' may only contain phones, found: {token}")
         };
 
         write!(f, "{s}")

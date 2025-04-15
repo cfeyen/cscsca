@@ -1,5 +1,5 @@
 use crate::{
-    runtime::Command, meta_tokens::{Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, phones::Phone, rules::conditions::{CondType, EQUALITY_CHAR, INPUT_STR}
+    runtime::Command, meta_tokens::{Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, phones::Phone, rules::conditions::{CondType, MATCH_CHAR, INPUT_PATERN_STR}
 };
 use compile_time_data::CompileTimeData;
 use ir::{Break, IrToken, ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, AND_CHAR};
@@ -100,7 +100,7 @@ fn tokenize_line<'s>(line: &'s str, compile_time_data: &CompileTimeData<'s>) -> 
             AND_CHAR => push_phone_and(IrToken::Break(Break::And), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             ANY_CHAR => push_phone_and(IrToken::Any, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             ARG_SEP_CHAR => push_phone_and(IrToken::ArgSep, &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
-            EQUALITY_CHAR => push_phone_and(IrToken::CondType(CondType::Equality), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
+            MATCH_CHAR => push_phone_and(IrToken::CondType(CondType::Match), &mut tokens, &mut slice, &mut prefix, compile_time_data)?,
             // handles compound char to token pushes
             LTR_CHAR => {
                 let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay }))) = tokens.last() {
@@ -185,7 +185,7 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
     slice.move_after();
 
     match prefix {
-        None if literal == INPUT_STR => tokens.push(IrToken::CondType(CondType::MatchInput)),
+        None if literal == INPUT_PATERN_STR => tokens.push(IrToken::CondType(CondType::Pattern)),
         None if literal == GAP_STR => tokens.push(IrToken::Gap),
         None if literal.is_empty() => (),
         None => tokens.push(IrToken::Phone(Phone::new(literal))),

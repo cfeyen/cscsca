@@ -285,12 +285,12 @@ fn tokenize_sep_with_suroundings() {
 
 #[test]
 fn tokenize_input() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::CondType(CondType::MatchInput)])]), tokenize("_"))
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::CondType(CondType::Pattern)])]), tokenize("_"))
 }
 
 #[test]
 fn tokenize_input_with_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::CondType(CondType::MatchInput), IrToken::Phone(Phone::Symbol("b"))])]), tokenize("a _ b"))
+    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a")), IrToken::CondType(CondType::Pattern), IrToken::Phone(Phone::Symbol("b"))])]), tokenize("a _ b"))
 }
 
 #[test]
@@ -363,7 +363,7 @@ fn tokenize_and_check_simple() {
             IrToken::Phone(Phone::Symbol("o")),
             IrToken::ScopeEnd(ScopeType::Selection),
 
-            IrToken::CondType(CondType::MatchInput),
+            IrToken::CondType(CondType::Pattern),
 
             IrToken::ScopeStart(ScopeType::Selection),
             IrToken::Phone(Phone::Symbol("i")),
@@ -378,7 +378,7 @@ fn tokenize_and_check_simple() {
             IrToken::ScopeEnd(ScopeType::Selection),
 
             IrToken::Break(Break::Cond),
-            IrToken::CondType(CondType::MatchInput),
+            IrToken::CondType(CondType::Pattern),
 
             IrToken::ScopeStart(ScopeType::Selection),
             IrToken::Phone(Phone::Symbol("l")),
@@ -388,7 +388,7 @@ fn tokenize_and_check_simple() {
 
             IrToken::Break(Break::AntiCond),
             IrToken::Phone(Phone::Symbol("h")),
-            IrToken::CondType(CondType::MatchInput),
+            IrToken::CondType(CondType::Pattern),
         ]),
     ]), tokens);
 

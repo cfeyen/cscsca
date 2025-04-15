@@ -225,10 +225,10 @@ impl std::fmt::Display for IrStructureError<'_> {
                 format!("Found shift token '{shift}' after another shift token")
             },
             Self::NoFocusInCond => {
-                format!("Found condition or anti-condition without the input pattern ('{}') or equality operator ('{}')", CondType::MatchInput, CondType::Equality)
+                format!("Found condition or anti-condition without the input pattern ('{}') or equality operator ('{}')", CondType::Pattern, CondType::Match)
             },
             Self::ManyFociInCond => {
-                format!("Found condition or anti-condition with multiple input patterns ('{}') or equality operators ('{}')", CondType::MatchInput, CondType::Equality)
+                format!("Found condition or anti-condition with multiple input patterns ('{}') or equality operators ('{}')", CondType::Pattern, CondType::Match)
             },
             Self::FocusOutOfCond(focus) => {
                 format!("Found condition focus ('{focus}') outside of a condition or anti-condition")

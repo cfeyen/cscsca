@@ -4,26 +4,26 @@ use crate::{applier::matcher::{tokens_match_phones_from_left, tokens_match_phone
 
 use super::sound_change_rule::RuleToken;
 
-pub const INPUT_STR: &str = "_";
-pub const EQUALITY_CHAR: char = '=';
+pub const INPUT_PATERN_STR: &str = "_";
+pub const MATCH_CHAR: char = '=';
 
 #[cfg(test)]
 mod tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CondType {
-    /// The input in a condition or anti-condition
+    /// The input in a pattern based condition or anti-condition
     #[default]
-    MatchInput,
+    Pattern,
     /// A deliminator for a match between to groups of tokens
-    Equality,
+    Match,
 }
 
 impl Display for CondType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::MatchInput => write!(f, "{INPUT_STR}"),
-            Self::Equality => write!(f, "{EQUALITY_CHAR}"),
+            Self::Pattern => write!(f, "{INPUT_PATERN_STR}"),
+            Self::Match => write!(f, "{MATCH_CHAR}"),
         }
     }
 }
@@ -54,7 +54,7 @@ impl<'s> Cond<'s> {
     /// assuming the input of a given size matches and based on the application direction
     pub fn eval<'a>(&'a self, phones: &[Phone<'s>], phone_index: usize, input_len: usize, choices: &mut Choices<'a, 's>, dir: Direction) -> Result<bool, MatchError<'a, 's>> {
         let cond_succeeds = match self.kind {
-            CondType::MatchInput => {
+            CondType::Pattern => {
                 let (before_phones, after_phones) = match dir {
                     Direction::Ltr => (&phones[0..phone_index], &phones[phone_index + input_len..]),
                     Direction::Rtl => {
@@ -73,10 +73,18 @@ impl<'s> Cond<'s> {
 
                 before_matches && after_matches
             },
-            CondType::Equality => {
-                let accumulate_display = |acc, token| format!("{acc}{token}");
-                self.before.iter().fold(String::new(), accumulate_display) ==
-                self.after.iter().fold(String::new(), accumulate_display)
+            CondType::Match => {
+                let mut left = Vec::new();
+
+                for token in &self.before {
+                    if let RuleToken::Phone(phone) = token {
+                        left.push(*phone);
+                    } else {
+                        return Err(MatchError::LeftMustBePhones(token));
+                    }
+                }
+
+                tokens_match_phones_from_left(&self.after, &left, choices)?
             }
         };
 

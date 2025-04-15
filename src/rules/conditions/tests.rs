@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn match_input() {
     let cond = Cond::new(
-        CondType::MatchInput,
+        CondType::Pattern,
         vec!(RuleToken::Phone(Phone::Symbol("a"))),
         vec!(RuleToken::Phone(Phone::Symbol("c"))),
     );
@@ -36,19 +36,19 @@ fn match_input() {
 #[test]
 fn equality() {
     assert!(Cond::new(
-        CondType::Equality,
+        CondType::Match,
         vec![RuleToken::Phone(Phone::Symbol("a"))],
         vec![RuleToken::Phone(Phone::Symbol("a"))]
     ).eval(&[], 0, 0, &mut Choices::default(), Direction::Ltr).unwrap());
 
     assert!(!Cond::new(
-        CondType::Equality,
+        CondType::Match,
         vec![RuleToken::Phone(Phone::Symbol("a"))],
         vec![RuleToken::Phone(Phone::Symbol("b"))]
     ).eval(&[], 0, 0, &mut Choices::default(), Direction::Ltr).unwrap());
 
     assert!(!Cond::new(
-        CondType::Equality,
+        CondType::Match,
         vec![RuleToken::Phone(Phone::Symbol("a a"))],
         vec![RuleToken::Phone(Phone::Symbol("a")), RuleToken::Phone(Phone::Symbol("a"))]
     ).eval(&[], 0, 0, &mut Choices::default(), Direction::Ltr).unwrap());
@@ -57,7 +57,7 @@ fn equality() {
 #[test]
 fn and() {
     let mut cond = Cond::new(
-        CondType::MatchInput,
+        CondType::Pattern,
         vec![RuleToken::Phone(Phone::Symbol("b"))],
         vec![RuleToken::Phone(Phone::Symbol("d"))],
     );
@@ -83,7 +83,7 @@ fn and() {
     assert!(cond.eval(phones_2, 2, 1, &mut Choices::default(), Direction::Ltr).unwrap());
 
     cond.set_and(Cond::new(
-        CondType::MatchInput,
+        CondType::Pattern,
         vec![RuleToken::Phone(Phone::Symbol("a")), RuleToken::Any { id: None }],
         vec![RuleToken::Any { id: None }, RuleToken::Phone(Phone::Symbol("e"))],
     ));

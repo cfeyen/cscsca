@@ -57,7 +57,7 @@ fn check_shift_cond_input() {
 
     assert_eq!(
         Ok(()),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::Cond), IrToken::CondType(CondType::MatchInput)])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::Cond), IrToken::CondType(CondType::Pattern)])])
     );
 }
 
@@ -67,7 +67,7 @@ fn check_shift_cond_inputs() {
 
     assert_eq!(
         Err((IrStructureError::ManyFociInCond, 1)),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::Cond), IrToken::CondType(CondType::MatchInput), IrToken::CondType(CondType::MatchInput)])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::Cond), IrToken::CondType(CondType::Pattern), IrToken::CondType(CondType::Pattern)])])
     );
 }
 
@@ -88,7 +88,7 @@ fn check_shift_anti_cond_input_cond_input() {
 
     assert_eq!(
         Err((IrStructureError::AntiCondBeforeCond, 1)),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::AntiCond), IrToken::CondType(CondType::MatchInput), IrToken::Break(Break::Cond), IrToken::CondType(CondType::MatchInput)])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::AntiCond), IrToken::CondType(CondType::Pattern), IrToken::Break(Break::Cond), IrToken::CondType(CondType::Pattern)])])
     );
 }
 
@@ -98,7 +98,7 @@ fn check_shift_anti_cond_input() {
 
     assert_eq!(
         Ok(()),
-        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::AntiCond), IrToken::CondType(CondType::MatchInput)])])
+        check_tokens(&[IrLine::Ir(vec![IrToken::Break(shift), IrToken::Break(Break::AntiCond), IrToken::CondType(CondType::Pattern)])])
     );
 }
 
@@ -259,6 +259,6 @@ fn check_gap_in_cond() {
         IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move })),
         IrToken::Break(Break::Cond),
         IrToken::Gap,
-        IrToken::CondType(CondType::MatchInput),
+        IrToken::CondType(CondType::Pattern),
     ])));
 }
