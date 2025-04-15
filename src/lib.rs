@@ -67,12 +67,15 @@ pub struct ScaError(String);
 impl Error for ScaError {}
 
 impl ScaError {
+    /// Builds a new `ScaError` from any error,
+    /// with the line and line number it occurred on
     fn from_error<E: Error + ?Sized>(e: &E, line: &str, line_num: usize) -> Self {
         Self(format!("{}Error:{} {e}\nLine {line_num}: {line}", ansi::RED, ansi::RESET))
     }
 }
 
 impl std::fmt::Display for ScaError {
+    #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
