@@ -17,7 +17,7 @@ A shift tells the SCA how changes are to applied and seperates inputs from outpu
 - `>`: Left to right, attempts to reapply the rule to the output of the last successful change
 - `<`: Right to left, attempts to reapply the rule to the output of the last successful change
 
-warning: it is technically possible to create an infinite loop with `>` or `<`. If applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
+warning: as it is technically possible to create an infinite loop with `>` or `<`, if applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
 
 ### Rules
 A sound change
@@ -42,7 +42,7 @@ note: a line starting with `##` is a comment
 Scopes are a way to dynamically determine which phone, group of phones, or lack there of exists in a rule.
 There are two types of scopes
 - optional `(`...`)`: a phone or group of phones that is optional
-- selection `{`...`,`...`}`: a list of phones or group of phones that selects on phone or group of phones in that list
+- selection `{`...`,`...`}`: a list of comma-seperated phones or group of phones that selects one phone or group of phones in that list
 
 Examples:
     ## l and l j become j
