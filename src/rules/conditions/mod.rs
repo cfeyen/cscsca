@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{applier::matcher::{tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, tokens::Direction, phones::Phone};
+use crate::{matcher::{tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, tokens::Direction, phones::Phone};
 
 use super::tokens::RuleToken;
 

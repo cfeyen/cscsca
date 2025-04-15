@@ -15,6 +15,7 @@ pub mod phones;
 pub(crate) mod tokens;
 pub(crate) mod rules;
 pub(crate) mod applier;
+pub(crate) mod matcher;
 pub mod runtime;
 
 #[cfg(test)]
