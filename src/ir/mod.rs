@@ -151,15 +151,18 @@ fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>) ->
 /// Pushes the slice according to `push_phone`, then sets the prefix
 /// and moves the slice over an extra character to account for the prefix character
 fn start_prefix<'s>(new_prefix: Prefix, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, tokenization_data: &TokenizationData<'s>) -> Result<(), IrError<'s>> {
-    if prefix.is_some() && slice.is_empty() { 
-        return Err(IrError::EmptyPrefix(prefix.unwrap()))
+    match prefix {
+        Some(prefix) if slice.is_empty() => {
+            Err(IrError::EmptyPrefix(*prefix))
+        }
+        _ => {
+            push_phone(tokens, slice, prefix, tokenization_data)?;
+            slice.skip_byte();
+
+            *prefix = Some(new_prefix);
+            Ok(())
+        }
     }
-
-    push_phone(tokens, slice, prefix, tokenization_data)?;
-    slice.skip_byte();
-
-    *prefix = Some(new_prefix);
-    Ok(())
 }
 
 /// Pushes the slice according to `push_phone`, then pushes the provided token

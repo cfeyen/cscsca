@@ -122,27 +122,31 @@ fn check_breaks<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
 /// Check to ensure that:
 /// - all scopes are properly opened and closed
 /// - argument seperators are only in selection scopes
-/// - scope labels only proceed scopes, anys, gaps
-/// - only phones, scope labels, and scopes occur in scopes
+/// - scope labels only proceed labelable tokens
+/// - only scope-valid characters occur in scopes
 ///   (and argument seperators for selection scopes)
 fn check_scopes<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
     let mut scope_stack = Vec::new();
-    let mut selecting = None;
+    let mut label = None;
 
     for token in line {
+        if !(scope_stack.is_empty() || token.valid_in_scope()) {
+            return Err(IrStructureError::DisallowedTokenInScope(*token));
+        }
+
+        match label {
+            Some(name) if !token.labelable() =>
+                return Err(IrStructureError::LabelProceedsUnlabelable(name, *token)),
+            _ => ()
+        }
+
         match token {
             IrToken::ScopeStart(kind) => {
-                selecting = None;
+                label = None;
                 scope_stack.push(*kind);
             },
-            IrToken::Any | IrToken::Gap => if selecting.is_some() {
-                selecting = None;
-            },
-            _ if selecting.is_some() => {
-                return Err(IrStructureError::SelectionDoesNotProceedScope(selecting.unwrap()))
-            },
-            IrToken::Phone(_) => (),
-            IrToken::Label(name) => selecting = Some(name),
+            IrToken::Any | IrToken::Gap => label = None,
+            IrToken::Label(name) => label = Some(name),
             IrToken::ScopeEnd(end_type) => {
                 if let Some(start_type) = scope_stack.pop() {
                     if start_type != *end_type {
@@ -155,8 +159,7 @@ fn check_scopes<'s>(line: &[IrToken<'s>]) -> Result<(), IrStructureError<'s>> {
             IrToken::ArgSep => if scope_stack.last() != Some(&ScopeType::Selection) {
                 return Err(IrStructureError::MisplacedArgSep)
             },
-            _ if scope_stack.is_empty() => (),
-            _ => return Err(IrStructureError::DisallowedTokenInScope(*token))
+            _ => ()
         }
     }
 
@@ -177,7 +180,7 @@ pub enum IrStructureError<'s> {
     MismatchedScopeBounds(ScopeType, ScopeType),
     MisplacedArgSep,
     DisallowedTokenInScope(IrToken<'s>),
-    SelectionDoesNotProceedScope(&'s str),
+    LabelProceedsUnlabelable(&'s str, IrToken<'s>),
     NoShift,
     ShiftAfterShift(Shift),
     BreakBeforeShift(Break),
@@ -209,8 +212,8 @@ impl std::fmt::Display for IrStructureError<'_> {
             Self::DisallowedTokenInScope(token) => {
                 format!("A '{token}' token may not occur in a scope")
             },
-            Self::SelectionDoesNotProceedScope(name) => {
-                format!("Scope label '{}' does not proceed a scope", IrToken::Label(name))
+            Self::LabelProceedsUnlabelable(name, token) => {
+                format!("Label '{}' proceeds unlabelable token '{token}'", IrToken::Label(name))
             },
             Self::AntiCondBeforeCond => {
                 format!("Found anti-conditon (denoted '{}') before a condition (denoted '{}')", Break::AntiCond, Break::Cond)
