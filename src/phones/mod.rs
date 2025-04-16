@@ -1,5 +1,8 @@
 use crate::{ir::ESCAPE_CHAR, BOUND_CHAR};
 
+#[cfg(test)]
+mod tests;
+
 /// `BOUND_CHAR` as a static str
 pub const BOUND_STR: &str = unsafe { std::str::from_utf8_unchecked(&[BOUND_CHAR as u8]) };
 
@@ -41,23 +44,6 @@ impl<'s> Phone<'s> {
     /// and whitespace treated as bounds
     /// 
     /// **Note**: This is not symetric, a.matches(b) does not imply b.matches(a)
-    /// 
-    /// ```
-    /// use cscsca::{phones::{Phone, BOUND_STR}};
-    /// 
-    /// assert!(Phone::Symbol("test").matches(&Phone::Symbol("test")));
-    /// assert!(!Phone::Symbol("test").matches(&Phone::Symbol("not test")));
-    /// assert!(Phone::Symbol("\\@").matches(&Phone::Symbol("@")));
-    /// assert!(!Phone::Symbol("@").matches(&Phone::Symbol("\\@")));
-    /// assert!(Phone::Symbol("\\\\@").matches(&Phone::Symbol("\\@")));
-    /// assert!(!Phone::Symbol("\\@").matches(&Phone::Symbol("\\@")));
-    /// assert!(Phone::Symbol("\\ ").matches(&Phone::Bound));
-    /// assert!(Phone::Symbol("\\ \\ ").matches(&Phone::Bound));
-    /// assert!(!Phone::Bound.matches(&Phone::Symbol("\\ ")));
-    /// assert!(Phone::Symbol(&format!("\\{BOUND_STR}")).matches(&Phone::Bound));
-    /// assert!(!Phone::Bound.matches(&Phone::Symbol(&format!("\\{BOUND_STR}"))));
-    /// assert!(Phone::Symbol("\\ ").matches(&Phone::Symbol(" ")));
-    /// ```
     #[must_use]
     pub fn matches(&self, other: &Self) -> bool {
         let symbol = self.as_str();

@@ -11,7 +11,7 @@ use std::error::Error;
 use runtime::Runtime;
 
 pub(crate) mod ir;
-pub mod phones;
+pub(crate) mod phones;
 pub(crate) mod tokens;
 pub(crate) mod rules;
 pub(crate) mod applier;

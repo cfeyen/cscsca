@@ -124,15 +124,6 @@ impl Runtime {
     pub fn apply(&self, input: &str, code: &str) -> Result<String, ScaError> {
         let phones = build_phone_list(input);
 
-        self.apply_to_phones(phones, code)
-    }
-    
-    /// Applies rules to an input given the context of the runtime
-    /// 
-    /// ## Errors
-    /// Errors are the result of providing invalid code, failed io, or application timing out
-    #[inline]
-    pub fn apply_to_phones<'s>(&self, phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
         self.apply_all_lines(phones, code)
     }
 
