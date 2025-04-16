@@ -45,14 +45,16 @@ There are two types of scopes
 - selection `{`...`,`...`}`: a list of comma-seperated phones or group of phones that selects one phone or group of phones in that list
 
 Examples:
-    ## l and l j become j
-    l (j) >> j
+```cscsca
+## l and l j become j
+l (j) >> j
 
-    ## f and x merge to h
-    {f, x} >> h
+## f and x merge to h
+{f, x} >> h
 
-    ## p and b become f and v respectively
-    {p, b} >> {f, v}
+## p and b become f and v respectively
+{p, b} >> {f, v}
+```
 
 ### Labels
 As seen in the example above corresponding scopes in the input and output try to agree in what they choose however there are times when we want this behavior to be expanded
@@ -68,14 +70,17 @@ Examples:
 ### Conditions and Anti-Conditions
 To apply rules conditionally add a condition after it
 
-A condition starts with a `/` and comes in two flavors: pattern and equality
+A condition starts with a `/` and comes in two flavors: **pattern** and **equality**
 
-- Pattern: *before* `_` *after*, checks if the rule's input is proceeded by *before* and followed by *after*
-- Match: *left* `=` *right*, checks if the token in *right* match the phones in *left* (most useful with variables)
+| Condition Type | Structure | How it Checks |
+|-|-|-|
+| **Pattern** | *before* `_` *after* | checks if the rule's input is proceeded by *before* and followed by *after* |
+| **Match** | *left* `=` *right* | checks if the tokens in *right* match the phones in *left* (most useful with variables) |
 
 A rule executes if any condition matches, to make a rule execute only if two conditions apply replace the start of the second with `&`
 
-Anti-Conditions  (conditions that stop rules from applying) are the same but start with `//`
+Anti-Conditions (conditions that stop rules from applying) are the same as conditions,
+but start with `//`, and should be placed after all conditions
 
 Examples:
 ```cscsca
@@ -98,6 +103,8 @@ Oftentimes we want to group phones by attributes, while CSCSCA does not have sup
 To define a *Definition* type `DEFINE` at the start of a line, followed by the name, then its contents.
 To access the contents later type the name prefixed with `@`
 
+*Definition*s are not limitted to lists of phones, they may contain any arbitrary code
+
 Examples:
 ```cscsca
 DEFINE N {m, n}
@@ -105,9 +112,11 @@ DEFINE Pv- {p, t, k}
 DEFINE Pv+ {b, d, g}
 DEFINE V {i, e, a, u, o}
 
+DEFINE intervocalic @V _ @V
+
 ## stops are voiced intervocalically or after nasals
 ## (same as the example above)
-@Pv- >> @Pv+ / @V _ @V / @N _
+@Pv- >> @Pv+ / @intervocalic / @N _
 ```
 
 ### Special Characters
