@@ -33,7 +33,7 @@ struct DefaultScopeIds {
 /// Builds a sound change rule out of a line of ir tokens
 /// 
 /// Note: the ir tokens should be checked for proper structure before being passed to this function
-pub fn build_rule<'ir, 's: 'ir>(line: &'ir IrLine<'s>) -> Result<RuleLine<'s>, RuleStructureError<'s>> {
+pub fn build_rule<'s>(line: &IrLine<'s>) -> Result<RuleLine<'s>, RuleStructureError<'s>> {
     let line = match line {
         IrLine::Empty => return Ok(RuleLine::Empty),
         IrLine::Cmd(_cmd, _args) => return Ok(RuleLine::Cmd),
@@ -102,7 +102,7 @@ fn ir_to_input_output<'s>(ir: &[&IrToken<'s>]) -> Result<Vec<RuleToken<'s>>, Rul
 }
 
 /// Converts lists of ir tokens for the (anti-)conditions of a rule to a list of Cond structs
-fn ir_to_cond<'s:>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'s>> {
+fn ir_to_cond<'s>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'s>> {
         let focus = if ir.contains(&&IrToken::CondType(CondType::Pattern)) {
             CondType::Pattern
         } else if ir.contains(&&IrToken::CondType(CondType::Match)) {

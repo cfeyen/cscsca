@@ -1,4 +1,4 @@
-use crate::{tokens::ScopeType, rules::{conditions::{Cond, CondType}, tokens::{LabelType, ScopeId}}};
+use crate::{rules::{conditions::{Cond, CondType}, tokens::{LabelType, ScopeId}}, tokens::{ScopeType, Shift}};
 use super::*;
 
 use crate::runtime::DEFAULT_MAX_APPLICATION_TIME;

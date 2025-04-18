@@ -18,20 +18,19 @@ mod empty_form_tests;
 /// Checks if tokens match phones starting from the left
 /// 
 /// Note: see `MatchEnviroment::tokens_match_phones` for side effects
-pub fn tokens_match_phones_from_right<'r, 's: 'r>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+pub fn tokens_match_phones_from_right<'r, 's>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
     MatchEnviroment::new(tokens, phones, Direction::Rtl).tokens_match_phones(choices)
 }
 
 /// Checks if tokens match phones starting from the left
 /// 
 /// Note: see `MatchEnviroment::tokens_match_phones` for side effects
-pub fn tokens_match_phones_from_left<'r, 's: 'r>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+pub fn tokens_match_phones_from_left<'r, 's>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
     MatchEnviroment::new(tokens, phones, Direction::Ltr).tokens_match_phones(choices)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct MatchEnviroment<'r, 's, 'p>
-where 's: 'r {
+pub struct MatchEnviroment<'r, 's, 'p> {
     tokens: &'r [RuleToken<'s>],
     token_index: usize,
     phones: &'p [Phone<'s>],
@@ -39,8 +38,7 @@ where 's: 'r {
     direction: Direction,
 }
 
-impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p>
-where 's: 'r {
+impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
     /// Creates a new `MatchEnviroment`
     pub fn new(tokens: &'r [RuleToken<'s>], phones: &'p [Phone<'s>], direction: Direction) -> Self {
         Self {
@@ -283,7 +281,7 @@ where 's: 'r {
 /// Returns the number of phones the tokens match to using the choices as reference
 /// 
 /// Note: Should only be used on inputs and outputs, not conditions
-pub fn match_len<'r, 's: 'r>(tokens: &'r [RuleToken<'s>], choices: &Choices<'r, 's>) -> Result<usize, MatchError<'r, 's>> {
+pub fn match_len<'r, 's>(tokens: &'r [RuleToken<'s>], choices: &Choices<'r, 's>) -> Result<usize, MatchError<'r, 's>> {
     let mut len = 0;
 
     for token in tokens {
@@ -338,7 +336,7 @@ pub fn has_empty_form(tokens: &[RuleToken]) -> bool {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct Choices<'r, 's: 'r> {
+pub struct Choices<'r, 's> {
     pub selection: HashMap<&'r ScopeId<'s>, usize>,
     pub optional: HashMap<&'r ScopeId<'s>, bool>,
     pub any: HashMap<&'r ScopeId<'s>, Phone<'s>>,
@@ -348,7 +346,7 @@ pub struct Choices<'r, 's: 'r> {
 /// Errors that occur when trying to match tokens to phones
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
-pub enum MatchError<'r, 's: 'r> {
+pub enum MatchError<'r, 's> {
     EmptyInput,
     InvalidSelectionChoice(ScopeId<'s>, usize),
     UnlabeledScope(&'r RuleToken<'s>),
