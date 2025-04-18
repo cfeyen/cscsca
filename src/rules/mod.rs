@@ -33,7 +33,7 @@ struct DefaultScopeIds {
 /// Builds a sound change rule out of a line of ir tokens
 /// 
 /// Note: the ir tokens should be checked for proper structure before being passed to this function
-pub fn build_rule<'a, 's: 'a>(line: &'a IrLine<'s>) -> Result<RuleLine<'s>, RuleStructureError<'s>> {
+pub fn build_rule<'ir, 's: 'ir>(line: &'ir IrLine<'s>) -> Result<RuleLine<'s>, RuleStructureError<'s>> {
     let line = match line {
         IrLine::Empty => return Ok(RuleLine::Empty),
         IrLine::Cmd(_cmd, _args) => return Ok(RuleLine::Cmd),
@@ -124,7 +124,7 @@ fn ir_to_cond<'s:>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'
 }
 
 /// Converts ir tokens to rule tokens
-fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
+fn ir_tokens_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
     let mut rule_tokens = Vec::new();
 
     while let Some(ir_token) = ir.next() {
@@ -195,7 +195,7 @@ fn ir_tokens_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToke
 /// Converts the ir tokens in a selection scope to a list of rule token lists
 /// where each is an option to be selected by the scope: 
 /// (options are seperated by the `ArgSep` token)
-fn selection_contents_to_rule_tokens<'a, 's: 'a>(ir: &mut impl Iterator<Item = &'a IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, scope: Option<&ScopeId<'s>>) -> Result<Vec<Vec<RuleToken<'s>>>, RuleStructureError<'s>> {
+fn selection_contents_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, scope: Option<&ScopeId<'s>>) -> Result<Vec<Vec<RuleToken<'s>>>, RuleStructureError<'s>> {
     let mut options = Vec::new();
     // scope_stack tracks which scope the function is analyzing to determine when to seperate options and return
     let mut scope_stack = Vec::new();

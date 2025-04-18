@@ -72,7 +72,7 @@ impl Display for RuleToken<'_> {
 
 /// A scope label
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ScopeId<'s> {  // 'a is the lifetime of the soucre code, 'b is the lifetime of a scope reference
+pub enum ScopeId<'s> {
     /// Named label
     Name(&'s str),
     /// The number that a scope is of its type in an input or output

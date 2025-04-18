@@ -20,7 +20,7 @@ pub fn check_token_line<'s>(line: &IrLine<'s>) -> Result<(), IrStructureError<'s
 }
 
 /// Converts a line of ir into regions, all regions after the first are proceeded by a break
-pub fn regionize_ir<'s, 'a>(tokens: &'a [IrToken<'s>]) -> (Vec<&'a IrToken<'s>>, Vec<(Break, Vec<&'a IrToken<'s>>)>) {
+pub fn regionize_ir<'s, 'ir>(tokens: &'ir [IrToken<'s>]) -> (Vec<&'ir IrToken<'s>>, Vec<(Break, Vec<&'ir IrToken<'s>>)>) {
     let mut input_region = Vec::new();
     let mut other_regions = Vec::new();
     let mut after_input = false;

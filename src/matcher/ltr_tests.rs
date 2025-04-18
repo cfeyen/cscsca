@@ -48,10 +48,13 @@ fn match_two_tokens_to_three_phones() {
 
 #[test]
 fn match_two_tokens_to_three_phones_from_late_start() {
-    assert_eq!(Ok(true), tokens_match_phones(&[
-        RuleToken::Phone(Phone::Symbol("b")),
-        RuleToken::Phone(Phone::Symbol("c")),
-    ], &[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 0, &mut 1, &mut Choices::default(), Direction::Ltr));
+    assert_eq!(Ok(true), MatchEnviroment {
+        tokens: &[RuleToken::Phone(Phone::Symbol("b")), RuleToken::Phone(Phone::Symbol("c"))],
+        token_index: 0,
+        phones: &[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")],
+        phone_index: 1,
+        direction: Direction::Ltr,
+    }.tokens_match_phones(&mut Choices::default()));
 }
 
 #[test]
@@ -112,7 +115,7 @@ fn fail_match_same_labeled_optional_scopes_where_the_first_could_match_but_the_s
 
     let tokens = [scope_1, phone, scope_2];
 
-    assert_eq!(Ok(false), tokens_match_phones_from_left(&tokens, &[Phone::Symbol("a"),Phone::Symbol("b"), Phone::Symbol("d")], &mut choices));
+    assert_eq!(Ok(false), tokens_match_phones_from_left(&tokens, &[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("d")], &mut choices));
 
     assert_eq!(Some(&false), choices.optional.get(&id))
 }
@@ -332,4 +335,32 @@ fn match_different_labeled_selection() {
     assert_eq!(choices.selection.get(&ScopeId::Name("label_1")), Some(&0));
 
     assert_eq!(choices.selection.get(&ScopeId::Name("label_2")), Some(&1));
+}
+
+#[test]
+fn fail_match_gap_across_bound() {
+    let tokens = [
+        RuleToken::Phone(Phone::Symbol("a")),
+        RuleToken::Gap { id: None },
+        RuleToken::Phone(Phone::Symbol("c")),
+    ];
+
+    let phones = [Phone::Symbol("a"), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")];
+    let mut choices = Choices::default();
+
+    assert_eq!(Ok(false), tokens_match_phones_from_left(&tokens, &phones, &mut choices))
+}
+
+#[test]
+fn match_gap_to_bound() {
+    let tokens = [
+        RuleToken::Phone(Phone::Symbol("a")),
+        RuleToken::Gap { id: None },
+        RuleToken::Phone(Phone::Bound),
+    ];
+
+    let phones = [Phone::Symbol("a"), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")];
+    let mut choices = Choices::default();
+
+    assert_eq!(Ok(true), tokens_match_phones_from_left(&tokens, &phones, &mut choices))
 }

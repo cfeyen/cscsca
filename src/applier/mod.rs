@@ -6,7 +6,7 @@ use crate::{tokens::{Direction, Shift, ShiftType}, phones::Phone, rules::{tokens
 mod tests;
 
 /// Applies a rule to a list of phones within a time limit
-pub fn apply<'a, 's>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, max_time: &Duration) -> Result<(), ApplicationError<'a, 's>> {
+pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, max_time: &Duration) -> Result<(), ApplicationError<'r, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
     let end_time = Instant::now() + *max_time;
@@ -48,7 +48,7 @@ fn next_position(rule: &SoundChangeRule, input_len: usize, replace_len: usize, p
 /// Applies a rule to a location in a list of phones if the input and conds match
 /// 
 /// Return: (the length of the output, the length of what it replaced)
-fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, phone_index: usize) -> Result<Option<(usize, usize)>, ApplicationError<'a, 's>> {
+fn apply_at<'r, 's: 'r>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, phone_index: usize) -> Result<Option<(usize, usize)>, ApplicationError<'r, 's>> {
     let SoundChangeRule {
         kind,
         input,
@@ -104,7 +104,7 @@ fn apply_at<'a, 's: 'a>(rule: &'a SoundChangeRule<'s>, phones: &mut Vec<Phone<'s
 /// Replaces the slice `phones[index..input_len]` with the output as phones
 /// 
 /// Return: (the length of the output, the length of what it replaced)
-fn replace_input<'a, 's: 'a>(phones: &mut Vec<Phone<'s>>, index: usize, input_len: usize, output: &'a [RuleToken<'s>], choices: &Choices<'a, 's>, dir: Direction) -> Result<Option<(usize, usize)>, ApplicationError<'a, 's>> {
+fn replace_input<'r, 's: 'r>(phones: &mut Vec<Phone<'s>>, index: usize, input_len: usize, output: &'r [RuleToken<'s>], choices: &Choices<'r, 's>, dir: Direction) -> Result<Option<(usize, usize)>, ApplicationError<'r, 's>> {
     let mut shifted_phones = Vec::new();
 
     let phone_iter = &mut phones.iter();
@@ -158,7 +158,7 @@ fn replace_input<'a, 's: 'a>(phones: &mut Vec<Phone<'s>>, index: usize, input_le
 }
 
 /// Converts rule tokens to the phones that they represent according to choices that have been made
-fn tokens_to_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], choices: &Choices<'a, 's>) -> Result<Vec<Phone<'s>>, ApplicationError<'a, 's>> {
+fn tokens_to_phones<'r, 's: 'r>(tokens: &'r [RuleToken<'s>], choices: &Choices<'r, 's>) -> Result<Vec<Phone<'s>>, ApplicationError<'r, 's>> {
     let mut phones = Vec::new();
 
     for token in tokens {
@@ -205,15 +205,15 @@ fn tokens_to_phones<'a, 's: 'a>(tokens: &'a [RuleToken<'s>], choices: &Choices<'
 /// Errors that occur when trying to apply a rule
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
-pub enum ApplicationError<'a, 's: 'a> {
-    MatchError(MatchError<'a, 's>),
-    UnmatchedTokenInOutput(&'a RuleToken<'s>),
-    InvalidSelectionAccess(&'a RuleToken<'s>, usize),
+pub enum ApplicationError<'r, 's: 'r> {
+    MatchError(MatchError<'r, 's>),
+    UnmatchedTokenInOutput(&'r RuleToken<'s>),
+    InvalidSelectionAccess(&'r RuleToken<'s>, usize),
     TimeLimitExceeded,
 }
 
-impl<'a, 's> From<MatchError<'a, 's>> for ApplicationError<'a, 's> {
-    fn from(value: MatchError<'a, 's>) -> Self {
+impl<'r, 's> From<MatchError<'r, 's>> for ApplicationError<'r, 's> {
+    fn from(value: MatchError<'r, 's>) -> Self {
         Self::MatchError(value)
     }
 }
