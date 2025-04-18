@@ -14,6 +14,22 @@ mod len_tests;
 #[cfg(test)]
 mod empty_form_tests;
 
+
+/// Checks if tokens match phones starting from the left
+/// 
+/// Note: see `MatchEnviroment::tokens_match_phones` for side effects
+pub fn tokens_match_phones_from_right<'r, 's: 'r>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+    MatchEnviroment::new(tokens, phones, Direction::Rtl).tokens_match_phones(choices)
+}
+
+/// Checks if tokens match phones starting from the left
+/// 
+/// Note: see `MatchEnviroment::tokens_match_phones` for side effects
+pub fn tokens_match_phones_from_left<'r, 's: 'r>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+    MatchEnviroment::new(tokens, phones, Direction::Ltr).tokens_match_phones(choices)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MatchEnviroment<'r, 's, 'p>
 where 's: 'r {
     tokens: &'r [RuleToken<'s>],
@@ -25,6 +41,29 @@ where 's: 'r {
 
 impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p>
 where 's: 'r {
+    /// Creates a new `MatchEnviroment`
+    pub fn new(tokens: &'r [RuleToken<'s>], phones: &'p [Phone<'s>], direction: Direction) -> Self {
+        Self {
+            tokens,
+            token_index: direction.start_index(tokens),
+            phones,
+            phone_index: direction.start_index(phones),
+            direction,
+        }
+    }
+
+    /// Copies `self` but replaces the `tokens` and `token_index`
+    /// with `new_tokens` and its starting index
+    fn with_new_tokens(&self, new_tokens: &'r [RuleToken<'s>]) -> Self {
+        Self {
+            tokens: new_tokens,
+            token_index: self.direction.start_index(new_tokens),
+            phones: self.phones,
+            phone_index: self.phone_index,
+            direction: self.direction,
+        }
+    }
+
     /// Gets the phone at the phone index
     fn get_phone(&self) -> Option<&'p Phone<'s>> {
         self.phones.get(self.phone_index)
@@ -41,6 +80,10 @@ where 's: 'r {
     }
 
     /// Checks if the token enviroment matches the phones
+    /// 
+    /// ## Side Effects
+    /// - may mutate the `token_index` and/or `phone_index` fields
+    /// - may mutate `choices`
     pub fn tokens_match_phones(&mut self, choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
         let Some(token) = self.tokens.get(self.token_index) else {
             return Ok(true);
@@ -83,15 +126,7 @@ where 's: 'r {
                     return Err(MatchError::InvalidSelectionChoice(id.clone(), choice));
                 };
 
-                let content_start = self.direction.start_index(content);
-
-                let mut content_env = Self {
-                    tokens: content,
-                    token_index: content_start,
-                    phones: self.phones,
-                    phone_index: self.phone_index,
-                    direction: self.direction,
-                };
+                let mut content_env = self.with_new_tokens(content);
 
                 let choice_matches = content_env.tokens_match_phones(choices)?;
                 self.phone_index = content_env.phone_index;
@@ -104,15 +139,9 @@ where 's: 'r {
         let starting_phone_index = self.phone_index;
 
         for (option_num, option) in options.iter().enumerate() {
-            let option_start = self.direction.start_index(option);
+            self.phone_index = starting_phone_index;
 
-            let mut option_env = Self {
-                tokens: option,
-                token_index: option_start,
-                phones: self.phones,
-                phone_index: starting_phone_index,
-                direction: self.direction,
-            };
+            let mut option_env = self.with_new_tokens(option);
 
             let mut new_choices = choices.clone();
             if let Some(id) = id {
@@ -131,8 +160,6 @@ where 's: 'r {
 
                 self.token_index = starting_token_index;
             }
-
-            self.phone_index = starting_phone_index;
         }
 
         Ok(false)
@@ -161,15 +188,11 @@ where 's: 'r {
                 new_choices.gap.insert(id, len);
             }
 
-            let mut after = Self {
-                tokens: self.tokens,
-                token_index: self.direction.change_by_one(self.token_index),
-                phones: self.phones,
-                phone_index: self.direction.change_by(self.phone_index, len),
-                direction: self.direction,
-            };
+            let mut after_env = *self;
+            after_env.inc_token_index();
+            after_env.phone_index = after_env.direction.change_by(after_env.phone_index, len);
 
-            if after.tokens_match_phones(&mut new_choices)? {
+            if after_env.tokens_match_phones(&mut new_choices)? {
                 *choices = new_choices;
                 return Ok(true);
             }
@@ -184,21 +207,10 @@ where 's: 'r {
         let starting_phone_index = self.phone_index;
         let starting_token_index = self.token_index;
 
-        let mut after_env = Self {
-            tokens: self.tokens,
-            token_index: self.direction.change_by_one(self.token_index),
-            phones: self.phones,
-            phone_index: self.phone_index,
-            direction: self.direction,
-        };
+        let mut after_env = *self;
+        after_env.inc_token_index();
 
-        let mut content_env = Self {
-            tokens: content,
-            token_index: self.direction.start_index(content),
-            phones: self.phones,
-            phone_index: self.phone_index,
-            direction: self.direction,
-        };
+        let mut content_env = self.with_new_tokens(content);
 
         if let Some(id) = id {
             println!("pre-choice");
@@ -266,36 +278,6 @@ where 's: 'r {
             true
         }
     }
-}
-
-/// Checks if tokens match phones starting from the left
-/// 
-/// Note see `tokens_match_phones` for side effects
-pub fn tokens_match_phones_from_right<'r, 's: 'r>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
-    let direction = Direction::Rtl;
-
-    MatchEnviroment {
-        tokens,
-        token_index: direction.start_index(tokens),
-        phones,
-        phone_index: direction.start_index(phones),
-        direction,
-    }.tokens_match_phones(choices)
-}
-
-/// Checks if tokens match phones starting from the left
-/// 
-/// Note see `tokens_match_phones` for side effects
-pub fn tokens_match_phones_from_left<'r, 's: 'r>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
-    let direction = Direction::Ltr;
-
-    MatchEnviroment {
-        tokens,
-        token_index: direction.start_index(tokens),
-        phones,
-        phone_index: direction.start_index(phones),
-        direction,
-    }.tokens_match_phones(choices)
 }
 
 /// Returns the number of phones the tokens match to using the choices as reference
