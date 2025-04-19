@@ -1,15 +1,15 @@
 use std::time::{Duration, Instant};
 
-use crate::{tokens::{Direction, ShiftType}, phones::Phone, rules::{tokens::RuleToken, sound_change_rule::SoundChangeRule}, ir::tokens::IrToken, matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}};
+use crate::{ir::tokens::IrToken, matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, phones::Phone, rules::{sound_change_rule::SoundChangeRule, tokens::RuleToken}, tokens::{Direction, ShiftType}};
 
 #[cfg(test)]
 mod tests;
 
 /// Applies a rule to a list of phones within a time limit
-pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, max_time: &Duration) -> Result<(), ApplicationError<'r, 's>> {
+pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, max_time: Option<Duration>) -> Result<(), ApplicationError<'r, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
-    let end_time = Instant::now() + *max_time;
+    let end_time = max_time.map(|limit| Instant::now() + limit);
     
     while phone_index < phones.len() {
         if let Some((replace_len, input_len)) = apply_at(rule, phones, phone_index)? {
@@ -20,8 +20,10 @@ pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>,
 
         // returns an error if the time limit is exceeded
         // protects against infinite loops
-        if Instant::now() > end_time {
-            return Err(ApplicationError::TimeLimitExceeded);
+        if let Some(end_time) = end_time {
+            if Instant::now() > end_time {
+                return Err(ApplicationError::TimeLimitExceeded);
+            }
         }
     }
 
