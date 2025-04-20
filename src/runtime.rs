@@ -30,36 +30,6 @@ pub type PutFn = dyn Fn(&str) -> Result<(), Box<dyn Error>>;
 /// A callback function for fetching input
 pub type GetFn = dyn Fn(&str) -> Result<String, Box<dyn Error>>;
 
-/// Returns the default function for the runtime's `io_put_fn` callback
-/// 
-/// Prints to stdout
-#[inline]
-#[must_use]
-pub fn default_io_put_fn() -> Box<PutFn> {
-    Box::new(|msg| {
-        println!("{msg}");
-        Ok(())
-    })
-}
-
-/// Returns the default function for the runtime's `io_put_fn` callback
-/// 
-/// Reads from stdin
-#[inline]
-#[must_use]
-pub fn default_io_get_fn() -> Box<GetFn> {
-    Box::new(|msg| {
-        print!("{msg} ");
-        let mut input = String::new();
-        _ = stdout().flush();
-        stdin().read_line(&mut input)?;
-
-        let input = input.trim_end_matches(['\r', '\n']).to_string();
-
-        Ok(input)
-    })
-}
-
 /// A context for appling sound changes
 /// 
 /// Determines the maximum amount a single line can apply changes for before being canceled,
@@ -234,6 +204,34 @@ impl Runtime {
 
         Ok(())
     }
+}
+
+/// Returns the default function for the runtime's `io_put_fn` callback
+/// 
+/// Prints to stdout
+#[must_use]
+fn default_io_put_fn() -> Box<PutFn> {
+    Box::new(|msg| {
+        println!("{msg}");
+        Ok(())
+    })
+}
+
+/// Returns the default function for the runtime's `io_put_fn` callback
+/// 
+/// Reads from stdin
+#[must_use]
+fn default_io_get_fn() -> Box<GetFn> {
+    Box::new(|msg| {
+        print!("{msg} ");
+        let mut input = String::new();
+        _ = stdout().flush();
+        stdin().read_line(&mut input)?;
+
+        let input = input.trim_end_matches(['\r', '\n']).to_string();
+
+        Ok(input)
+    })
 }
 
 #[derive(Debug)]
