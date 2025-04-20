@@ -6,10 +6,20 @@ pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 
 /// Non rule commands executed by the runtime
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Command {
+pub(crate) enum Command {
     Print,
     Get,
     GetAsCode
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LineApplicationLimit {
+    /// No limit on line application, allows infinite loops
+    Unlimited,
+    /// Maximum time allotted for line application
+    Time(Duration),
+    /// Maximum times an application attempt may be made by a line
+    Attempts(usize),
 }
 
 /// A callback function for logging output
@@ -54,7 +64,7 @@ pub fn default_io_get_fn() -> Box<GetFn> {
 /// and includes callbacks for:
 ///     - printing
 ///     - getting input
-///     - limiting execution time
+///     - limiting execution time/attempts
 pub struct Runtime {
     /// The function called when logging
     ///
@@ -64,7 +74,7 @@ pub struct Runtime {
     /// The function called to fetch input
     io_get_fn: Box<GetFn>,
     /// The maximum amount of time allotted to apply changes to a line
-    max_line_application_time: Option<Duration>,
+    line_application_limit: LineApplicationLimit,
 }
 
 impl Default for Runtime {
@@ -82,7 +92,7 @@ impl Runtime {
         Self {
             io_put_fn: default_io_put_fn(),
             io_get_fn: default_io_get_fn(),
-            max_line_application_time: Some(DEFAULT_MAX_APPLICATION_TIME),
+            line_application_limit: LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME),
         }
     }
 
@@ -105,16 +115,16 @@ impl Runtime {
 
     /// Set the runtime's maximum application time per line
     #[inline]
-    pub const fn set_max_line_application_time(&mut self, limit: Option<Duration>) -> &mut Self {
-        self.max_line_application_time = limit;
+    pub const fn set_line_application_limit(&mut self, limit: LineApplicationLimit) -> &mut Self {
+        self.line_application_limit = limit;
         self
     }
 
     /// Gets the runtime's maximum application time per line
     #[inline]
     #[must_use]
-    pub const fn get_max_line_application_time(&self) -> Option<Duration> {
-        self.max_line_application_time
+    pub const fn get_line_application_limit(&self) -> LineApplicationLimit {
+        self.line_application_limit
     }
 
     /// Applies rules to an input given the context of the runtime
@@ -180,7 +190,7 @@ impl Runtime {
                     .map_err(|e| ScaError::from_error(&e, line, line_num))?;
 
                 if let RuleLine::Rule(rule) = rule_line {
-                    apply(&rule, phones, self.max_line_application_time)
+                    apply(&rule, phones, self.line_application_limit)
                         .map_err(|e| ScaError::from_error(&e, line, line_num))?;
                 }
             },

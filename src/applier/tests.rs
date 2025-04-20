@@ -11,7 +11,7 @@ fn apply_empty_rule_to_no_phones() {
         anti_conds: Vec::new(),
     };
     
-    assert_eq!(Ok(()), apply(&rule, &mut Vec::new(), Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut Vec::new(), LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
 }
 
 #[test]
@@ -24,7 +24,7 @@ fn apply_empty_rule_to_one_phone() {
         anti_conds: Vec::new(),
     };
     
-    assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut vec![Phone::Symbol("a")], Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut vec![Phone::Symbol("a")], LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn one_to_one_shift() {
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
     
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
 
     assert_eq!(vec![Phone::Symbol("b"), Phone::Symbol("c"), Phone::Symbol("b")], phones);
 }
@@ -59,7 +59,7 @@ fn one_to_two_shift() {
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("d"), Phone::Symbol("a")];
     
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
 
     assert_eq!(vec![Phone::Symbol("b"), Phone::Symbol("c"), Phone::Symbol("d"), Phone::Symbol("b"), Phone::Symbol("c")], phones);
 }
@@ -79,7 +79,7 @@ fn two_to_one_shift() {
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("d"), Phone::Symbol("a"), Phone::Symbol("b")];
     
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
 
     assert_eq!(vec![Phone::Symbol("c"), Phone::Symbol("d"), Phone::Symbol("c")], phones);
 }
@@ -96,7 +96,7 @@ fn one_to_none_shift() {
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("a")];
 
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
 
     assert_eq!(vec![Phone::Symbol("b")], phones);
 }
@@ -113,7 +113,7 @@ fn remove_word_final_ltr() { // also tests bound deduplication
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Bound, Phone::Symbol("e"), Phone::Bound, Phone::Symbol("f"), Phone::Symbol("g")];
     
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
 
     assert_eq!(vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("f")], phones);
 }
@@ -130,7 +130,7 @@ fn remove_word_final_rtl() { // also tests bound deduplication
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Bound, Phone::Symbol("e"), Phone::Bound, Phone::Symbol("f"), Phone::Symbol("g")];
     
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
     
     assert_eq!(vec![Phone::Bound], phones);
 }
@@ -167,7 +167,7 @@ fn selection_to_selection() { // also tests bound deduplication
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Symbol("d")];
 
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
     
     assert_eq!(vec![Phone::Symbol("d"), Phone::Symbol("e"), Phone::Symbol("f"), Phone::Symbol("d")], phones);
 }
@@ -192,7 +192,7 @@ fn option_to_phone() { // also tests bound deduplication
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")];
     
-    assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
 }
 
 #[test]
@@ -221,7 +221,7 @@ fn option_phone_to_option_phone() { // also tests bound deduplication
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("e"), Phone::Symbol("b"), Phone::Symbol("e")];
     
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)  ));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)  ));
   
     assert_eq!(vec![Phone::Symbol("c"), Phone::Symbol("d"), Phone::Symbol("e"), Phone::Symbol("d"), Phone::Symbol("e")], phones);
 }
@@ -238,7 +238,7 @@ fn phone_to_phone_word_final_ltr() { // also tests bound deduplication
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
     
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
     
     assert_eq!(vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("b")], phones);
 }
@@ -255,7 +255,7 @@ fn phone_to_phone_word_final_rtl() { // also tests bound deduplication
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
 
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
     
     assert_eq!(vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("b")], phones);
 }
@@ -309,7 +309,7 @@ fn quadruple_agreement() { // also tests bound deduplication
         Phone::Symbol("i"),
     ];
     
-    assert_eq!(Ok(()), apply(&rule, &mut phones, Some(DEFAULT_MAX_APPLICATION_TIME)));
+    assert_eq!(Ok(()), apply(&rule, &mut phones, LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME)));
     
     assert_eq!(vec![
         Phone::Symbol("d"),
@@ -325,4 +325,18 @@ fn quadruple_agreement() { // also tests bound deduplication
         Phone::Symbol("c"),
         Phone::Symbol("i")
     ], phones);
+}
+
+#[test]
+fn count_limit() {
+    let rule = SoundChangeRule {
+        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
+        input: vec![RuleToken::Phone(Phone::new("a"))],
+        output: vec![RuleToken::Phone(Phone::new("b"))],
+        conds: vec![Cond::default()],
+        anti_conds: Vec::new(),
+    };
+
+    assert!(apply(&rule, &mut vec![Phone::new("a")], LineApplicationLimit::Attempts(1)).is_ok());
+    assert!(apply(&rule, &mut vec![Phone::new("a"), Phone::new("b")], LineApplicationLimit::Attempts(1)).is_err());
 }

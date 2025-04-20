@@ -1,15 +1,52 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use crate::{ir::tokens::IrToken, matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, phones::Phone, rules::{sound_change_rule::SoundChangeRule, tokens::RuleToken}, tokens::{Direction, ShiftType}};
+use crate::{ir::tokens::IrToken, matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, phones::Phone, rules::{sound_change_rule::SoundChangeRule, tokens::RuleToken}, runtime::LineApplicationLimit, tokens::{Direction, ShiftType}};
 
 #[cfg(test)]
 mod tests;
 
+/// The condition for a line application limit
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LimitCondition {
+    /// No limit
+    None,
+    /// End time
+    Time(Instant),
+    /// Application attempts (current, maximum)
+    Count(usize, usize),
+}
+
+impl From<LineApplicationLimit> for LimitCondition {
+    fn from(value: LineApplicationLimit) -> Self {
+        match value {
+            LineApplicationLimit::Unlimited => LimitCondition::None,
+            LineApplicationLimit::Time(time) => LimitCondition::Time(Instant::now() + time),
+            LineApplicationLimit::Attempts(max) => LimitCondition::Count(0, max),
+        }
+    }
+}
+
+impl LimitCondition {
+    /// Checks if the limiting condition has been exceeded,
+    /// moves `Count` varient closer to completion
+    fn check(&mut self) -> bool {
+        match self {
+            Self::None => false,
+            Self::Time(time) => Instant::now() >= *time,
+            Self::Count(cur, max) if *cur >= *max => true,
+            Self::Count(cur, _) => {
+                *cur += 1;
+                false
+            }
+        }
+    }
+}
+
 /// Applies a rule to a list of phones within a time limit
-pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, max_time: Option<Duration>) -> Result<(), ApplicationError<'r, 's>> {
+pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, limit: LineApplicationLimit) -> Result<(), ApplicationError<'r, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
-    let end_time = max_time.map(|limit| Instant::now() + limit);
+    let mut limit_condition: LimitCondition = limit.into();
     
     while phone_index < phones.len() {
         if let Some((replace_len, input_len)) = apply_at(rule, phones, phone_index)? {
@@ -18,12 +55,10 @@ pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>,
             phone_index = dir.change_by_one(phone_index);
         }
 
-        // returns an error if the time limit is exceeded
+        // returns an error if the limit is exceeded
         // protects against infinite loops
-        if let Some(end_time) = end_time {
-            if Instant::now() > end_time {
-                return Err(ApplicationError::TimeLimitExceeded);
-            }
+        if limit_condition.check() {
+            return Err(ApplicationError::TimeLimitExceeded);
         }
     }
 
