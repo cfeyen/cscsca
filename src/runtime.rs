@@ -12,6 +12,8 @@ pub(crate) enum Command {
     GetAsCode
 }
 
+/// A limit for how long a line can be executed for,
+/// prevents infinite loops from being infinite
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LineApplicationLimit {
     /// No limit on line application, allows infinite loops
@@ -64,7 +66,7 @@ pub fn default_io_get_fn() -> Box<GetFn> {
 /// and includes callbacks for:
 ///     - printing
 ///     - getting input
-///     - limiting execution time/attempts
+///     - limiting line application time/attempts
 pub struct Runtime {
     /// The function called when logging
     ///
