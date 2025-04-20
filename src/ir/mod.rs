@@ -7,7 +7,6 @@ use prefix::{Prefix, DEFINITION_PREFIX, SELECTION_PREFIX, VARIABLE_PREFIX};
 
 pub mod tokens;
 pub mod prefix;
-pub mod token_checker;
 pub mod tokenization_data;
 
 #[cfg(test)]
@@ -30,8 +29,6 @@ pub enum IrLine<'s> {
 }
 
 /// Converts source code into intermediate representation tokens
-/// 
-/// Note: these tokens may not be structurally valid and should be checked
 pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mut TokenizationData<'s>) -> Result<IrLine<'s>, IrError<'s>> {
     Ok(if let Some(definition_content) = line.strip_prefix(DEFINITION_LINE_START) {
         // handles definitions

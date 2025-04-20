@@ -31,26 +31,6 @@ pub enum IrToken<'s> {
     ScopeEnd(ScopeType),
 }
 
-impl IrToken<'_> {
-    /// Checks if a token is allowed in scopes
-    pub fn valid_in_scope(&self) -> bool {
-        matches!(
-            self,
-            Self::Any | Self::ArgSep | Self::Gap
-            | Self::Label(_) | Self::Phone(_)
-            | Self::ScopeEnd(_) | Self::ScopeStart(_)
-        )
-    }
-
-    /// Checks if a token can be labeled
-    pub fn labelable(&self) -> bool {
-        matches!(
-            self,
-            Self::Any | Self::Gap | Self::ScopeStart(_)
-        )
-    }
-}
-
 impl Display for IrToken<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {

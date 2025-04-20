@@ -1,6 +1,6 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
-use crate::{applier::apply, ansi::{BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, ir::{token_checker::check_token_line, tokenize_line_or_create_command, tokenization_data::TokenizationData, IrLine, GET_LINE_START}, ScaError};
+use crate::{applier::apply, ansi::{BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, ir::{tokenize_line_or_create_command, tokenization_data::TokenizationData, IrLine, GET_LINE_START}, ScaError};
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 
@@ -183,11 +183,10 @@ impl Runtime {
             },
             // checks ir, builds a rule, and applies it
             IrLine::Ir(_) => {
-                check_token_line(&ir_line)
-                    .map_err(|e| ScaError::from_error(&e, line, line_num))?;
-
                 let rule_line = build_rule(&ir_line)
                     .map_err(|e| ScaError::from_error(&e, line, line_num))?;
+
+                drop(ir_line);
 
                 if let RuleLine::Rule(rule) = rule_line {
                     apply(&rule, phones, self.line_application_limit)

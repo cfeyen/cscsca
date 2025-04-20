@@ -1,4 +1,4 @@
-use crate::{phones::Phone, ir::token_checker::check_tokens};
+use crate::phones::Phone;
 
 use super::*;
 
@@ -321,7 +321,7 @@ fn escape_escape() {
 }
 
 #[test]
-fn tokenize_and_check_simple() {
+fn tokenize_simple() {
     let tokens = tokenize("##this is a comment\nDEFINE V { i, e, a, u, o }\n\n$stops{p, t, k} >> $stops{b, d, g} / @V _ @V / _ {l, r} // h _");
 
     assert_eq!(Ok(vec![
@@ -391,6 +391,4 @@ fn tokenize_and_check_simple() {
             IrToken::CondType(CondType::Pattern),
         ]),
     ]), tokens);
-
-    assert_eq!(Ok(()), check_tokens(&tokens.unwrap()));
 }

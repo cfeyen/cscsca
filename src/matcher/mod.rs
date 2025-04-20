@@ -370,7 +370,7 @@ impl std::fmt::Display for MatchError<'_, '_> {
             Self::UnlabeledScope(scope) => {
                 format!("Cannot resove scope as a value\nTry adding a label '{}' before the scope and ensuring it is used in the input\nScope:\t{scope}", IrToken::Label("name"))
             },
-            Self::CannotCheckLenOfGap => format!("Cannot check the length of '{}'", RuleToken::Gap { id: None }),
+            Self::CannotCheckLenOfGap => format!("Cannot check the length of '{}' in an input", RuleToken::Gap { id: None }),
             Self::LeftMustBePhones(token) => format!("Left side of '{MATCH_CHAR}' may only contain phones, found: {token}")
         };
 
