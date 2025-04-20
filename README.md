@@ -8,12 +8,12 @@ A sound change applier based on linguistic sound change notation.
 - expansive conditions and anti-conditions
 - definitions that can be inserted anywhere in a rule
 - automatic and manual matching for lists of phones
-- gaps between phones in conditions
+- gaps of arbitrary phones in conditions (useful for harmony)
 - can get information to use in conditions at runtime (variables)
 - reasonably minimalist and simple but also highly expressive and versitile
 
 ## Drawbacks
- - no built-in support for syllables or supersegmentals
+- no built-in support for syllables or supersegmentals
 
 ## Writing Sound Change Rules with CSCSCA
 ### Phones
