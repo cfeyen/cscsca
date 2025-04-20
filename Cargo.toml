@@ -1,10 +1,12 @@
 [package]
 name = "cscsca"
+authors = ["Charles Feyen"]
 version = "0.6.3"
 edition = "2024"
-description = "Charles' Super Cool Sound Change Applier - A tool for simulating phonemic evolution"
 readme = "README.md"
-authors = ["Charles Feyen"]
+keywords = ["linguistics", "conlang"]
+categories = ["command-line-utilities"]
+description = "Charles' Super Cool Sound Change Applier - A tool for simulating phonetic evolution"
 
 [features]
 no_ansi = []

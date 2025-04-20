@@ -2,13 +2,28 @@
 
 A sound change applier based on linguistic sound change notation.
 
+## Cool and Useful Features
+- digraphs (should be merged from single phone at the very start of the file)
+- application direction
+- expansive conditions and anti-conditions
+- definitions that can be inserted anywhere in a rule
+- automatic and manual matching for lists of phones
+- gaps between phones in conditions
+- can get information to use in conditions at runtime (variables)
+- reasonably minimalist and simple but also highly expressive and versitile
+
+## Drawbacks
+ - no built-in support for syllables or supersegmentals
+
 ## Writing Sound Change Rules with CSCSCA
 ### Phones
 A phone is a group of non-special characters seperated by spaces
 
 Examples: `a` `ts` `á` `litteraly_a_phone`
 
-notes: the phone `#` is a word boundary
+notes:
+- the phone `#` is a word boundary
+- to convert an input *ts* (phones `t`, `s`) to the phone `ts` use the rule ```t s >> ts```
 
 ### Shifts
 A shift tells the SCA how changes are to applied and seperates inputs from outputs
