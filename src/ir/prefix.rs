@@ -1,5 +1,5 @@
 pub const DEFINITION_PREFIX: char = '@';
-pub const SELECTION_PREFIX: char = '$';
+pub const LABEL_PREFIX: char = '$';
 pub const VARIABLE_PREFIX: char = '%';
 
 /// Prefixes added to literal strings to modify their effects
@@ -17,7 +17,7 @@ impl std::fmt::Display for Prefix {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let c = match self {
             Self::Definition => DEFINITION_PREFIX,
-            Self::Label => SELECTION_PREFIX,
+            Self::Label => LABEL_PREFIX,
             Self::Variable => VARIABLE_PREFIX
         };
 

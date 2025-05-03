@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{tokens::{ScopeType, Shift}, phones::Phone, rules::conditions::CondType, ir::prefix::SELECTION_PREFIX};
+use crate::{tokens::{ScopeType, Shift}, phones::Phone, rules::conditions::CondType, ir::prefix::LABEL_PREFIX};
 
 pub const ANY_CHAR: char = '*';
 pub const ARG_SEP_CHAR: char = ',';
@@ -42,7 +42,7 @@ impl Display for IrToken<'_> {
             Self::Phone(phone) => phone.to_string(),
             Self::ScopeEnd(kind) => kind.fmt_end().to_string(),
             Self::ScopeStart(kind) => kind.fmt_start().to_string(),
-            Self::Label(name) => format!("{SELECTION_PREFIX}{name}"),
+            Self::Label(name) => format!("{LABEL_PREFIX}{name}"),
         };
 
         write!(f, "{s}")

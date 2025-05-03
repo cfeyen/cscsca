@@ -304,9 +304,8 @@ fn print_statement() {
 }
 
 #[test]
-fn escape_print() {
-    let shift_token = IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Move }));
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("\\PRINT")), shift_token, IrToken::Phone(Phone::Symbol("escaped"))])]), tokenize("\\PRINT >> escaped"))
+fn bad_escape() {
+    assert_eq!(Err((IrError::BadEscape('P'), 1)), tokenize("\\PRINT >> escaped"))
 }
 
 #[test]

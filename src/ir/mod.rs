@@ -1,9 +1,9 @@
 use crate::{
-    runtime::Command, tokens::{Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, phones::Phone, rules::conditions::{CondType, MATCH_CHAR, INPUT_PATERN_STR}
+    phones::Phone, rules::conditions::{CondType, INPUT_PATERN_STR, MATCH_CHAR}, runtime::Command, tokens::{Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, BOUND_CHAR
 };
 use tokenization_data::TokenizationData;
 use tokens::{Break, IrToken, ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, AND_CHAR};
-use prefix::{Prefix, DEFINITION_PREFIX, SELECTION_PREFIX, VARIABLE_PREFIX};
+use prefix::{Prefix, DEFINITION_PREFIX, LABEL_PREFIX, VARIABLE_PREFIX};
 
 pub mod tokens;
 pub mod prefix;
@@ -76,9 +76,11 @@ fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>) ->
     for c in chars {
         match c {
             // handles escapes
-            _ if escape => {
+            _ if escape => if is_escapeable(c) {
                 slice.grow(c);
                 escape = false;
+            } else {
+                return Err(IrError::BadEscape(c))
             },
             ESCAPE_CHAR => {
                 slice.grow(c);
@@ -86,7 +88,7 @@ fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>) ->
             },
             // handles prefixes
             DEFINITION_PREFIX => start_prefix(Prefix::Definition, &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
-            SELECTION_PREFIX => start_prefix(Prefix::Label, &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
+            LABEL_PREFIX => start_prefix(Prefix::Label, &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             VARIABLE_PREFIX => start_prefix(Prefix::Variable, &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             // handles scope bounds
             OPTIONAL_START_CHAR => push_phone_and(IrToken::ScopeStart(ScopeType::Optional), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
@@ -210,6 +212,30 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
     Ok(())
 }
 
+/// Determines if a character has a function to escape
+pub fn is_escapeable(c: char) -> bool {
+    [
+        LTR_CHAR,
+        RTL_CHAR,
+        COND_CHAR,
+        AND_CHAR,
+        ARG_SEP_CHAR,
+        MATCH_CHAR,
+        INPUT_PATERN_STR.chars().next().unwrap_or_default(),
+        BOUND_CHAR,
+        ANY_CHAR,
+        GAP_STR.chars().next().unwrap_or_default(),
+        OPTIONAL_START_CHAR,
+        OPTIONAL_END_CHAR,
+        SELECTION_START_CHAR,
+        SELECTION_END_CHAR,
+        DEFINITION_PREFIX,
+        LABEL_PREFIX,
+        VARIABLE_PREFIX,
+        ESCAPE_CHAR,
+    ].contains(&c)
+}
+
 /// A wrapper around a str reference that allows slices of it to be taken
 /// 
 /// The slices may only grow in length or move right to a non intersecting position
@@ -278,20 +304,20 @@ pub enum IrError<'s> {
     UndefinedDefinition(&'s str),
     UndefinedVariable(&'s str),
     EmptyDefinition,
+    BadEscape(char),
 }
 
 impl std::error::Error for IrError<'_> {}
 
 impl std::fmt::Display for IrError<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::EmptyPrefix(prefix) => format!("Found prefix '{prefix}' without a following identifier"),
-            Self::UndefinedDefinition(name) => format!("Undefined definiton '{DEFINITION_PREFIX}{name}'"),
-            Self::UndefinedVariable(name) => format!("Undefined definiton '{VARIABLE_PREFIX}{name}'"),
-            Self::EmptyDefinition => format!("Found '{DEFINITION_LINE_START}' with out a following name"),
-        };
-
-        write!(f, "{s}")
+        match self {
+            Self::EmptyPrefix(prefix) => write!(f, "Found prefix '{prefix}' without a following identifier"),
+            Self::UndefinedDefinition(name) => write!(f, "Undefined definiton '{DEFINITION_PREFIX}{name}'"),
+            Self::UndefinedVariable(name) => write!(f, "Undefined definiton '{VARIABLE_PREFIX}{name}'"),
+            Self::EmptyDefinition => write!(f, "Found '{DEFINITION_LINE_START}' with out a following name"),
+            Self::BadEscape(c) => write!(f, "Escaped normal character '{c}' ({ESCAPE_CHAR}{c})"),
+        }
     }
 }
  

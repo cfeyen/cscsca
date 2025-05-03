@@ -1,4 +1,60 @@
+use crate::apply_fallible;
+
 use super::*;
+
+#[test]
+fn shifting_bounds() {
+    assert_eq!(
+        apply_fallible("a #c", "\\# >> b"),
+        Ok("a bc".to_string())
+    )
+}
+
+#[test]
+fn phone_list() {
+    assert_eq!(
+        build_phone_list("a b c"),
+        vec![Phone::Symbol("a"), Phone::Bound, Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
+    );
+
+    assert_eq!(
+        build_phone_list("ab c"),
+        vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
+    );
+
+    assert_eq!(
+        build_phone_list(&format!("a{BOUND_STR}b c")),
+        vec![Phone::Symbol("a"), Phone::Symbol(BOUND_STR), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
+    );
+}
+
+#[test]
+fn phone_list_to_str() {
+    assert_eq!(
+        phone_list_to_string(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")]),
+        "abc".to_string()
+    );
+
+    assert_eq!(
+        phone_list_to_string(&[Phone::Symbol("a"), Phone::Bound, Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]),
+        "a b c".to_string()
+    );
+
+    assert_eq!(
+        phone_list_to_string(&[Phone::Symbol("a"), Phone::Bound, Phone::Symbol(&format!("{ESCAPE_CHAR}b")), Phone::Bound, Phone::Symbol("c")]),
+        "a b c".to_string()
+    );
+
+    assert_eq!(
+        phone_list_to_string(&[Phone::Symbol("a"), Phone::Bound, Phone::Symbol(&format!("{ESCAPE_CHAR}{ESCAPE_CHAR}b")), Phone::Bound, Phone::Symbol("c")]),
+        format!("a {ESCAPE_CHAR}b c")
+    );
+
+    assert_eq!(
+        phone_list_to_string(&[Phone::Symbol(BOUND_STR)]),
+        BOUND_STR.to_string()
+    );
+}
 
 #[test]
 fn text_matches_text () {
@@ -12,7 +68,7 @@ fn escapes() {
     assert!(!Phone::Symbol("@").matches(&Phone::Symbol("\\@")));
     assert!(Phone::Symbol("\\\\@").matches(&Phone::Symbol("\\@")));
     assert!(!Phone::Symbol("\\@").matches(&Phone::Symbol("\\@")));
-    assert!(Phone::Symbol(&format!("\\{BOUND_STR}")).matches(&Phone::Bound));
+    assert!(!Phone::Symbol(&format!("\\{BOUND_STR}")).matches(&Phone::Bound));
     assert!(!Phone::Bound.matches(&Phone::Symbol(&format!("\\{BOUND_STR}"))));
 }
 

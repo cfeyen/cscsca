@@ -31,12 +31,12 @@ impl<'s> Phone<'s> {
     }
 
     /// Returns the phone's symbol.
-    /// If the phone is a boundary, `BOUND_STR` is returned
+    /// If the phone is a boundary, `" "` (space) is returned
     #[must_use]
     pub fn as_str(&self) -> &'s str {
         match self {
             Self::Symbol(symbol) => symbol,
-            Self::Bound => BOUND_STR,
+            Self::Bound => " ",
         }
     }
 
@@ -77,7 +77,7 @@ impl<'s> Phone<'s> {
                     // if the other phone is a bound str or whitespace,
                     // the loop is marked as in whitespace and moved to the next iteration,
                     // otherwise, false is returned
-                    if other_char.to_string() == BOUND_STR || other_char.is_whitespace() {
+                    if other_char.is_whitespace() {
                         in_whitespace = true;
                         continue;
                     }
@@ -113,7 +113,7 @@ pub fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
         .filter(|s| !s.is_empty())
         .map(|s| if s == "\n" {
             Phone::Symbol(s)
-        } else if let BOUND_STR | "" = s.trim() {
+        } else if s.trim().is_empty() {
             Phone::Bound
         } else {
             Phone::Symbol(s)
@@ -140,9 +140,11 @@ pub fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
 pub fn phone_list_to_string(phone_list: &[Phone]) -> String {
     phone_list
         .iter()
-        .fold(String::new(), |acc, phone| format!("{acc}{phone}"))
-        .replace(&format!("{BOUND_CHAR}\n{BOUND_CHAR}"), "\n")
-        .replace(BOUND_CHAR, " ")
+        .fold(String::new(), |acc, phone| acc + phone.as_str())
+        .split(&format!("{ESCAPE_CHAR}{ESCAPE_CHAR}"))
+        .map(|s| s.replace(ESCAPE_CHAR, ""))
+        .reduce(|acc, s| format!("{acc}{ESCAPE_CHAR}{s}"))
+        .unwrap_or_default()
         .trim()
         .to_string()
 }
