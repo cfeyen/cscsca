@@ -331,12 +331,12 @@ fn quadruple_agreement() { // also tests bound deduplication
 fn count_limit() {
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
-        input: vec![RuleToken::Phone(Phone::new("a"))],
-        output: vec![RuleToken::Phone(Phone::new("b"))],
+        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
+        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
         conds: vec![Cond::default()],
         anti_conds: Vec::new(),
     };
 
-    assert!(apply(&rule, &mut vec![Phone::new("a")], LineApplicationLimit::Attempts(1)).is_ok());
-    assert!(apply(&rule, &mut vec![Phone::new("a"), Phone::new("b")], LineApplicationLimit::Attempts(1)).is_err());
+    assert!(apply(&rule, &mut vec![Phone::Symbol("a")], LineApplicationLimit::Attempts(1)).is_ok());
+    assert!(apply(&rule, &mut vec![Phone::Symbol("a"), Phone::Symbol("b")], LineApplicationLimit::Attempts(1)).is_err());
 }
