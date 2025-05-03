@@ -1,6 +1,14 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
-use crate::{applier::apply, ansi::{BLUE, RESET}, phones::{Phone, build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, ir::{tokenize_line_or_create_command, tokenization_data::TokenizationData, IrLine, GET_LINE_START}, ScaError};
+use crate::{
+    applier::apply,
+    ansi::{BLUE, RESET},
+    phones::{Phone, build_phone_list, phone_list_to_string},
+    rules::{build_rule, RuleLine},
+    ir::{tokenize_line_or_create_command, tokenization_data::TokenizationData, IrLine},
+    ScaError,
+    keywords::{GET_LINE_START, GET_AS_CODE_LINE_START},
+};
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
 
@@ -125,7 +133,7 @@ impl Runtime {
                 drop(phones);
                 // Safety: Since the output is a ScaError,
                 // which owns all of its values, and phones is dropped,
-                // no references remain to the souces buffer in `tokenization_data`
+                // no references remain to the sources buffer in `tokenization_data`
                 unsafe { tokenization_data.free_sources() };
                 return Err(e);
             }
@@ -136,7 +144,7 @@ impl Runtime {
         drop(phones);
         // Safety: Since the output is a String,
         // which owns all of its values, and phones is dropped,
-        // no references remain to the souces buffer in `tokenization_data`
+        // no references remain to the sources buffer in `tokenization_data`
         unsafe { tokenization_data.free_sources() };
 
         Ok(output)
@@ -241,6 +249,6 @@ impl Error for GetFormatError {}
 
 impl Display for GetFormatError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Invalid get format, should be {GET_LINE_START} 'var_name' 'msg'")
+        write!(f, "Invalid get format, should be {GET_LINE_START} 'var_name' 'msg' or {GET_AS_CODE_LINE_START} 'var_name' 'msg'")
     }
 }

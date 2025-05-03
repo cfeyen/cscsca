@@ -1,9 +1,20 @@
 use crate::{
-    phones::Phone, rules::conditions::{CondType, INPUT_PATERN_STR, MATCH_CHAR}, runtime::Command, tokens::{Direction, ScopeType, Shift, ShiftType, LTR_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}, BOUND_CHAR
+    phones::Phone,
+    rules::conditions::CondType,
+    runtime::Command,
+    tokens::{Direction, ScopeType, Shift, ShiftType},
+    keywords::{
+        AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, COMMENT_LINE_START, COND_CHAR,
+        DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR,
+        GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX,
+        LTR_CHAR, MATCH_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START,
+        RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, VARIABLE_PREFIX, is_special
+    }
 };
+
 use tokenization_data::TokenizationData;
-use tokens::{Break, IrToken, ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, AND_CHAR};
-use prefix::{Prefix, DEFINITION_PREFIX, LABEL_PREFIX, VARIABLE_PREFIX};
+use tokens::{Break, IrToken};
+use prefix::Prefix;
 
 pub mod tokens;
 pub mod prefix;
@@ -11,13 +22,6 @@ pub mod tokenization_data;
 
 #[cfg(test)]
 mod tests;
-
-pub const DEFINITION_LINE_START: &str = "DEFINE";
-pub const PRINT_LINE_START: &str = "PRINT";
-pub const GET_LINE_START: &str = "GET";
-pub const GET_AS_CODE_LINE_START: &str = "GET_AS_CODE";
-pub const COMMENT_LINE_START: &str = "##";
-pub const ESCAPE_CHAR: char = '\\';
 
 /// A list of `IrTokens`, a command, or nothing representing a line of source code
 #[cfg_attr(test, derive(PartialEq))]
@@ -76,7 +80,7 @@ fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>) ->
     for c in chars {
         match c {
             // handles escapes
-            _ if escape => if is_escapeable(c) {
+            _ if escape => if is_special(c) {
                 slice.grow(c);
                 escape = false;
             } else {
@@ -187,7 +191,7 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
     slice.move_after();
 
     match prefix {
-        None if literal == INPUT_PATERN_STR => tokens.push(IrToken::CondType(CondType::Pattern)),
+        None if literal == INPUT_PATTERN_STR => tokens.push(IrToken::CondType(CondType::Pattern)),
         None if literal == GAP_STR => tokens.push(IrToken::Gap),
         None if literal.is_empty() => (),
         None => tokens.push(IrToken::Phone(Phone::new(literal))),
@@ -210,30 +214,6 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
 
     *prefix = None;
     Ok(())
-}
-
-/// Determines if a character has a function to escape
-pub fn is_escapeable(c: char) -> bool {
-    [
-        LTR_CHAR,
-        RTL_CHAR,
-        COND_CHAR,
-        AND_CHAR,
-        ARG_SEP_CHAR,
-        MATCH_CHAR,
-        INPUT_PATERN_STR.chars().next().unwrap_or_default(),
-        BOUND_CHAR,
-        ANY_CHAR,
-        GAP_STR.chars().next().unwrap_or_default(),
-        OPTIONAL_START_CHAR,
-        OPTIONAL_END_CHAR,
-        SELECTION_START_CHAR,
-        SELECTION_END_CHAR,
-        DEFINITION_PREFIX,
-        LABEL_PREFIX,
-        VARIABLE_PREFIX,
-        ESCAPE_CHAR,
-    ].contains(&c)
 }
 
 /// A wrapper around a str reference that allows slices of it to be taken

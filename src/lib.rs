@@ -17,11 +17,10 @@ pub(crate) mod rules;
 pub(crate) mod applier;
 pub(crate) mod matcher;
 pub mod runtime;
+pub mod keywords;
 
 #[cfg(test)]
 mod tests;
-
-pub const BOUND_CHAR: char = '#';
 
 /// Applies sca source code to an input string
 /// 

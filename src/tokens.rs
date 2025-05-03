@@ -1,11 +1,10 @@
-use std::fmt::Display;
+use crate::keywords::{
+    OPTIONAL_START_CHAR, OPTIONAL_END_CHAR,
+    SELECTION_START_CHAR, SELECTION_END_CHAR,
+    LTR_CHAR, RTL_CHAR,
+};
 
-pub const LTR_CHAR: char = '>';
-pub const RTL_CHAR: char = '<';
-pub const OPTIONAL_START_CHAR: char = '(';
-pub const OPTIONAL_END_CHAR: char = ')';
-pub const SELECTION_START_CHAR: char = '{';
-pub const SELECTION_END_CHAR: char = '}';
+use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Shift {

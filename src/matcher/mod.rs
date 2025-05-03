@@ -1,6 +1,12 @@
 use std::collections::HashMap;
 
-use crate::{tokens::Direction, phones::Phone, rules::{conditions::MATCH_CHAR, tokens::{RuleToken, ScopeId}}, ir::tokens::IrToken};
+use crate::{
+    keywords::MATCH_CHAR,
+    ir::tokens::IrToken,
+    phones::Phone,
+    rules::tokens::{RuleToken, ScopeId},
+    tokens::Direction
+};
 
 #[cfg(test)]
 mod ltr_tests;

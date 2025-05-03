@@ -1,6 +1,4 @@
-pub const DEFINITION_PREFIX: char = '@';
-pub const LABEL_PREFIX: char = '$';
-pub const VARIABLE_PREFIX: char = '%';
+use crate::keywords::{DEFINITION_PREFIX, LABEL_PREFIX, VARIABLE_PREFIX};
 
 /// Prefixes added to literal strings to modify their effects
 #[derive(Debug, Clone, Copy, PartialEq)]

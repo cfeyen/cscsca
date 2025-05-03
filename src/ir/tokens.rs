@@ -1,12 +1,11 @@
 use std::fmt::Display;
 
-use crate::{tokens::{ScopeType, Shift}, phones::Phone, rules::conditions::CondType, ir::prefix::LABEL_PREFIX};
-
-pub const ANY_CHAR: char = '*';
-pub const ARG_SEP_CHAR: char = ',';
-pub const COND_CHAR: char = '/';
-pub const GAP_STR: &str = "..";
-pub const AND_CHAR: char = '&';
+use crate::{
+    keywords::{ANY_CHAR, ARG_SEP_CHAR, GAP_STR, LABEL_PREFIX, COND_CHAR, AND_CHAR},
+    tokens::{ScopeType, Shift},
+    phones::Phone,
+    rules::conditions::CondType,
+};
 
 /// Tokens that make up the intermediate representation of sound shifts
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

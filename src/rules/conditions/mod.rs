@@ -1,11 +1,13 @@
 use std::fmt::Display;
 
-use crate::{matcher::{tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError}, tokens::Direction, phones::Phone};
+use crate::{
+    keywords::{INPUT_PATTERN_STR, MATCH_CHAR},
+    matcher::{tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError},
+    tokens::Direction,
+    phones::Phone
+};
 
 use super::tokens::RuleToken;
-
-pub const INPUT_PATERN_STR: &str = "_";
-pub const MATCH_CHAR: char = '=';
 
 #[cfg(test)]
 mod tests;
@@ -22,7 +24,7 @@ pub enum CondType {
 impl Display for CondType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Pattern => write!(f, "{INPUT_PATERN_STR}"),
+            Self::Pattern => write!(f, "{INPUT_PATTERN_STR}"),
             Self::Match => write!(f, "{MATCH_CHAR}"),
         }
     }

@@ -4,7 +4,11 @@ use conditions::{Cond, CondType};
 use sound_change_rule::SoundChangeRule;
 use tokens::{LabelType, RuleToken, ScopeId};
 
-use crate::{ir::{tokens::{Break, IrToken, AND_CHAR}, IrLine}, tokens::{ScopeType, Shift}};
+use crate::{
+    keywords::AND_CHAR,
+    ir::{tokens::{Break, IrToken}, IrLine},
+    tokens::{ScopeType, Shift}
+};
 
 pub mod sound_change_rule;
 pub mod conditions;
