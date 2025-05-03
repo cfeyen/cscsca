@@ -4,7 +4,10 @@ use crate::{ir::ESCAPE_CHAR, BOUND_CHAR};
 mod tests;
 
 /// `BOUND_CHAR` as a static str
-pub const BOUND_STR: &str = unsafe { std::str::from_utf8_unchecked(&[BOUND_CHAR as u8]) };
+pub const BOUND_STR: &str = {
+    let utf8 = std::ptr::from_ref(&BOUND_CHAR).cast::<[u8; BOUND_CHAR.len_utf8()]>();
+    unsafe { std::str::from_utf8_unchecked(&*utf8) }
+};
 
 /// A representation of a phoneme or word boundary
 /// 
