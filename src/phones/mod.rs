@@ -41,56 +41,42 @@ impl<'s> Phone<'s> {
     /// and whitespace treated as bounds
     /// 
     /// **Note**: This is not symetric, a.matches(b) does not imply b.matches(a)
+    /// 
+    /// Should be used to check if a phone in a `RuleToken` matches a phone from input
     #[must_use]
     pub fn matches(&self, other: &Self) -> bool {
-        let symbol = self.as_str();
-        let other_symbol = other.as_str();
+        match (self, other) {
+            (Self::Bound, Self::Bound) => true,
+            (Self::Bound, Self::Symbol(symbol)) | (Self::Symbol(symbol), Self::Bound)
+                => symbol.chars().all(char::is_whitespace),
+            (Self::Symbol(phone_symbol), Self::Symbol(other_symbol)) => {
+                let phone_chars = phone_symbol.chars();
+                let mut other_chars = other_symbol.chars();
 
-        let phone_chars = symbol.chars();
-        let mut other_chars = other_symbol.chars();
+                let mut escape = false;
 
-        let mut escape = false;
-        let mut in_whitespace = false;
-
-        for phone_char in phone_chars {
-            // removes an escape character ('\')
-            // and marks an immeadiately following one not to be escaped
-            if phone_char == ESCAPE_CHAR && !escape {
-                escape = true;
-                continue;
-            }
-
-            escape = false;
-
-            // phone and the previous are whitespace skip to the next phone
-            if in_whitespace && phone_char.is_whitespace() {
-                continue;
-            }
-
-            if let Some(other_char) = other_chars.next() {
-                // marks the loop as in whitespace if the character is whitespace
-                // and the other character is a `BOUND_STR`
-                if phone_char.is_whitespace() {
-                    // if the other phone is a bound str or whitespace,
-                    // the loop is marked as in whitespace and moved to the next iteration,
-                    // otherwise, false is returned
-                    if other_char.is_whitespace() {
-                        in_whitespace = true;
+                for phone_char in phone_chars {
+                    // removes an escape character ('\')
+                    // and marks an immeadiately following one not to be escaped
+                    if phone_char == ESCAPE_CHAR && !escape {
+                        escape = true;
                         continue;
                     }
-                    
-                    return false;
+        
+                    escape = false;
+        
+                    if let Some(other_char) = other_chars.next() {
+                        if phone_char != other_char {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
                 }
-                
-                in_whitespace = false;
-
-                if phone_char != other_char { return false; }
-            } else {
-                return false;
+        
+                other_chars.next().is_none()
             }
         }
-
-        other_chars.next().is_none()
     }
 }
 

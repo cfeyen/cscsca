@@ -145,9 +145,9 @@ To print the current phonetic form, type `PRINT` at the start of a line followed
 
 To get input at runtime, type `GET` *variable_name* *message* where *message* is what you want to display to prompt input. To access the input later prefix *variable_name* with `%`
 
-note: here the content of *variable_name* will be a single phone, spaces incuded, if you wish to check equality with something that has spaces, use `\` to escape them in your code
+note: here the content of *variable_name* will be a list phone, seperated by spaces
 
-You may replace `GET` with `GET_AS_CODE` to interpret the variable contents as code
+You may replace `GET` with `GET_AS_CODE` to interpret the variable contents as code instead of phones
 
 Examples:
 

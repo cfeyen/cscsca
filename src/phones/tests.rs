@@ -74,8 +74,8 @@ fn escapes() {
 
 #[test]
 fn bound_matches_phone() {
-    assert!(Phone::Symbol("\\ ").matches(&Phone::Bound));
-    assert!(Phone::Symbol("\\ \\ ").matches(&Phone::Bound));
-    assert!(!Phone::Bound.matches(&Phone::Symbol("\\ ")));
-    assert!(Phone::Symbol("\\ ").matches(&Phone::Symbol(" ")));
+    assert!(Phone::Symbol(" ").matches(&Phone::Bound));
+    assert!(Phone::Symbol("  ").matches(&Phone::Bound));
+    assert!(Phone::Bound.matches(&Phone::Symbol(" ")));
+    assert!(Phone::Symbol(" ").matches(&Phone::Symbol(" ")));
 }

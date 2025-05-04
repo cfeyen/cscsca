@@ -18,6 +18,7 @@ use super::{tokens::IrToken, tokenize_line, IrError};
 pub struct TokenizationData<'s> {
     definitions: HashMap<&'s str, Vec<IrToken<'s>>>,
     variables: HashMap<&'s str, Vec<IrToken<'s>>>,
+    /// A list of pointers to all strs leaked
     sources: Vec<*const str>,
 }
 
@@ -62,15 +63,21 @@ impl<'s> TokenizationData<'s> {
         Ok(())
     }
 
-    /// Leaks the source to the static scope and makes a phone out of it,
-    /// then assigns the tokens to the given name
+    /// Leaks the source to the static scope,
+    /// then assigns the it as a list of phones to the name
     /// 
     /// ## Warning
     /// If `free_sources` is never called on this struct, the input will be leaked forever
     pub fn set_variable(&mut self, name: &'s str, source: String) {
         let source = self.add_source(source);
+        
 
-        self.variables.insert(name, vec![IrToken::Phone(Phone::new(source))]);
+        self.variables.insert(
+            name, 
+            source.split_whitespace()
+                .map(|s| IrToken::Phone(Phone::Symbol(s)))
+                .collect()
+        );
     }
 
     /// Leaks a source and adds it to the sources buffer
@@ -96,4 +103,27 @@ impl<'s> TokenizationData<'s> {
             s.cast_mut().drop_in_place();
         });
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test_get_variable_to_multiple_phones() {
+    use crate::keywords::BOUND_STR;
+
+    let mut tokenization_data = TokenizationData::new();
+    tokenization_data.set_variable("name", format!("ab cd e {BOUND_STR} fg\t\t{BOUND_STR}h"));
+    
+    assert_eq!(
+        tokenization_data.get_variable("name"),
+        Ok(&vec![
+            IrToken::Phone(Phone::Symbol("ab")),
+            IrToken::Phone(Phone::Symbol("cd")),
+            IrToken::Phone(Phone::Symbol("e")),
+            IrToken::Phone(Phone::Symbol(BOUND_STR)),
+            IrToken::Phone(Phone::Symbol("fg")),
+            IrToken::Phone(Phone::Symbol(&format!("{BOUND_STR}h"))),
+        ])
+    );
+
+    unsafe { tokenization_data.free_sources() };
 }
