@@ -22,15 +22,11 @@ mod empty_form_tests;
 
 
 /// Checks if tokens match phones starting from the left
-/// 
-/// Note: see `MatchEnviroment::tokens_match_phones` for side effects
 pub fn tokens_match_phones_from_right<'r, 's>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
     MatchEnviroment::new(tokens, phones, Direction::Rtl).tokens_match_phones(choices)
 }
 
 /// Checks if tokens match phones starting from the left
-/// 
-/// Note: see `MatchEnviroment::tokens_match_phones` for side effects
 pub fn tokens_match_phones_from_left<'r, 's>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
     MatchEnviroment::new(tokens, phones, Direction::Ltr).tokens_match_phones(choices)
 }
@@ -341,6 +337,7 @@ pub fn has_empty_form(tokens: &[RuleToken]) -> bool {
     true
 }
 
+/// Choices for how agreement should occur
 #[derive(Debug, Clone, Default)]
 pub struct Choices<'r, 's> {
     pub selection: HashMap<&'r ScopeId<'s>, usize>,

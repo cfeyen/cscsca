@@ -121,14 +121,13 @@ impl Runtime {
     /// Applies all lines, errors are returned as formated strings
     // ! must take ownership of phones so that the input sources can safely be freed to prevent memory leaks
     fn apply_all_lines<'s>(&self, mut phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
-        let lines = code
-            .lines()
-            .enumerate()
-            .map(|(num, line)| (num + 1, line));
-
+        let lines = code.lines();
         let mut tokenization_data = TokenizationData::new();
+        let mut line_num = 0;
 
-        for (line_num, line) in lines {
+        for line in lines {
+            line_num += 1;
+
             if let Err(e) = self.apply_line(line, line_num, &mut phones, &mut tokenization_data) {
                 drop(phones);
                 // Safety: Since the output is a ScaError,
@@ -161,7 +160,7 @@ impl Runtime {
                 self.handle_command(cmd, args, phones, tokenization_data)
                     .map_err(|e| ScaError::from_error(&*e, line, line_num))?;
             },
-            // checks ir, builds a rule, and applies it
+            // builds a rule from ir then applies it
             IrLine::Ir(_) => {
                 let rule_line = build_rule(&ir_line)
                     .map_err(|e| ScaError::from_error(&e, line, line_num))?;

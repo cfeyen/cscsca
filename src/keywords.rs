@@ -1,19 +1,16 @@
+
 /// Defines many constants and a list that contains all of them
 /// 
-/// Structured:
+/// Structure:
 /// 
-/// constants! {
+/// List, types and visibility:
+///  
+/// *`list_visiblitiy`* *`list_name`*: \[*`const visibility`* *`const type`*\];
 /// 
-/// *list_visablitiy* *list_name*: \[*const_visibility* *const_type*\];
+/// Constants:
 /// 
-/// *const_name* = *expression*;
-/// 
-/// *const_name* = *expression*;
-/// 
-/// ...
-/// 
-/// }
-macro_rules! constants {
+/// *`const_name`* = *`expression`*;
+macro_rules! const_list {
     ($list_vis:vis $list:ident: [$vis:vis $t:ty]; $($name:ident = $char:expr;)*) => {
         $($vis const $name: $t = $char;)*
 
@@ -31,7 +28,7 @@ macro_rules! len {
     };
 }
 
-constants! {
+const_list! {
     SPECIAL_CHARS: [pub char];
     
     // Prefixes
@@ -60,7 +57,7 @@ constants! {
     ESCAPE_CHAR = '\\';
 }
 
-constants! {
+const_list! {
     SPECIAL_STRS: [pub &str];
 
     // Strings that are only special when isolated
@@ -69,16 +66,12 @@ constants! {
     BOUND_STR = "#";
 }
 
-constants! {
-    _LINE_STARTS: [pub &str];
-
-    // Strings that are only special at the start of a line
-    DEFINITION_LINE_START = "DEFINE";
-    PRINT_LINE_START = "PRINT";
-    GET_LINE_START = "GET";
-    GET_AS_CODE_LINE_START = "GET_AS_CODE";
-    COMMENT_LINE_START = "##";
-}
+// Strings that are only special at the start of a line
+pub const DEFINITION_LINE_START: &str = "DEFINE";
+pub const PRINT_LINE_START: &str = "PRINT";
+pub const GET_LINE_START: &str = "GET";
+pub const GET_AS_CODE_LINE_START: &str = "GET_AS_CODE";
+pub const COMMENT_LINE_START: &str = "##";
 
 
 /// Determines if a character has a function to escape

@@ -4,30 +4,22 @@ use super::*;
 
 /// Converts source code into intermediate representation tokens
 /// 
-/// Note: these tokens may not be structurally valid and should be checked
-/// 
 /// If there is an error it is returned with the number of the line it occured on
 /// 
 /// ## Warning
 /// Any io fetched during application will be leaked to the static scope
 #[cfg(test)]
 fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {
-    let lines = source
-        .lines()
-        .enumerate()
-        .map(|(num, line)| (num + 1, line.trim()));
-
-    let mut token_lines = Vec::new();
     let mut tokenization_data = TokenizationData::new();
 
-    for (line_num, line) in lines {
-        match tokenize_line_or_create_command(line, &mut tokenization_data) {
-            Ok(tokens) => token_lines.push(tokens),
-            Err(e) => return Err((e, line_num)),
-        }
-    }
-
-    Ok(token_lines)
+    source
+        .lines()
+        .enumerate()
+        .map(|(num, line)| {
+            tokenize_line_or_create_command(line.trim(), &mut tokenization_data)
+                .map_err(|e| (e, num + 1))
+        })
+        .collect()
 }
 
 #[test]
