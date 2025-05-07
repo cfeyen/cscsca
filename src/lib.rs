@@ -17,6 +17,7 @@ pub(crate) mod rules;
 pub(crate) mod applier;
 pub(crate) mod matcher;
 pub(crate) mod sub_string;
+pub(crate) mod escaped_strings;
 pub mod runtime;
 pub mod keywords;
 

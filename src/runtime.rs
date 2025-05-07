@@ -5,9 +5,10 @@ use crate::{
     applier::apply,
     ir::{tokenization_data::TokenizationData, tokenize_line_or_create_command, IrLine},
     keywords::{GET_AS_CODE_LINE_START, GET_LINE_START},
-    phones::{build_phone_list, escape_input, phone_list_to_string, Phone},
+    phones::{build_phone_list, phone_list_to_string, Phone},
     rules::{build_rule, RuleLine},
-    ScaError
+    escaped_strings::EscapedString,
+    ScaError,
 };
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
@@ -113,9 +114,9 @@ impl Runtime {
     /// Errors are the result of providing invalid code, failed io, or application timing out
     #[inline]
     pub fn apply(&self, input: &str, code: &str) -> Result<String, ScaError> {
-        let escaped = escape_input(input);
+        let escaped = EscapedString::from(input);
 
-        let phones = build_phone_list(&escaped);
+        let phones = build_phone_list(escaped.inner());
 
         self.apply_all_lines(phones, code)
     }

@@ -1,4 +1,4 @@
-use crate::{keywords::{ESCAPE_CHAR, SPECIAL_STRS, is_special_char}, sub_string::SubString};
+use crate::{escaped_strings::EscapedStr, keywords::ESCAPE_CHAR, sub_string::SubString};
 
 #[cfg(test)]
 mod tests;
@@ -44,67 +44,13 @@ impl std::fmt::Display for Phone<'_> {
     }
 }
 
-/// Escapes special chars and isolated special strings in input
-pub fn escape_input(input: &str) -> String {
-    let mut escaped = String::new();
-    let mut chars = input.chars();
-
-    let mut i = 0;
-    let mut last_is_whitespace = false;
-
-    'outer: while let Some(c) = chars.next() {
-        // Gets the substring from c onward
-        let c_and_after = input.get(i..).unwrap_or_default();
-
-        // handles special characters
-        if is_special_char(c) {
-            escaped.push(ESCAPE_CHAR);
-            escaped.push(c);
-            last_is_whitespace = false;
-            i += c.len_utf8();
-            continue 'outer;
-        }
-
-        // handles isolated strings
-        // ! (for functionality of other parts of code these should be single characters in length,
-        // ! or composed of special characters)
-        if last_is_whitespace {
-            for s in SPECIAL_STRS {
-                if c_and_after.starts_with(s) && {
-                    let after_s = c_and_after.get(s.len()..);
-                    after_s.is_none_or(|s| s.is_empty() || s.starts_with(char::is_whitespace))
-                } {
-                    escaped.push(c);
-
-                    for _ in s.chars() {
-                        chars.next();
-                    }
-    
-                    i += s.len();
-                    
-                    escaped.push(ESCAPE_CHAR);
-                    escaped += s;
-                    last_is_whitespace = false;
-                    continue 'outer;
-                }
-            }
-        }
-        
-        // handles normal characters
-        last_is_whitespace = c.is_whitespace();
-        i += c.len_utf8();
-        escaped.push(c);
-    }
-
-    escaped
-}
-
 /// Builds a list of phones (as string slices with lifetime 's)
 /// from an input (string slice with 's)
 /// where each phone is a character or escaped character
 /// and reformats whitespace as word bounderies
 #[must_use]
-pub fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
+pub fn build_phone_list(input: EscapedStr) -> Vec<Phone<'_>> {
+    let input = input.inner();
     let mut substring = SubString::new(input);
     let mut phones = Vec::new();
 

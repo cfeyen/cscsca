@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::phones::{build_phone_list, escape_input};
+use crate::{
+    phones::build_phone_list,
+    escaped_strings::{EscapedStr, EscapedString},
+};
 
 use super::{tokens::IrToken, tokenize_line, IrError};
 
@@ -55,7 +58,7 @@ impl<'s> TokenizationData<'s> {
     /// ## Warning
     /// If `free_sources` is never called on this struct, the input will be leaked forever
     pub fn set_variable_as_ir(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
-        let source = self.add_source(source);
+        let source = self.add_source_string(source);
 
         let tokens = tokenize_line(source, self)?;
 
@@ -69,7 +72,7 @@ impl<'s> TokenizationData<'s> {
     /// ## Warning
     /// If `free_sources` is never called on this struct, the input will be leaked forever
     pub fn set_variable(&mut self, name: &'s str, source: &str) {
-        let source = self.add_source(escape_input(source));
+        let source = self.add_source_escaped(EscapedString::from(source));
 
         self.variables.insert(
             name,
@@ -81,13 +84,28 @@ impl<'s> TokenizationData<'s> {
     /// 
     /// ## Warning
     /// If `free_sources` is never called on this struct, the source will be leaked forever
-    fn add_source<'a> (&mut self, mut source: String) -> &'a str {
+    fn add_source_string<'a>(&mut self, mut source: String) -> &'a str {
         // leaking and moving the source to the sources buffer allows variable to be redefined
         // and prevents self reference, however, it may also cause memory leaks
         source.shrink_to_fit();
         let source = source.leak();
+        self.add_source(source);
+            
+        source
+    }
 
-        self.sources.push(std::ptr::from_ref(source));
+    /// Leaks a source and adds it to the sources buffer
+    /// 
+    /// ## Warning
+    /// If `free_sources` is never called on this struct, the source will be leaked forever
+    fn add_source_escaped<'a>(&mut self, mut source: EscapedString) -> EscapedStr<'a> {
+        // leaking and moving the source to the sources buffer allows variable to be redefined
+        // and prevents self reference, however, it may also cause memory leaks
+        source.shrink_to_fit();
+        let source = source.leak();
+        self.add_source(source.inner());
+        self.sources.push(std::ptr::from_ref(source.inner()));
+            
         source
     }
 
@@ -96,9 +114,14 @@ impl<'s> TokenizationData<'s> {
     /// ## Safety
     /// There should be no references remaining to any string in the sources buffer
     pub unsafe fn free_sources(self) {
-        self.sources.into_iter().for_each(|s| unsafe {
-            s.cast_mut().drop_in_place();
+        self.sources.into_iter().for_each(|ptr| unsafe {
+            ptr.cast_mut().drop_in_place();
         });
+    }
+
+    /// Adds a source to the sources buffer so it can be freed later
+    fn add_source(&mut self, source: &'s str) {
+        self.sources.push(std::ptr::from_ref(source));
     }
 }
 

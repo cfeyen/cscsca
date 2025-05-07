@@ -1,4 +1,4 @@
-use crate::{apply, keywords::BOUND_CHAR};
+use crate::{apply, escaped_strings::EscapedString, keywords::BOUND_CHAR};
 
 use super::*;
 
@@ -13,18 +13,18 @@ fn shifting_bounds() {
 #[test]
 fn phone_list() {
     assert_eq!(
-        build_phone_list("a b c"),
+        build_phone_list(EscapedString::from("a b c").inner()),
         vec![Phone::Symbol("a"), Phone::Bound, Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
     );
 
     assert_eq!(
-        build_phone_list("ab c"),
+        build_phone_list(EscapedString::from("ab c").inner()),
         vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
     );
 
     assert_eq!(
-        build_phone_list(&format!("a{BOUND_CHAR}b c")),
-        vec![Phone::Symbol("a"), Phone::Symbol(&BOUND_CHAR.to_string()), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
+        build_phone_list(EscapedString::from(format!("a{BOUND_CHAR}b c").as_str()).inner()),
+        vec![Phone::Symbol("a"), Phone::Symbol(&format!("{ESCAPE_CHAR}{BOUND_CHAR}").to_string()), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
     );
 }
 
