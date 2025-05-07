@@ -22,7 +22,6 @@ A phone is a group of non-special characters seperated by spaces
 Examples: `a` `ts` `á` `litteraly_a_phone`
 
 notes:
-- the phone `#` is a word boundary
 - to convert an input *ts* (phones `t`, `s`) to the phone `ts` use the rule ```t s >> ts```
 
 ### Shifts
@@ -137,15 +136,21 @@ DEFINE intervocalic @V _ @V
 ### Special Characters
 - `*`: represents any non-boundary phone, may be proceeded by a label to agree in what phone is represented
 - `..`: a gap of zero or more non-boundary phones (notes: must have a space on both sides, only allowed in conditions), may be proceeded by a label to limit gap length to less than or equal to the length of the first gap with the same label
-- `#`: a phone representing a word boundary
+- `#`: a word boundary
 - `\`: escapes the effects of the following character
+
+### Reserved Characters
+Characters that do nothing, but need to be escaped
+- `.`
+- `[`
+- `]`
 
 ### IO and Variables
 To print the current phonetic form, type `PRINT` at the start of a line followed by the message you would like to print with it
 
 To get input at runtime, type `GET` *variable_name* *message* where *message* is what you want to display to prompt input. To access the input later prefix *variable_name* with `%`
 
-note: here the content of *variable_name* will be a list phone, seperated by spaces
+note: here the content of *variable_name* will be a list phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
 
 You may replace `GET` with `GET_AS_CODE` to interpret the variable contents as code instead of phones
 

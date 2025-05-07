@@ -296,8 +296,10 @@ fn print_statement() {
 }
 
 #[test]
-fn bad_escape() {
-    assert_eq!(Err((IrError::BadEscape('P'), 1)), tokenize("\\PRINT >> escaped"))
+fn escape() {
+    assert_eq!(Err((IrError::BadEscape(Some('P')), 1)), tokenize("\\PRINT >> escaped"));
+    assert!(tokenize("\\_ >> escaped").is_ok());
+    assert_eq!(Err((IrError::BadEscape(Some('_')), 1)), tokenize("\\_0 >> escaped"));
 }
 
 #[test]

@@ -55,15 +55,27 @@ const_list! {
     ANY_CHAR = '*';
     ARG_SEP_CHAR = ',';
     ESCAPE_CHAR = '\\';
+    BOUND_CHAR = '#';
 }
 
 const_list! {
-    SPECIAL_STRS: [pub &str];
+    UNUSED_CHARS: [pub char];
+
+    DOT_CHAR = '.';
+    SQUARE_START_CHAR = '[';
+    SQUARE_END_CHAR = ']';
+}
+
+pub(crate) fn is_special_char(c: char) -> bool {
+    SPECIAL_CHARS.contains(&c) || UNUSED_CHARS.contains(&c)
+}
+
+const_list! {
+    pub(crate) SPECIAL_STRS: [pub &str];
 
     // Strings that are only special when isolated
     GAP_STR = "..";
     INPUT_PATTERN_STR = "_";
-    BOUND_STR = "#";
 }
 
 // Strings that are only special at the start of a line
@@ -72,10 +84,3 @@ pub const PRINT_LINE_START: &str = "PRINT";
 pub const GET_LINE_START: &str = "GET";
 pub const GET_AS_CODE_LINE_START: &str = "GET_AS_CODE";
 pub const COMMENT_LINE_START: &str = "##";
-
-
-/// Determines if a character has a function to escape
-pub(crate) fn is_special(c: char) -> bool {
-    SPECIAL_CHARS.contains(&c)
-    || SPECIAL_STRS.iter().any(|s| s.starts_with(c))
-}

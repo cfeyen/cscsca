@@ -1,15 +1,10 @@
 use crate::{
+    keywords::{AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX, is_special_char},
     phones::Phone,
     rules::conditions::CondType,
     runtime::Command,
     tokens::{Direction, ScopeType, Shift, ShiftType},
-    keywords::{
-        AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, COMMENT_LINE_START, COND_CHAR,
-        DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR,
-        GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX,
-        LTR_CHAR, MATCH_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START,
-        RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, VARIABLE_PREFIX, is_special
-    }
+    sub_string::SubString,
 };
 
 use tokenization_data::TokenizationData;
@@ -80,11 +75,9 @@ fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>) ->
     for c in chars {
         match c {
             // handles escapes
-            _ if escape => if is_special(c) {
+            _ if escape => {
                 slice.grow(c);
                 escape = false;
-            } else {
-                return Err(IrError::BadEscape(c))
             },
             ESCAPE_CHAR => {
                 slice.grow(c);
@@ -103,6 +96,7 @@ fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>) ->
             AND_CHAR => push_phone_and(IrToken::Break(Break::And), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             ANY_CHAR => push_phone_and(IrToken::Any, &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             ARG_SEP_CHAR => push_phone_and(IrToken::ArgSep, &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
+            BOUND_CHAR => push_phone_and(IrToken::Phone(Phone::Bound), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             MATCH_CHAR => push_phone_and(IrToken::CondType(CondType::Match), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             // handles compound char to token pushes
             LTR_CHAR => {
@@ -179,6 +173,8 @@ fn push_phone_and<'s>(token: IrToken<'s>, tokens: &mut Vec<IrToken<'s>>, slice: 
 
 /// Pushes the slice as a phone and prepares it to start the next slice
 /// 
+/// Handles escape validity and input pattern and gap generation
+/// 
 /// If there is a prefix, it either expands the phone as a definition or
 /// inserts a selection token and resets the prefix to None
 /// 
@@ -190,20 +186,23 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
     let literal = slice.take_slice();
     slice.move_after();
 
-    match prefix {
-        None if literal == INPUT_PATTERN_STR => tokens.push(IrToken::CondType(CondType::Pattern)),
-        None if literal == GAP_STR => tokens.push(IrToken::Gap),
-        None if literal.is_empty() => (),
-        None => tokens.push(IrToken::Phone(Phone::new(literal))),
-        Some(Prefix::Definition) => {
+    check_escapes(literal)?;
+    check_reserved(literal)?;
+
+    match (&prefix, literal) {
+        (None, INPUT_PATTERN_STR) => tokens.push(IrToken::CondType(CondType::Pattern)),
+        (None, GAP_STR) => tokens.push(IrToken::Gap),
+        (None, "") => (),
+        (None, _) => tokens.push(IrToken::Phone(Phone::Symbol(literal))),
+        (Some(Prefix::Definition), _) => {
             let content = tokenization_data.get_definition(literal)?;
 
             for token in content {
                 tokens.push(*token);
             }
         },
-        Some(Prefix::Label) => tokens.push(IrToken::Label(literal)),
-        Some(Prefix::Variable) => {
+        (Some(Prefix::Label), _) => tokens.push(IrToken::Label(literal)),
+        (Some(Prefix::Variable), _) => {
             let content = tokenization_data.get_variable(literal)?;
 
             for token in content {
@@ -216,64 +215,82 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
     Ok(())
 }
 
-/// A wrapper around a str reference that allows slices of it to be taken
-/// 
-/// The slices may only grow in length or move right to a non intersecting position
-/// and with the length being reset
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct SubString<'s> {
-    source: &'s str,
-    start: usize,
-    len: usize
+/// Ensures all special characters are escaped
+fn check_reserved(input: &str) -> Result<(), IrError<'_>> {
+    let mut chars = input.chars();
+
+    let mut escaped = false;
+    let mut i = 0;
+
+    'outer: while let Some(c) = chars.next() {
+        match c {
+            ESCAPE_CHAR if !escaped => escaped = true,
+            _ if is_special_char(c) && !escaped => {
+                for s in SPECIAL_STRS {
+                    if input[i..].starts_with(s) {
+                        for _ in s.chars() {
+                            chars.next();
+                        }
+                        i += s.len();
+                        continue 'outer;
+                    }
+                }
+
+                return Err(IrError::ReservedCharacter(c));
+            },
+            _ => escaped = false,
+        }
+
+        i += c.len_utf8();
+    }
+
+    Ok(())
 }
 
-impl<'s> SubString<'s> {
-    /// Creates a new `SubString`
-    #[inline]
-    pub const fn new(source: &'s str) -> Self {
-        Self { source, start: 0, len: 0 }
+/// Ensures all escapes are valid
+fn check_escapes(input: &str) -> Result<(), IrError<'_>> {
+    let mut chars = input.chars();
+    let mut i = 0;
+    let mut last_is_whitespace = true;
+
+    'outer: while let Some(c) = chars.next() {
+        i += c.len_utf8();
+
+        if c == ESCAPE_CHAR {
+            if let Some(next) = chars.next() {
+                if is_special_char(next) {
+                    i += next.len_utf8();
+                    last_is_whitespace = false;
+                    continue;
+                }
+
+                let after_c = &input[i..];
+                i += next.len_utf8();
+
+                if last_is_whitespace {
+                    for s in SPECIAL_STRS {
+                        if after_c.starts_with(s) && {
+                            let after_s = &after_c.get(s.len()..).unwrap_or_default();
+                            after_s.is_empty() || after_s.starts_with(char::is_whitespace)
+                        } {
+                            for c in s.chars().skip(1) {
+                                i += c.len_utf8();
+                            }
+                            continue 'outer;
+                        }
+                    }
+                }
+
+                return Err(IrError::BadEscape(Some(next)))
+            }
+
+            return Err(IrError::BadEscape(None))
+        }
+
+        last_is_whitespace = c.is_whitespace();
     }
 
-    /// Returns if the substring has 0 length
-    #[inline]
-    pub const fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-
-    /// Retreives the internal substring (may be done any number of times)
-    #[inline]
-    pub fn take_slice(&self) -> &'s str {
-        &self.source[self.start..self.start + self.len]
-    }
-
-    /// Increments the internal substring length by the size of c in utf-8
-    #[inline]
-    pub const fn grow(&mut self, c: char) {
-        self.len += c.len_utf8();
-    }
-
-    /// Moves the substring start to the index after the slice ends and resets the length
-    #[inline]
-    pub const fn move_after (&mut self) {
-        self.start += self.len;
-        self.len = 0;
-    }
-    
-    /// Moves the substring start to the index after the slice ends and resets the length
-    /// then moves skipping a byte
-    #[inline]
-    pub const fn skip_byte(&mut self) {
-        self.move_after();
-        self.start += 1;
-    }
-
-    /// Moves the substring start to the index after the substring ends and resets the length
-    /// then moves skipping a substring the size of c in utf-8
-    #[inline]
-    pub const fn skip(&mut self, c: char) {
-        self.move_after();
-        self.start += c.len_utf8();
-    }
+    Ok(())
 }
 
 /// Errors that occur when parsing raw text to tokens
@@ -284,7 +301,8 @@ pub enum IrError<'s> {
     UndefinedDefinition(&'s str),
     UndefinedVariable(&'s str),
     EmptyDefinition,
-    BadEscape(char),
+    BadEscape(Option<char>),
+    ReservedCharacter(char),
 }
 
 impl std::error::Error for IrError<'_> {}
@@ -296,7 +314,9 @@ impl std::fmt::Display for IrError<'_> {
             Self::UndefinedDefinition(name) => write!(f, "Undefined definiton '{DEFINITION_PREFIX}{name}'"),
             Self::UndefinedVariable(name) => write!(f, "Undefined definiton '{VARIABLE_PREFIX}{name}'"),
             Self::EmptyDefinition => write!(f, "Found '{DEFINITION_LINE_START}' with out a following name"),
-            Self::BadEscape(c) => write!(f, "Escaped normal character '{c}' ({ESCAPE_CHAR}{c})"),
+            Self::BadEscape(None) => write!(f, "Found '{ESCAPE_CHAR}' with no following character"),
+            Self::BadEscape(Some(c)) => write!(f, "Escaped normal character '{c}' ({ESCAPE_CHAR}{c})"),
+            Self::ReservedCharacter(c) => write!(f, "Found reserved character '{c}' consider escaping it ('{ESCAPE_CHAR}{c}')"),
         }
     }
 }

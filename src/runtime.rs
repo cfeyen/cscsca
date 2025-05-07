@@ -1,13 +1,13 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
 use crate::{
-    applier::apply,
     ansi::{BLUE, RESET},
-    phones::{Phone, build_phone_list, phone_list_to_string},
+    applier::apply,
+    ir::{tokenization_data::TokenizationData, tokenize_line_or_create_command, IrLine},
+    keywords::{GET_AS_CODE_LINE_START, GET_LINE_START},
+    phones::{build_phone_list, escape_input, phone_list_to_string, Phone},
     rules::{build_rule, RuleLine},
-    ir::{tokenize_line_or_create_command, tokenization_data::TokenizationData, IrLine},
-    ScaError,
-    keywords::{GET_LINE_START, GET_AS_CODE_LINE_START},
+    ScaError
 };
 
 pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
@@ -113,7 +113,9 @@ impl Runtime {
     /// Errors are the result of providing invalid code, failed io, or application timing out
     #[inline]
     pub fn apply(&self, input: &str, code: &str) -> Result<String, ScaError> {
-        let phones = build_phone_list(input);
+        let escaped = escape_input(input);
+
+        let phones = build_phone_list(&escaped);
 
         self.apply_all_lines(phones, code)
     }
@@ -121,13 +123,14 @@ impl Runtime {
     /// Applies all lines, errors are returned as formated strings
     // ! must take ownership of phones so that the input sources can safely be freed to prevent memory leaks
     fn apply_all_lines<'s>(&self, mut phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
+        // gets lines of code with line numbers,
+        // and rule prepended so that escaped escape characters are properly outputted
         let lines = code.lines();
         let mut tokenization_data = TokenizationData::new();
         let mut line_num = 0;
 
         for line in lines {
             line_num += 1;
-
             if let Err(e) = self.apply_line(line, line_num, &mut phones, &mut tokenization_data) {
                 drop(phones);
                 // Safety: Since the output is a ScaError,
@@ -202,7 +205,7 @@ impl Runtime {
                 if let Some((name, msg)) = args.split_once(' ') {
                     let source = (self.io_get_fn)(msg.trim())?;
 
-                    tokenization_data.set_variable(name, source);
+                    tokenization_data.set_variable(name, &source);
                 } else {
                     return Err(Box::new(&GetFormatError));
                 }

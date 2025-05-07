@@ -1,14 +1,21 @@
-use crate::{apply, runtime::Runtime};
+use crate::{apply, apply_fallible, runtime::Runtime};
 
 mod demo_tests;
 mod failure_tests;
 
 #[test]
 fn escape() {
-    assert_eq!(
-        "Aa@",
-        apply("@aa@", "\\@ a >> A")
-    )
+    assert_eq!("Aa@", apply("@aa@", "\\@ a >> A"));
+}
+
+#[test]
+fn input_escape() {
+    assert_eq!("bb", apply("..", "\\. >> b"));
+}
+
+#[test]
+fn reserved_chars() {
+    assert!(apply_fallible("..", ". >> b").is_err());
 }
 
 #[test]
@@ -68,4 +75,12 @@ fn multi_phone_shift() {
     
     assert_eq!("efgz", apply("abcz", "a b c >> e f g / _ z"));
     assert_eq!("efgz", apply("abcz", "a b c << e f g / _ z"));
+}
+
+#[test]
+fn escape_printing() {
+    assert_eq!("\\", apply("\\", ""));
+    assert_eq!("\\", apply("\\", "\\\\ >> \\\\"));
+    assert_eq!("a*", apply("a", "a >> a\\*"));
+    assert_eq!(apply("#", "* >> *"), apply("#", "\\# >> \\#"));
 }

@@ -1,4 +1,4 @@
-use crate::keywords::{ESCAPE_CHAR, BOUND_STR};
+use crate::{keywords::{ESCAPE_CHAR, SPECIAL_STRS, is_special_char}, sub_string::SubString};
 
 #[cfg(test)]
 mod tests;
@@ -15,18 +15,6 @@ pub enum Phone<'s> {
 }
 
 impl<'s> Phone<'s> {
-    /// Creates a new phone that is either a symbol or a bound
-    /// depending on the input
-    #[inline]
-    #[must_use]
-    pub fn new(symbol: &'s str) -> Self {
-        if symbol == BOUND_STR {
-            Self::Bound
-        } else {
-            Self::Symbol(symbol)
-        }
-    }
-
     /// Returns the phone's symbol.
     /// If the phone is a boundary, `" "` (space) is returned
     #[must_use]
@@ -37,45 +25,15 @@ impl<'s> Phone<'s> {
         }
     }
 
-    /// Determines if a different phone matches with escaping characters in the first phone removed,
-    /// and whitespace treated as bounds
+    /// Determines if two phones match
     /// 
-    /// **Note**: This is not symetric, a.matches(b) does not imply b.matches(a)
-    /// 
-    /// Should be used to check if a phone in a `RuleToken` matches a phone from input
+    /// Equal phones match and bounds and all-whitespace phones match
     #[must_use]
     pub fn matches(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Bound, Self::Bound) => true,
             (Self::Bound, Self::Symbol(symbol)) | (Self::Symbol(symbol), Self::Bound)
                 => symbol.chars().all(char::is_whitespace),
-            (Self::Symbol(phone_symbol), Self::Symbol(other_symbol)) => {
-                let phone_chars = phone_symbol.chars();
-                let mut other_chars = other_symbol.chars();
-
-                let mut escape = false;
-
-                for phone_char in phone_chars {
-                    // removes an escape character ('\')
-                    // and marks an immeadiately following one not to be escaped
-                    if phone_char == ESCAPE_CHAR && !escape {
-                        escape = true;
-                        continue;
-                    }
-        
-                    escape = false;
-        
-                    if let Some(other_char) = other_chars.next() {
-                        if phone_char != other_char {
-                            return false;
-                        }
-                    } else {
-                        return false;
-                    }
-                }
-        
-                other_chars.next().is_none()
-            }
+            _ => self == other,
         }
     }
 }
@@ -86,35 +44,101 @@ impl std::fmt::Display for Phone<'_> {
     }
 }
 
+/// Escapes special chars and isolated special strings in input
+pub fn escape_input(input: &str) -> String {
+    let mut escaped = String::new();
+    let mut chars = input.chars();
+
+    let mut i = 0;
+    let mut last_is_whitespace = false;
+
+    'outer: while let Some(c) = chars.next() {
+        // Gets the substring from c onward
+        let c_and_after = input.get(i..).unwrap_or_default();
+
+        // handles special characters
+        if is_special_char(c) {
+            escaped.push(ESCAPE_CHAR);
+            escaped.push(c);
+            last_is_whitespace = false;
+            i += c.len_utf8();
+            continue 'outer;
+        }
+
+        // handles isolated strings
+        // ! (for functionality of other parts of code these should be single characters in length,
+        // ! or composed of special characters)
+        if last_is_whitespace {
+            for s in SPECIAL_STRS {
+                if c_and_after.starts_with(s) && {
+                    let after_s = c_and_after.get(s.len()..);
+                    after_s.is_none_or(|s| s.is_empty() || s.starts_with(char::is_whitespace))
+                } {
+                    escaped.push(c);
+
+                    for _ in s.chars() {
+                        chars.next();
+                    }
+    
+                    i += s.len();
+                    
+                    escaped.push(ESCAPE_CHAR);
+                    escaped += s;
+                    last_is_whitespace = false;
+                    continue 'outer;
+                }
+            }
+        }
+        
+        // handles normal characters
+        last_is_whitespace = c.is_whitespace();
+        i += c.len_utf8();
+        escaped.push(c);
+    }
+
+    escaped
+}
+
 /// Builds a list of phones (as string slices with lifetime 's)
 /// from an input (string slice with 's)
+/// where each phone is a character or escaped character
 /// and reformats whitespace as word bounderies
 #[must_use]
 pub fn build_phone_list(input: &str) -> Vec<Phone<'_>> {
-    let phones = input
-        .split("")
-        .filter(|s| !s.is_empty())
-        .map(|s| if s == "\n" {
-            Phone::Symbol(s)
-        } else if s.trim().is_empty() {
-            Phone::Bound
-        } else {
-            Phone::Symbol(s)
-        });
+    let mut substring = SubString::new(input);
+    let mut phones = Vec::new();
 
-    let mut phone_list = Vec::new();
+    for c in input.chars() {
+        substring.grow(c);
 
-    for phone in phones {
-        if phone == Phone::Symbol("\n") {
-            phone_list.push(Phone::Bound);
-            phone_list.push(phone);
-            phone_list.push(Phone::Bound);
-        } else {
-            phone_list.push(phone);
+        match c {
+            ESCAPE_CHAR => (),
+            '\n' => {
+                substring.move_after();
+                if !phones.last().is_some_and(|p| p == &Phone::Bound) {
+                    phones.push(Phone::Bound);
+                }
+                phones.push(Phone::Symbol("\n"));
+                phones.push(Phone::Bound);
+            },
+            _ if c.is_whitespace() => {
+                substring.move_after();
+                if !phones.last().is_some_and(|p| p == &Phone::Bound) {
+                    phones.push(Phone::Bound);
+                }
+            },
+            _ => {
+                phones.push(Phone::Symbol(substring.take_slice()));
+                substring.move_after();
+            }
         }
     }
 
-    phone_list
+    if !substring.take_slice().is_empty() {
+        phones.push(Phone::Symbol(substring.take_slice()));
+    }
+
+    phones
 }
 
 /// Converts a list of string slices to a string

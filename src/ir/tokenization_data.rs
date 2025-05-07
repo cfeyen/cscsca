@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::phones::Phone;
+use crate::phones::{build_phone_list, escape_input};
 
 use super::{tokens::IrToken, tokenize_line, IrError};
 
@@ -8,8 +8,8 @@ use super::{tokens::IrToken, tokenize_line, IrError};
 /// and lasts longer than the tokenization of a single line
 /// 
 /// Includes:
-///     - definitions
-///     - variables
+/// - definitions
+/// - variables
 /// 
 /// ## Warning
 /// If variable io is used and `free_sources` is never called on this struct,
@@ -63,20 +63,17 @@ impl<'s> TokenizationData<'s> {
         Ok(())
     }
 
-    /// Leaks the source to the static scope,
+    /// Escapes the source then leaks it to the static scope,
     /// then assigns the it as a list of phones to the name
     /// 
     /// ## Warning
     /// If `free_sources` is never called on this struct, the input will be leaked forever
-    pub fn set_variable(&mut self, name: &'s str, source: String) {
-        let source = self.add_source(source);
-        
+    pub fn set_variable(&mut self, name: &'s str, source: &str) {
+        let source = self.add_source(escape_input(source));
 
         self.variables.insert(
-            name, 
-            source.split_whitespace()
-                .map(|s| IrToken::Phone(Phone::Symbol(s)))
-                .collect()
+            name,
+            build_phone_list(source).into_iter().map(IrToken::Phone).collect()
         );
     }
 
@@ -108,20 +105,29 @@ impl<'s> TokenizationData<'s> {
 #[cfg(test)]
 #[test]
 fn test_get_variable_to_multiple_phones() {
-    use crate::keywords::BOUND_STR;
+    use crate::{keywords::{BOUND_CHAR, ESCAPE_CHAR}, phones::Phone};
 
     let mut tokenization_data = TokenizationData::new();
-    tokenization_data.set_variable("name", format!("ab cd e {BOUND_STR} fg\t\t{BOUND_STR}h"));
+    tokenization_data.set_variable("name", &format!("ab cd e {BOUND_CHAR} fg\t\t{BOUND_CHAR}h"));
     
     assert_eq!(
         tokenization_data.get_variable("name"),
         Ok(&vec![
-            IrToken::Phone(Phone::Symbol("ab")),
-            IrToken::Phone(Phone::Symbol("cd")),
+            IrToken::Phone(Phone::Symbol("a")),
+            IrToken::Phone(Phone::Symbol("b")),
+            IrToken::Phone(Phone::Bound),
+            IrToken::Phone(Phone::Symbol("c")),
+            IrToken::Phone(Phone::Symbol("d")),
+            IrToken::Phone(Phone::Bound),
             IrToken::Phone(Phone::Symbol("e")),
-            IrToken::Phone(Phone::Symbol(BOUND_STR)),
-            IrToken::Phone(Phone::Symbol("fg")),
-            IrToken::Phone(Phone::Symbol(&format!("{BOUND_STR}h"))),
+            IrToken::Phone(Phone::Bound),
+            IrToken::Phone(Phone::Symbol(&format!("{ESCAPE_CHAR}{BOUND_CHAR}"))),
+            IrToken::Phone(Phone::Bound),
+            IrToken::Phone(Phone::Symbol("f")),
+            IrToken::Phone(Phone::Symbol("g")),
+            IrToken::Phone(Phone::Bound),
+            IrToken::Phone(Phone::Symbol(&format!("{ESCAPE_CHAR}{BOUND_CHAR}"))),
+            IrToken::Phone(Phone::Symbol("h")),
         ])
     );
 

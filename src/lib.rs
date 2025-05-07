@@ -16,6 +16,7 @@ pub(crate) mod tokens;
 pub(crate) mod rules;
 pub(crate) mod applier;
 pub(crate) mod matcher;
+pub(crate) mod sub_string;
 pub mod runtime;
 pub mod keywords;
 
