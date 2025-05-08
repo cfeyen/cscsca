@@ -66,8 +66,11 @@ const_list! {
     SQUARE_END_CHAR = ']';
 }
 
-pub(crate) fn is_special_char(c: char) -> bool {
-    SPECIAL_CHARS.contains(&c) || UNUSED_CHARS.contains(&c)
+const_list! {
+    ISOLATED_CHARS: [pub char];
+    
+    // Chars that should only be escaped when isolated
+    UNDERSCORE_CHAR = '_';
 }
 
 const_list! {
@@ -76,6 +79,21 @@ const_list! {
     // Strings that are only special when isolated
     GAP_STR = "..";
     INPUT_PATTERN_STR = "_";
+}
+
+/// Checks if a char can/should always be escaped
+pub(crate) fn is_special_char(c: char) -> bool {
+    SPECIAL_CHARS.contains(&c) || UNUSED_CHARS.contains(&c)
+}
+
+/// Checks if a char can/should be escaped when isolated
+pub(crate) fn is_isolated_char(c: char) -> bool {
+    ISOLATED_CHARS.contains(&c)
+}
+
+/// Checks if a char can act as abound by an isolated char
+pub(crate) fn is_isolation_bound(c: char) -> bool {
+    c.is_whitespace() || is_special_char(c)
 }
 
 // Strings that are only special at the start of a line

@@ -1,10 +1,5 @@
 use crate::{
-    keywords::{AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX, is_special_char},
-    phones::Phone,
-    rules::conditions::CondType,
-    runtime::Command,
-    tokens::{Direction, ScopeType, Shift, ShiftType},
-    sub_string::SubString,
+    escaped_strings::check_escapes, keywords::{is_special_char, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX}, phones::Phone, rules::conditions::CondType, runtime::Command, sub_string::SubString, tokens::{Direction, ScopeType, Shift, ShiftType}
 };
 
 use tokenization_data::TokenizationData;
@@ -242,52 +237,6 @@ fn check_reserved(input: &str) -> Result<(), IrError<'_>> {
         }
 
         i += c.len_utf8();
-    }
-
-    Ok(())
-}
-
-/// Ensures all escapes are valid
-fn check_escapes(input: &str) -> Result<(), IrError<'_>> {
-    let mut chars = input.chars();
-    let mut i = 0;
-    let mut last_is_whitespace = true;
-
-    'outer: while let Some(c) = chars.next() {
-        i += c.len_utf8();
-
-        if c == ESCAPE_CHAR {
-            if let Some(next) = chars.next() {
-                if is_special_char(next) {
-                    i += next.len_utf8();
-                    last_is_whitespace = false;
-                    continue;
-                }
-
-                let after_c = &input[i..];
-                i += next.len_utf8();
-
-                if last_is_whitespace {
-                    for s in SPECIAL_STRS {
-                        if after_c.starts_with(s) && {
-                            let after_s = &after_c.get(s.len()..).unwrap_or_default();
-                            after_s.is_empty() || after_s.starts_with(char::is_whitespace)
-                        } {
-                            for c in s.chars().skip(1) {
-                                i += c.len_utf8();
-                            }
-                            continue 'outer;
-                        }
-                    }
-                }
-
-                return Err(IrError::BadEscape(Some(next)))
-            }
-
-            return Err(IrError::BadEscape(None))
-        }
-
-        last_is_whitespace = c.is_whitespace();
     }
 
     Ok(())
