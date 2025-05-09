@@ -24,6 +24,9 @@ pub mod keywords;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "gen_vscode_grammar")] // | other | other | ...
+pub mod tooling_gen;
+
 /// Applies sca source code to an input string
 /// 
 /// Returns a string of either the final text or a formatted error

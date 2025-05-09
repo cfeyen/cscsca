@@ -8,6 +8,10 @@ use no_ansi::*;
 
 const APPLY_CMD: &str = "sca";
 const APPLY_TO_FILE_CMD: &str = "apply";
+#[cfg(feature = "gen_vscode_grammar")]
+const GEN_CMD: &str = "gen";
+#[cfg(feature = "gen_vscode_grammar")]
+const VSC_EXT: &str = "vscode_grammar";
 const CHAR_HELP_CMD: &str = "chars";
 const HELP_CMD: &str = "help";
 const DEMO_CMD: &str = "demo";
@@ -108,6 +112,21 @@ fn main() {
                     Err(_) => println!("Could not create file '{dest}'")
                 }
             },
+            #[cfg(feature = "gen_vscode_grammar")]
+            (GEN_CMD, 2) => {
+                match &*args[0] {
+                    VSC_EXT => {
+                        let path = &*args[1];
+                        if let Err(e) = cscsca::tooling_gen::vscode_grammar::gen_vscode_grammar(path) {
+                            println!("{e}");
+                        }
+                    },
+                    arg => {
+                        println!("Unrecognized argument to {BOLD}{GEN_CMD}{RESET} '{arg}'");
+                        println!("Run '{BOLD}cscsca help{RESET}' for more information");
+                    },
+                }
+            }
             // prints the characters in each argument
             (CHAR_HELP_CMD, 1..) => {
                 for text in &args {
