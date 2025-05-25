@@ -208,7 +208,7 @@ There are both fallible and infallable variants of the crates API functions. The
 Runtimes allow you to control some of CSCSCA's runtime behavior
 - User Input: Allows you to control where input is fetched from
 - Output: Allows you to control how printing works
-- Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time applying a rule can take. This limit may be set via runtimes.
+- Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time/attempts applying a rule can take. This limit may be set via runtimes.
 
-The default runtime uses standard IO, removes all ending newlines from input, and uses a 100ms time limit.
-This time limit does require a call to fetch system time. In the case of Web Assembly, this causes an error. Instead, an attempt limit should be used.
+The default runtime uses standard IO, removes all ending newlines from input, and uses a limit 10000 application attempts per line.
+If a time limit is used, it does require a call to fetch system time. In the case of Web Assembly, this causes an error.

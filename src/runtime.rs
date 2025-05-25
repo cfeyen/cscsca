@@ -11,7 +11,7 @@ use crate::{
     ScaError,
 };
 
-pub const DEFAULT_MAX_APPLICATION_TIME: Duration = Duration::from_millis(100);
+pub const DEFAULT_LINE_APPLICATION_LIMIT: LineApplicationLimit = LineApplicationLimit::Attempts(10000);
 
 /// Non rule commands executed by the runtime
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,7 +73,7 @@ impl Runtime {
         Self {
             io_put_fn: default_io_put_fn(),
             io_get_fn: default_io_get_fn(),
-            line_application_limit: LineApplicationLimit::Time(DEFAULT_MAX_APPLICATION_TIME),
+            line_application_limit: DEFAULT_LINE_APPLICATION_LIMIT,
         }
     }
 
