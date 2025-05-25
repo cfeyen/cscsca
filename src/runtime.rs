@@ -74,6 +74,15 @@ impl Runtime {
         }
     }
 
+    /// Creates a runtime with the given IO functions
+    pub fn new_with_io(put: Box<PutFn>, get: Box<GetFn>) -> Self {
+        Self {
+            io_put_fn: put,
+            io_get_fn: get,
+            line_application_limit: DEFAULT_LINE_APPLICATION_LIMIT,
+        }
+    }
+
     /// Sets the `io_put_fn` callback for the runtime
     /// 
     /// Should send the printed message to an io device
