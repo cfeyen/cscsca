@@ -63,7 +63,7 @@ fn demo_print() {
         Ok(())
     }));
 
-    _ = apply_with_runtime("pata takan", DEMO, &runtime);
+    _ = apply_with_runtime("pata takan", DEMO, &mut runtime);
 
     assert_eq!(
         &vec![format!("before h-loss: '{BLUE}pat taga{RESET}'")],

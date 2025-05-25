@@ -34,7 +34,7 @@ pub mod tooling_gen;
 #[inline]
 #[must_use]
 pub fn apply(input: &str, code: &str) -> String {
-    apply_with_runtime(input, code, &Runtime::default())
+    apply_with_runtime(input, code, &mut Runtime::default())
 }
 
 /// Applies sca source code to an input string
@@ -43,25 +43,33 @@ pub fn apply(input: &str, code: &str) -> String {
 /// Errors are the result of providing invalid code, failed io, or application timing out
 #[inline]
 pub fn apply_fallible(input: &str, code: &str) -> Result<String, ScaError> {
-    apply_fallible_with_runtime(input, code, &Runtime::default())
+    apply_fallible_with_runtime(input, code, &mut Runtime::default())
 }
 
 /// Applies sca source code to an input string
 /// 
 /// Returns a string of either the final text or a formatted error
+/// 
+/// ## Note
+/// This requires a mutable reference to the runtime because its IO functions implement `FnMut`.
+/// Only the captures of those functions may be mutated
 #[inline]
 #[must_use]
-pub fn apply_with_runtime(input: &str, code: &str, runtime: &Runtime) -> String {
+pub fn apply_with_runtime(input: &str, code: &str, runtime: &mut Runtime) -> String {
     apply_fallible_with_runtime(input, code, runtime)
         .unwrap_or_else(|e| e.to_string())
 }
 
-/// Applies sca source code to an input string,
+/// Applies sca source code to an input string
+/// 
+/// ## Note
+/// This requires a mutable reference to the runtime because its IO functions implement `FnMut`.
+/// Only the captures of those functions may be mutated
 /// 
 /// ## Errors
 /// Errors are the result of providing invalid code, failed io, or application timing out
 #[inline]
-pub fn apply_fallible_with_runtime(input: &str, code: &str, runtime: &Runtime) -> Result<String, ScaError> {
+pub fn apply_fallible_with_runtime(input: &str, code: &str, runtime: &mut Runtime) -> Result<String, ScaError> {
     runtime.apply(input, code)
 }
 

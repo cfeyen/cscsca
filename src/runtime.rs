@@ -34,10 +34,10 @@ pub enum LineApplicationLimit {
 }
 
 /// A callback function for logging output
-pub type PutFn = dyn Fn(&str) -> Result<(), Box<dyn Error>>;
+pub type PutFn = dyn FnMut(String) -> Result<(), Box<dyn Error>>;
 
 /// A callback function for fetching input
-pub type GetFn = dyn Fn(&str) -> Result<String, Box<dyn Error>>;
+pub type GetFn = dyn FnMut(String) -> Result<String, Box<dyn Error>>;
 
 /// A context for appling sound changes
 /// 
@@ -75,6 +75,7 @@ impl Runtime {
     }
 
     /// Creates a runtime with the given IO functions
+    #[must_use]
     pub fn new_with_io(put: Box<PutFn>, get: Box<GetFn>) -> Self {
         Self {
             io_put_fn: put,
@@ -116,10 +117,14 @@ impl Runtime {
 
     /// Applies rules to an input given the context of the runtime
     /// 
+    /// ## Note
+    /// This requires a mutable reference because the IO functions implement `FnMut`.
+    /// Only the captures of those functions may be mutated
+    /// 
     /// ## Errors
     /// Errors are the result of providing invalid code, failed io, or application timing out
     #[inline]
-    pub fn apply(&self, input: &str, code: &str) -> Result<String, ScaError> {
+    pub fn apply(&mut self, input: &str, code: &str) -> Result<String, ScaError> {
         let escaped = EscapedString::from(input);
 
         let phones = build_phone_list(escaped.inner());
@@ -129,7 +134,7 @@ impl Runtime {
 
     /// Applies all lines, errors are returned as formated strings
     // ! must take ownership of phones so that the input sources can safely be freed to prevent memory leaks
-    fn apply_all_lines<'s>(&self, mut phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
+    fn apply_all_lines<'s>(&mut self, mut phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
         // gets lines of code with line numbers,
         // and rule prepended so that escaped escape characters are properly outputted
         let lines = code.lines();
@@ -160,7 +165,7 @@ impl Runtime {
     }
 
     /// Applies a line within the runtime, errers are returned as formated strings
-    fn apply_line<'s>(&self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, tokenization_data: &mut TokenizationData<'s>) -> Result<(), ScaError> {
+    fn apply_line<'s>(&mut self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, tokenization_data: &mut TokenizationData<'s>) -> Result<(), ScaError> {
         // converts the line to ir
         let ir_line = tokenize_line_or_create_command(line, tokenization_data)
             .map_err(|e| ScaError::from_error(&e, line, line_num))?;
@@ -190,17 +195,17 @@ impl Runtime {
     }
 
     /// Handles commands to the runtime
-    fn handle_command<'s>(&self, cmd: Command, args: &'s str, phones: &[Phone], tokenization_data: &mut TokenizationData<'s>) -> Result<(), Box<dyn Error + 's>> {
+    fn handle_command<'s>(&mut self, cmd: Command, args: &'s str, phones: &[Phone], tokenization_data: &mut TokenizationData<'s>) -> Result<(), Box<dyn Error + 's>> {
         match cmd {
             // formats the message, calls the io_put_fn callback on it, then logs it
             Command::Print => {
                 let msg = format!("{args} '{BLUE}{}{RESET}'", phone_list_to_string(phones));
-                (self.io_put_fn)(&msg)?;
+                (self.io_put_fn)(msg)?;
             },
             // formats the message, calls the io_put_fn callback on it, then logs it
             Command::GetAsCode => {
                 if let Some((name, msg)) = args.split_once(' ') {
-                    let source = (self.io_get_fn)(msg.trim())?;
+                    let source = (self.io_get_fn)(msg.trim().to_string())?;
 
                     tokenization_data.set_variable_as_ir(name, source)?;
                 } else {
@@ -210,7 +215,7 @@ impl Runtime {
             // formats the message, calls the io_put_fn callback on it, then logs it
             Command::Get => {
                 if let Some((name, msg)) = args.split_once(' ') {
-                    let source = (self.io_get_fn)(msg.trim())?;
+                    let source = (self.io_get_fn)(msg.trim().to_string())?;
 
                     tokenization_data.set_variable(name, &source);
                 } else {
