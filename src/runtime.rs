@@ -48,9 +48,6 @@ pub type GetFn = dyn Fn(&str) -> Result<String, Box<dyn Error>>;
 ///     - limiting line application time/attempts
 pub struct Runtime {
     /// The function called when logging
-    ///
-    /// Should send the printed message to an io device
-    /// unless all outputs are to be retrieved from the print log after execution
     io_put_fn: Box<PutFn>,
     /// The function called to fetch input
     io_get_fn: Box<GetFn>,
