@@ -1,10 +1,7 @@
 use std::{env, fs};
 
-#[cfg(not(feature = "no_ansi"))]
-use cscsca::ansi::*;
-
-#[cfg(feature = "no_ansi")]
-use no_ansi::*;
+mod color;
+use color::*;
 
 const APPLY_CMD: &str = "sca";
 const APPLY_TO_FILE_CMD: &str = "apply";
@@ -214,17 +211,4 @@ const fn demo() -> &'static str {
 /// returns the template file
 const fn template() -> &'static str {
     include_str!("assets/base.sca")
-}
-
-/// Empty colors for when the no_ansi flag is used,
-/// as cscsca::colors is private when that flag is active
-#[cfg(feature = "no_ansi")]
-mod no_ansi {
-    pub const RESET: &str = "";
-    pub const BOLD: &str = "";
-    pub const RED: &str = "";
-    pub const YELLOW: &str = "";
-    pub const GREEN: &str = "";
-    pub const BLUE: &str = "";
-    pub const MAGENTA: &str = "";
 }

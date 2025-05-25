@@ -197,7 +197,7 @@ Generates a VSCode syntax highlighting extension for `.sca`/`.cscsca` files at *
 `á` is not `á`. The first (`á`) is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
 
 ## Crate Features
-- `no_ansi`: removes ANSI color codes from IO. This is ideal for printing in enviroments where ANSI is not rendered as color/formatting
+- `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
 - `gen_vscode_grammar`: adds the `gen vscode_grammar` CLI command and exposes the function used to do so in the crate
 
 ## Library API

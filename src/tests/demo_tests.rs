@@ -1,4 +1,4 @@
-use crate::{apply, apply_with_runtime, Runtime, ansi::*};
+use crate::{apply, apply_with_runtime, Runtime, color::*};
 
 const DEMO: &'static str = include_str!("../assets/demo.sca");
 

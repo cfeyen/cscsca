@@ -1,7 +1,7 @@
 use std::{error::Error, fmt::Display, io::{stdin, stdout, Write}, time::Duration};
 
 use crate::{
-    ansi::{BLUE, RESET},
+    color::{BLUE, RESET},
     applier::apply,
     ir::{tokenization_data::TokenizationData, tokenize_line_or_create_command, IrLine},
     keywords::{GET_AS_CODE_LINE_START, GET_LINE_START},

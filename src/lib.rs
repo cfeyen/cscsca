@@ -18,6 +18,7 @@ pub(crate) mod applier;
 pub(crate) mod matcher;
 pub(crate) mod sub_string;
 pub(crate) mod escaped_strings;
+pub mod color;
 pub mod runtime;
 pub mod keywords;
 
@@ -74,7 +75,7 @@ impl ScaError {
     /// Builds a new `ScaError` from any error,
     /// with the line and line number it occurred on
     fn from_error<E: Error + ?Sized>(e: &E, line: &str, line_num: usize) -> Self {
-        Self(format!("{}Error:{} {e}\nLine {line_num}: {line}", ansi::RED, ansi::RESET))
+        Self(format!("{}Error:{} {e}\nLine {line_num}: {line}", color::RED, color::RESET))
     }
 }
 
@@ -83,23 +84,4 @@ impl std::fmt::Display for ScaError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
-}
-
-/// ANSI color codes
-#[cfg(not(feature = "no_ansi"))]
-pub mod ansi {
-    pub const RESET: &str = "\x1b[0m";
-    pub const BOLD: &str = "\x1b[1m";
-    pub const RED: &str = "\x1b[31m";
-    pub const YELLOW: &str = "\x1b[93m";
-    pub const GREEN: &str = "\x1b[92m";
-    pub const BLUE: &str = "\x1b[94m";
-    pub const MAGENTA: &str = "\x1b[35m";
-}
-
-#[cfg(feature = "no_ansi")]
-mod ansi {
-    pub const RESET: &str = "";
-    pub const RED: &str = "";
-    pub const BLUE: &str = "";
 }
