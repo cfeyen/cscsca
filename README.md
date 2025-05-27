@@ -17,7 +17,7 @@ A sound change applier based on linguistic sound change notation.
 
 ## Writing Sound Change Rules with CSCSCA
 ### Phones
-A phone is a group of non-special characters seperated by spaces
+A phone is a group of non-special characters not seperated by spaces
 
 Examples: `a` `ts` `á` `litteraly_a_phone`
 
@@ -171,7 +171,7 @@ All CLI commands are proceeded by the path to CSCSCA's executable binary.
 Bellow this is represended with `cscsca`
 
 ### cscsca help
-Prints the help file
+Prints the this file
 
 ### cscsca demo
 Prints the demo file
@@ -198,6 +198,7 @@ Generates a VSCode syntax highlighting extension for `.sca`/`.cscsca` files at *
 
 ## Crate Features
 - `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
+- `docs`: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
 - `gen_vscode_grammar`: adds the `gen vscode_grammar` CLI command and exposes the function used to do so in the crate
 
 ## Library API

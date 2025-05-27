@@ -154,7 +154,8 @@ fn main() {
             }
         }
     } else {
-        help()
+        println!("Charles' Super Cool Sound Change Applier");
+        println!("Run '{BOLD}cscsca help{RESET}' for more information");
     }
 }
 
@@ -167,40 +168,9 @@ fn print_chars(text: &str) {
     }
 }
 
-/// color formats then prints the help file
+/// prints the README fule
 fn help() {
-    let text = &mut include_str!("assets/help.txt").chars();
-    let mut help = String::new();
-
-    while let Some(c) = text.next() {
-        match c {
-            '[' => {
-                let mut content = String::new();
-
-                // gets bracket contents
-                for c in text.by_ref() {
-                    if c == ']' { break; }
-                    content.push(c)
-                }
-
-                let special = match content.as_str() {
-                    "-" => RESET,
-                    "r" => { help += BOLD; RED },
-                    "y" => YELLOW,
-                    "g" => GREEN,
-                    "b" => BLUE,
-                    "m" => { help += BOLD; MAGENTA },
-                    "!" => BOLD,
-                    content => { help = help + "[" + content; "]" },
-                };
-
-                help += special;
-            }
-            c => help.push(c)
-        }
-    }
-
-    println!("{help}");
+    println!("{}", include_str!("../README.md"))
 }
 
 /// returns the demo file

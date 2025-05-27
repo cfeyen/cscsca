@@ -9,7 +9,6 @@ mod ansi {
     pub const YELLOW: &str = "\x1b[93m";
     pub const GREEN: &str = "\x1b[92m";
     pub const BLUE: &str = "\x1b[94m";
-    pub const MAGENTA: &str = "\x1b[35m";
 }
 
 #[cfg(not(any(feature = "ansi")))]
@@ -23,5 +22,4 @@ mod colorless {
     pub const YELLOW: &str = "";
     pub const GREEN: &str = "";
     pub const BLUE: &str = "";
-    pub const MAGENTA: &str = "";
 }
