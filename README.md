@@ -71,7 +71,7 @@ l (j) >> j
 ```
 
 ### Labels
-As seen in the example above corresponding scopes in the input and output try to agree in what they choose however there are times when we want this behavior to be expanded
+As seen in the example above corresponding scopes in the input and output try to agree in what they choose however there are times when we want this behavior to be different than the default or expanded to conditions
 
 To force scopes to agree in what they choose, we can use labels. A label has a name that starts with `$` and proceeds a scope
 
@@ -91,10 +91,11 @@ A condition starts with a `/` and comes in two flavors: **pattern** and **equali
 | **Pattern** | *before* `_` *after* | checks if the rule's input is proceeded by *before* and followed by *after* |
 | **Match** | *left* `=` *right* | checks if the tokens in *right* match the phones in *left* (most useful with variables) |
 
-A rule executes if any condition matches, to make a rule execute only if two conditions apply replace the start of the second with `&`
+A rule executes if any condition matches, to make a rule execute only if two sub-conditions apply replace the `/` at the start of the second with `&`
 
-Anti-Conditions (conditions that stop rules from applying) are the same as conditions,
-but start with `//`, and should be placed after all conditions
+If `&!` is used instead of `&`, the proceeding sub-condition must succeed and all sub-conditions up until the next `/` must fail for the overarching condition to succeed
+
+Anti-Conditions (conditions that stop rules from applying) are the same as conditions, but start with `//` or `/!`, and should be placed after all conditions
 
 Examples:
 ```cscsca

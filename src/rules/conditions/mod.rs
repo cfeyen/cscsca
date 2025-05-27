@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::{
-    keywords::{INPUT_PATTERN_STR, MATCH_CHAR},
+    keywords::{INPUT_PATTERN_STR, MATCH_CHAR, AND_CHAR, NOT_CHAR},
     matcher::{tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError},
     tokens::Direction,
     phones::Phone
@@ -11,6 +11,22 @@ use super::tokens::RuleToken;
 
 #[cfg(test)]
 mod tests;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AndType {
+    #[default]
+    And,
+    AndNot
+}
+
+impl Display for AndType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::And => write!(f, "{AND_CHAR}"),
+            Self::AndNot => write!(f, "{AND_CHAR}{NOT_CHAR}"),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CondType {
@@ -37,7 +53,7 @@ pub struct Cond<'s> {
     kind: CondType,
     before: Vec<RuleToken<'s>>,
     after: Vec<RuleToken<'s>>,
-    and: Option<Box<Self>>,
+    and: Option<(AndType, Box<Self>)>,
 }
 
 impl<'s> Cond<'s> {
@@ -48,8 +64,8 @@ impl<'s> Cond<'s> {
 
     /// Sets the additional required condition
     #[inline]
-    pub fn set_and(&mut self, and: Self) {
-        self.and = Some(Box::new(and));
+    pub fn set_and(&mut self, and_type: AndType, and: Self) {
+        self.and = Some((and_type, Box::new(and)));
     }
 
     /// Checks if the condition matches the phones in a list around a given index
@@ -90,8 +106,13 @@ impl<'s> Cond<'s> {
             }
         };
 
-        Ok(cond_succeeds && if let Some(and) = &self.and {
-            and.eval(phones, phone_index, input_len, choices, dir)?
+        Ok(cond_succeeds && if let Some((and_type, and_cond)) = &self.and {
+            let cond_res = and_cond.eval(phones, phone_index, input_len, choices, dir)?;
+
+            match and_type {
+                AndType::And => cond_res,
+                AndType::AndNot => !cond_res,
+            }
         } else {
             true
         })

@@ -66,7 +66,7 @@ pub fn build_rule<'s>(line: &IrLine<'s>) -> Result<RuleLine<'s>, RuleStructureEr
                 to_anti_conds = true;
                 anti_conds.push(ir_to_cond(&tokens)?);
             },
-            Break::And => {
+            Break::And(and_type) => {
                 let mut cond = ir_to_cond(&tokens)?;
 
                 let last_cond = if to_anti_conds {
@@ -77,9 +77,9 @@ pub fn build_rule<'s>(line: &IrLine<'s>) -> Result<RuleLine<'s>, RuleStructureEr
                 .last_mut()
                 .ok_or(RuleStructureError::AndDoesNotFollowCond)?;
 
-                cond.set_and(std::mem::take(last_cond));
+                cond.set_and(and_type, std::mem::take(last_cond));
                 *last_cond = cond;
-            }
+            },
         }
     }
 

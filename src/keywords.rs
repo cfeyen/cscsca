@@ -41,6 +41,7 @@ const_list! {
     RTL_CHAR = '<';
     COND_CHAR = '/';
     AND_CHAR = '&';
+    NOT_CHAR = '!';
 
     // Scope Bounds
     OPTIONAL_START_CHAR = '(';

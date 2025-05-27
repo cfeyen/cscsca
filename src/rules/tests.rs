@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::{tokens::{Direction, Shift, ShiftType}, phones::Phone};
+use crate::{phones::Phone, rules::conditions::AndType, tokens::{Direction, Shift, ShiftType}};
 use super::*;
 
 /// Builds a sound change rules out of lines of ir tokens,
@@ -805,7 +805,7 @@ fn and_cond() {
         Vec::new(),
     );
 
-    cond.set_and(Cond::new(
+    cond.set_and(AndType::And, Cond::new(
         CondType::Pattern,
         vec![RuleToken::Phone(Phone::Symbol("b"))],
         Vec::new(),
@@ -825,7 +825,7 @@ fn and_cond() {
             IrToken::Break(Break::Cond),
             IrToken::Phone(Phone::Symbol("b")),
             IrToken::CondType(CondType::Pattern),
-            IrToken::Break(Break::And),
+            IrToken::Break(Break::And(AndType::And)),
             IrToken::Phone(Phone::Symbol("c")),
             IrToken::CondType(CondType::Pattern),
         ]))
@@ -842,7 +842,7 @@ fn and_anticond() {
         Vec::new(),
     );
 
-    cond.set_and(Cond::new(
+    cond.set_and(AndType::And, Cond::new(
         CondType::Pattern,
         vec![RuleToken::Phone(Phone::Symbol("b"))],
         Vec::new(),
@@ -862,7 +862,7 @@ fn and_anticond() {
             IrToken::Break(Break::AntiCond),
             IrToken::Phone(Phone::Symbol("b")),
             IrToken::CondType(CondType::Pattern),
-            IrToken::Break(Break::And),
+            IrToken::Break(Break::And(AndType::And)),
             IrToken::Phone(Phone::Symbol("c")),
             IrToken::CondType(CondType::Pattern),
         ]))
@@ -884,13 +884,13 @@ fn double_and() {
         Vec::new(),
     );
 
-    cond_2.set_and(Cond::new(
+    cond_2.set_and(AndType::And, Cond::new(
         CondType::Pattern,
         vec![RuleToken::Phone(Phone::Symbol("b"))],
         Vec::new(),
     ));
 
-    cond.set_and(cond_2);
+    cond.set_and(AndType::And, cond_2);
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {
@@ -906,10 +906,10 @@ fn double_and() {
             IrToken::Break(Break::Cond),
             IrToken::Phone(Phone::Symbol("b")),
             IrToken::CondType(CondType::Pattern),
-            IrToken::Break(Break::And),
+            IrToken::Break(Break::And(AndType::And)),
             IrToken::Phone(Phone::Symbol("c")),
             IrToken::CondType(CondType::Pattern),
-            IrToken::Break(Break::And),
+            IrToken::Break(Break::And(AndType::And)),
             IrToken::Phone(Phone::Symbol("d")),
             IrToken::CondType(CondType::Pattern),
         ]))

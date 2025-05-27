@@ -1,5 +1,5 @@
 use crate::{
-    escaped_strings::check_escapes, keywords::{is_special_char, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX}, phones::Phone, rules::conditions::CondType, runtime::Command, sub_string::SubString, tokens::{Direction, ScopeType, Shift, ShiftType}
+    escaped_strings::check_escapes, keywords::{is_special_char, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX}, phones::Phone, rules::conditions::{AndType, CondType}, runtime::Command, sub_string::SubString, tokens::{Direction, ScopeType, Shift, ShiftType}
 };
 
 use tokenization_data::TokenizationData;
@@ -88,7 +88,22 @@ fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>) ->
             SELECTION_START_CHAR => push_phone_and(IrToken::ScopeStart(ScopeType::Selection), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             SELECTION_END_CHAR => push_phone_and(IrToken::ScopeEnd(ScopeType::Selection), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             // handles simple one-to-one char to token pushes
-            AND_CHAR => push_phone_and(IrToken::Break(Break::And), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
+            AND_CHAR => push_phone_and(IrToken::Break(Break::And(AndType::And)), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
+            NOT_CHAR => {
+                let token = match tokens.last() {
+                    Some(IrToken::Break(Break::And(AndType::And))) => {
+                        tokens.pop();
+                        IrToken::Break(Break::And(AndType::AndNot))
+                    },
+                    Some(IrToken::Break(Break::Cond)) => {
+                        tokens.pop();
+                        IrToken::Break(Break::AntiCond)
+                    },
+                    _ => return Err(IrError::UnexpectedNot),
+                };
+
+                push_phone_and(token, &mut tokens, &mut slice, &mut prefix, tokenization_data)?;
+            }
             ANY_CHAR => push_phone_and(IrToken::Any, &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             ARG_SEP_CHAR => push_phone_and(IrToken::ArgSep, &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
             BOUND_CHAR => push_phone_and(IrToken::Phone(Phone::Bound), &mut tokens, &mut slice, &mut prefix, tokenization_data)?,
@@ -252,6 +267,7 @@ pub enum IrError<'s> {
     EmptyDefinition,
     BadEscape(Option<char>),
     ReservedCharacter(char),
+    UnexpectedNot,
 }
 
 impl std::error::Error for IrError<'_> {}
@@ -266,6 +282,7 @@ impl std::fmt::Display for IrError<'_> {
             Self::BadEscape(None) => write!(f, "Found '{ESCAPE_CHAR}' with no following character"),
             Self::BadEscape(Some(c)) => write!(f, "Escaped normal character '{c}' ({ESCAPE_CHAR}{c})"),
             Self::ReservedCharacter(c) => write!(f, "Found reserved character '{c}' consider escaping it ('{ESCAPE_CHAR}{c}')"),
+            Self::UnexpectedNot => write!(f, "Found '{NOT_CHAR}' not after '{COND_CHAR}' or '{AND_CHAR}'")
         }
     }
 }

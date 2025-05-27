@@ -1,10 +1,7 @@
 use std::fmt::Display;
 
 use crate::{
-    keywords::{ANY_CHAR, ARG_SEP_CHAR, GAP_STR, LABEL_PREFIX, COND_CHAR, AND_CHAR},
-    tokens::{ScopeType, Shift},
-    phones::Phone,
-    rules::conditions::CondType,
+    keywords::{ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, LABEL_PREFIX}, phones::Phone, rules::conditions::{AndType, CondType}, tokens::{ScopeType, Shift}
 };
 
 /// Tokens that make up the intermediate representation of sound shifts
@@ -62,7 +59,8 @@ pub enum Break {
     /// Starts an anti-condition
     AntiCond,
     /// A union between conditions where both must succeed
-    And
+    /// or the first must succeed and the next must fail
+    And(AndType),
 }
 
 impl Display for Break {
@@ -71,7 +69,7 @@ impl Display for Break {
             Self::Shift(shift) => format!("{shift}"),
             Self::Cond => format!("{COND_CHAR}"),
             Self::AntiCond => format!("{COND_CHAR}{COND_CHAR}"),
-            Self::And => format!("{AND_CHAR}"),
+            Self::And(and_type) => format!("{and_type}"),
         };
 
         write!(f, "{s}")
