@@ -40,13 +40,13 @@ Structured *input* *shift* *output* where *input* and *output* are phones (*inpu
 
 Examples:
 ```cscsca
-## x becomes h
+## `x` becomes `h`
 x >> h
 
-## a t j cluster becomes c
+## a `t` `j` cluster becomes `c`
 t j >> c
 
-## h is lost
+## `h` is lost
 h >>
 ```
 
@@ -60,13 +60,13 @@ There are two types of scopes
 
 Examples:
 ```cscsca
-## l and l j become j
+## `l` and `l` `j` become `j`
 l (j) >> j
 
-## f and x merge to h
+## `f` and `x` merge to `h`
 {f, x} >> h
 
-## p and b become f and v respectively
+## `p` and `b` become `f` and `v` respectively
 {p, b} >> {f, v}
 ```
 
@@ -77,7 +77,7 @@ To force scopes to agree in what they choose, we can use labels. A label has a n
 
 Examples:
 ```cscsca
-## i and u merge with proceeding h or x into j i and w u
+## `i` and `u` merge with proceeding `h` or `x` into `j` `i` and `w` `u`
 {h, x} $label{i, u} >> $label{j i, w u}
 ```
 
@@ -99,10 +99,10 @@ Anti-Conditions (conditions that stop rules from applying) are the same as condi
 
 Examples:
 ```cscsca
-## h is lost word-initially
+## `h` is lost word-initially
 h >> / # _
 
-## h is lost when not word-initial
+## `h` is lost when not word-initial
 h >> // # _ 
 
 ## stops are voiced intervocalically or after nasals
@@ -158,12 +158,13 @@ You may replace `GET` with `GET_AS_CODE` to interpret the variable contents as c
 Examples:
 
 ```cscsca
-GET dialect enter dialect:
+GET dialect Enter dialect:
 
-## h is lost in the northern dialect
-h >> / %dialect = {northern, north-west}
+## h is lost in the northern and north-west dialects
+## (note spaces in the words as each character is an individual phone)
+h >> / %dialect = {n o r t h e r n, n o r t h - w e s t}
 
-PRINT h-loss
+PRINT h-loss:
 ```
 
 
