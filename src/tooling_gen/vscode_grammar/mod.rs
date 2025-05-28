@@ -121,7 +121,7 @@ fn build_grammar() -> String {
                 Pattern::new("label", vec!["entity.name.function", "emphasis"], format!("{ESCAPE}{LABEL_PREFIX}{NON_WHITESPACE}{REP_ONCE_PLUS}{REP_MAYBE_ONCE}{break_ahead}")),
                 Pattern::new("definition_name", vec!["entity.name.type"], format!("{}{NON_WHITESPACE}{REP_ONCE_PLUS}{REP_MAYBE_ONCE}{break_ahead}", look_ahead(&format!("{LINE_START}{DEFINITION_LINE_START}{WHITESPACE}{REP_ANY}{REP_MAYBE_ONCE}")))),
                 Pattern::new("variable_name", vec!["entity.name.type", "emphasis"], format!("{}{NON_WHITESPACE}{REP_ONCE_PLUS}{REP_MAYBE_ONCE}{break_ahead}", look_ahead(&format!("{LINE_START}{GROUP_START}{GET_LINE_START}{OR}{GET_AS_CODE_LINE_START}{GROUP_END}{WHITESPACE}{REP_ANY}{REP_MAYBE_ONCE}")))),
-                Pattern::new("breaks", vec!["keyword.control"], format!("{LTR_CHAR}{LTR_CHAR}{OR}{LTR_CHAR}{OR}{RTL_CHAR}{RTL_CHAR}{OR}{RTL_CHAR}{OR}{COND_CHAR}{COND_CHAR}{OR}{COND_CHAR}{NOT_CHAR}{OR}{COND_CHAR}{OR}{AND_CHAR}{OR}{AND_CHAR}{NOT_CHAR}")),
+                Pattern::new("breaks", vec!["keyword.control"], format!("{LTR_CHAR}{LTR_CHAR}{OR}{LTR_CHAR}{OR}{RTL_CHAR}{RTL_CHAR}{OR}{RTL_CHAR}{OR}{COND_CHAR}{COND_CHAR}{OR}{COND_CHAR}{NOT_CHAR}{OR}{COND_CHAR}{OR}{AND_CHAR}{NOT_CHAR}{OR}{AND_CHAR}")),
                 Pattern::new("punctuation", vec!["punctuation.seperator"], format!("{ARG_SEP_CHAR}")),
                 Pattern::new("scope_bound", vec!["punctuation.bound"], format!("{ESCAPE}{OPTIONAL_START_CHAR}{OR}{ESCAPE}{OPTIONAL_END_CHAR}{OR}{ESCAPE}{SELECTION_START_CHAR}{OR}{ESCAPE}{SELECTION_END_CHAR}")),
                 Pattern::new("reserved", vec!["invalid.reserved"], format!("{ESCAPE}{DOT_CHAR}{OR}{ESCAPE}{SQUARE_START_CHAR}{OR}{ESCAPE}{SQUARE_END_CHAR}{OR}{NOT_CHAR}")),
