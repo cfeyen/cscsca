@@ -1,17 +1,20 @@
 use std::{env, fs};
 
 mod color;
+mod cli_parser;
+
+use cli_parser::{CliCommand, InputType};
+#[cfg(any(feature = "gen_vscode_grammar"))]
+use cli_parser::GenType;
 use color::*;
 
 const APPLY_CMD: &str = "sca";
-const APPLY_TO_FILE_CMD: &str = "apply";
-#[cfg(feature = "gen_vscode_grammar")]
+#[cfg(any(feature = "gen_vscode_grammar"))]
 const GEN_CMD: &str = "gen";
 #[cfg(feature = "gen_vscode_grammar")]
 const VSC_EXT: &str = "vscode_grammar";
 const CHAR_HELP_CMD: &str = "chars";
 const HELP_CMD: &str = "help";
-const DEMO_CMD: &str = "demo";
 const NEW_CMD: &str = "new";
 const FILE_EXTENTION: &str = ".sca";
 
@@ -26,137 +29,98 @@ const FILE_EXTENTION: &str = ".sca";
 /// - apply 'src' 'path' - applies the code at 'src' to the text in 'path' and prints the result
 /// - apply 'src' 'path' 'dest' - applies the code at 'src' to the text in 'path' and stores the result in 'dest'
 fn main() {
-    let args = &mut env::args();
-    let _path = args.next();
-    let cmd = args.next();
-    let args = args.collect::<Vec<_>>();
-
-    if let Some(cmd) = cmd {
-        match (cmd.as_str(), args.len()) {
-            (APPLY_CMD, 2..) => {
-                let path = &args[0];
-                let text = &args[1..].join(" ");
-
-                let code = &match fs::read_to_string(path) {
-                    Ok(code) => code,
+    match CliCommand::from_args(env::args()) {
+        Ok(CliCommand::Apply { write, paths, input }) => {
+            let text = match input {
+                InputType::Raw(raw) => raw,
+                InputType::Read(path) => match fs::read_to_string(&path) {
+                    Ok(s) => s,
                     Err(_) => {
-                        println!("{RED}Error:{RESET} Could not find file '{BLUE}{path}{RESET}'");
+                        println!("{RED}Error:{RESET} An error occured when reading the input from {BLUE}{path}{RESET}");
                         return;
-                    }
-                };
+                    },
+                },
+            };
 
-                println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
-
-                let output = cscsca::apply(text, code);
-                println!("{}", output);
-            },
-            // prints the result of appling code from one file to text in another
-            (APPLY_TO_FILE_CMD, 2) => {
-                let src = &args[0];
-                let target = &args[1];
-
-                let code = &match fs::read_to_string(src) {
-                    Ok(code) => code,
-                    Err(_) => {
-                        println!("{RED}Error:{RESET} Could not find file '{BLUE}{src}{RESET}'");
-                        return;
-                    }
-                };
-
-                let text = &match fs::read_to_string(target) {
-                    Ok(code) => code,
-                    Err(_) => {
-                        println!("{RED}Error:{RESET} Could not find file '{BLUE}{target}{RESET}'");
-                        return;
-                    }
-                };
-
-                println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
-
-                let output = cscsca::apply(text, code);
-                println!("{}", output);
-            },
-            // stores the result of appling code from one file to text in another in a third
-            // (either by overwriting its contents or creating a new one)
-            (APPLY_TO_FILE_CMD, 3) => {
-                let src = &args[0];
-                let target = &args[1];
-                let dest = &args[2];
-
-                let code = &match fs::read_to_string(src) {
-                    Ok(code) => code,
-                    Err(_) => {
-                        println!("{RED}Error:{RESET} Could not find file '{BLUE}{src}{RESET}'");
-                        return;
-                    }
-                };
-
-                let text = &match fs::read_to_string(target) {
-                    Ok(code) => code,
-                    Err(_) => {
-                        println!("{RED}Error:{RESET} Could not find file '{BLUE}{target}{RESET}'");
-                        return;
-                    }
-                };
-
-                println!("{GREEN}Applying changes to '{BLUE}{text}{GREEN}'{RESET}");
-
-                let output = cscsca::apply(text, code);
-                println!("{}", output);
-
-                match fs::write(dest, output) {
-                    Ok(()) => println!("Done"),
-                    Err(_) => println!("Could not create file '{dest}'")
-                }
-            },
-            #[cfg(feature = "gen_vscode_grammar")]
-            (GEN_CMD, 2) => {
-                match &*args[0] {
-                    VSC_EXT => {
-                        let path = &*args[1];
-                        if let Err(e) = cscsca::tooling_gen::vscode_grammar::gen_vscode_grammar(path) {
-                            println!("{e}");
+            match apply_changes(&paths, text) {
+                Ok(output) => {
+                    println!("{output}");
+                    if let Some(path) = write {
+                        if fs::write(&path, output).is_err() {
+                            println!("{RED}Error:{RESET} An error occured when writing the output to {BLUE}{path}{RESET}");
                         }
-                    },
-                    arg => {
-                        println!("Unrecognized argument to {BOLD}{GEN_CMD}{RESET} '{arg}'");
-                        println!("Run '{BOLD}cscsca help{RESET}' for more information");
-                    },
-                }
+                    }
+                },
+                Err(e) => println!("{RED}Error:{RESET} {e}")
             }
-            // prints the characters in each argument
-            (CHAR_HELP_CMD, 1..) => {
-                for text in &args {
-                    print_chars(text);
+        },
+        Ok(CliCommand::Chars { words }) => for text in words {
+            print_chars(&text);
+        },
+        Ok(CliCommand::New { base, path, extra_args }) => {
+            if extra_args {
+                println!("{YELLOW}Warning:{RESET} Extra arguments beyond '{BLUE}{path}{RESET}' do nothing");
+            }
+
+            let path = path + FILE_EXTENTION;
+
+            if std::path::Path::new(&path).exists() {
+                println!("{RED}Error:{RESET} {BLUE}{path}{RESET} already exisits");
+            } else if fs::write(&path, if base { template() } else { "" }).is_err() {
+                println!("{RED}Error:{RESET} An error occured when writing to {BLUE}{path}{RESET}");
+            }
+        },
+        #[cfg(any(feature = "gen_vscode_grammar"))]
+        Ok(CliCommand::Gen { tooling, path, extra_args }) => {
+            if extra_args {
+                println!("{YELLOW}Warning:{RESET} Extra arguments beyond '{BOLD}{path}{RESET}' do nothing");
+            }
+
+            match tooling {
+                #[cfg(feature = "gen_vscode_grammar")]
+                GenType::VsCodeGrammar => if let Err(e) = cscsca::tooling_gen::vscode_grammar::gen_vscode_grammar(&path) {
+                    println!("{e}");
                 }
-            },
-            // prints the help file
-            (HELP_CMD, 0) => help(),
-            // creats a new template file
-            (NEW_CMD, 1) => {
-                let path = if args[0].contains(".") {
-                    &args[0]
-                } else {
-                    &format!("{}{FILE_EXTENTION}", args[0])
-                };
-                
-                match fs::write(path, template()) {
-                    Ok(()) => println!("Created {BLUE}{path}{RESET}"),
-                    Err(_) => println!("{RED}Error:{RESET} Failed to create {BLUE}{path}{RESET}")
-                }
-            },
-            // prints the demo file
-            (DEMO_CMD, 0) => println!("{}", demo()),
-            // handles unrecognized commands
-            (_, arg_count) => {
-                println!("Unrecognized command '{BOLD}{cmd}{RESET}' with {arg_count} arguments");
-                println!("Run '{BOLD}cscsca help{RESET}' for more information");
             }
         }
-    } else {
-        println!("Charles' Super Cool Sound Change Applier");
-        println!("Run '{BOLD}cscsca help{RESET}' for more information");
+        Ok(CliCommand::Help { extra_args }) => {
+            if extra_args {
+                println!("{YELLOW}Warning:{RESET} Extra arguments beyond '{BOLD}{HELP_CMD}{RESET}' do nothing");
+            }
+            help();
+        },
+        Ok(CliCommand::None) => {
+            println!("Charles' Super Cool Sound Change Applier");
+            println!("Run '{BOLD}cscsca help{RESET}' for more information");
+        },
+        Err(e) => println!("{RED}Error:{RESET} {e}"),
     }
+}
+
+fn apply_changes(paths: &[String], input: String) -> Result<String, String> {
+    if input.is_empty() {
+        return Err("No input provided".to_string())
+    }
+
+    let mut output = input;
+
+    for path in paths {
+        let code = &match fs::read_to_string(path) {
+            Ok(code) => code,
+            Err(_) => {
+                return Err(format!("Could not find file '{BLUE}{path}{RESET}'"));
+            }
+        };
+
+        println!("{GREEN}Applying changes in {BLUE}{path}{GREEN} to '{BLUE}{output}{GREEN}'{RESET}");
+
+        match cscsca::apply_fallible(&output, code) {
+            Ok(text) => output = text,
+            Err(e) => return Err(e.to_string()),
+        }
+    }
+
+    Ok(output)
 }
 
 /// prints the characters in a string
@@ -171,11 +135,6 @@ fn print_chars(text: &str) {
 /// prints the README fule
 fn help() {
     println!("{}", include_str!("../README.md"))
-}
-
-/// returns the demo file
-const fn demo() -> &'static str {
-    include_str!("assets/demo.sca")
 }
 
 /// returns the template file

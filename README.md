@@ -175,28 +175,28 @@ Bellow this is represended with `cscsca`
 ### cscsca help
 Prints the this file
 
-### cscsca demo
-Prints the demo file
-
 ### cscsca new *path*
-Creates a basic `.sca` file at *path*
+Creates a new file at *path*.sca
+
+If -b or --base proceeds *path*, the new file has general defintions in it
 
 ### cscsca sca *file* *text*
 Applies the rules in *file* to *text* and prints the result
 
-### cscsca apply *rule_file* *src_file*
-Applies the rules in *rule_file* to the text in *src_file* and prints the result
+After *file*, you may add a series of --chain *file* or -c *file* commands to chain the output of one file into the input of the next
 
-### cscsca apply *rule_file* *src_file* *dst_file*
-Applies the rules in *rule_file* to the text in *src_file* and writes the result to *dst_file*
+Add --write *write_file* or -w *write_file* before *text* to write the final output to *write_file*
+
+Replace *text* --read *read_file* or -r *read_file* to read the input text from *read_file*
+
 
 ### cscsca gen vscode_grammar *path*
 (locked behind `gen_vscode_grammar` feature)
 
-Generates a VSCode syntax highlighting extension for `.sca`/`.cscsca` files at *path*
+Generates a VSCode syntax highlighting extension for `.sca`/`.cscsca` files in a directory at *path*
 
 ### cscsca chars *text*
-`á` is not `á`. The first (`á`) is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
+`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
 
 ## Crate Features
 - `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
