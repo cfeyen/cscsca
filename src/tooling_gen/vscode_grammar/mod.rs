@@ -35,8 +35,12 @@ const PATH_SEP: char = '/';
 #[cfg(windows)]
 const PATH_SEP: char = '\\';
 
+/// Gengerates the VSCode extension at `path`
+/// 
+/// ## Errors
+/// Returns an error is some part of creating the directory
 pub fn gen_vscode_grammar(path: &str) -> Result<(), Error> {
-    fs::create_dir(format!("{path}"))?;
+    fs::create_dir(path)?;
     fs::create_dir(format!("{path}{PATH_SEP}icons"))?;
     fs::write(format!("{path}{PATH_SEP}icons{PATH_SEP}light.png"), LIGHT_ICON)?;
     fs::write(format!("{path}{PATH_SEP}icons{PATH_SEP}dark.png"), DARK_ICON)?;
@@ -67,7 +71,7 @@ fn style_json(json: &str) -> String {
             depth += 1;
         }
 
-        styled.push('\n')
+        styled.push('\n');
     }
 
     styled
