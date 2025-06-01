@@ -76,15 +76,10 @@ fn run_apply(paths: &[String], output_data: &OutputData, input: InputType) {
     let mut full_output = String::new();
 
     for input in input.lines() {
-        match apply_changes(paths, input.to_string()) {
+        match apply_changes(paths, input.to_string(), output_data.map()) {
             Ok(output) => {
-                let expanded_output = if output_data.map() {
-                    format!("{input} {MAP_SPACER} {output}")
-                } else {
-                    output
-                };
-                println!("{expanded_output}");
-                full_output += &expanded_output;
+                full_output += &output;
+                println!("{output}");
             },
             Err(e) => error(&e),
         }
@@ -100,12 +95,12 @@ fn run_apply(paths: &[String], output_data: &OutputData, input: InputType) {
 }
 
 /// Applies changes to an input
-fn apply_changes(paths: &[String], input: String) -> Result<String, String> {
+fn apply_changes(paths: &[String], mut input: String, map: bool) -> Result<String, String> {
     if input.is_empty() {
         return Err("No input provided".to_string())
     }
 
-    let mut output = input;
+    let mut full_output = input.clone();
 
     for path in paths {
         let code = &match fs::read_to_string(path) {
@@ -115,15 +110,21 @@ fn apply_changes(paths: &[String], input: String) -> Result<String, String> {
             }
         };
 
-        println!("{GREEN}Applying changes in {BLUE}{path}{GREEN} to '{BLUE}{output}{GREEN}'{RESET}");
+        println!("{GREEN}Applying changes in {BLUE}{path}{GREEN} to '{BLUE}{input}{GREEN}'{RESET}");
 
-        match cscsca::apply_fallible(&output, code) {
-            Ok(text) => output = text,
+        match cscsca::apply_fallible(&input, code) {
+            Ok(output) => {
+                if map {
+                    use std::fmt::Write as _;
+                    _ = write!(full_output, " {MAP_SPACER} {output}");
+                }
+                input = output;
+            },
             Err(e) => return Err(e.to_string()),
         }
     }
 
-    Ok(output)
+    Ok(full_output)
 }
 
 /// prints the characters in a string

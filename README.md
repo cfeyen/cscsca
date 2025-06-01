@@ -185,7 +185,7 @@ Applies the rules in *file* to *text* and prints the result
 
 After *file*, you may add a series of --chain *file* or -c *file* commands to chain the output of one file into the input of the next
 
-Add --map or -m to write each input with each output
+Add --map or -m to write each output with its input and all intermediate steps
 
 Add --write *write_file* or -w *write_file* before *text* to write the final output to *write_file*
 
