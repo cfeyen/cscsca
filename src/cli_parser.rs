@@ -1,5 +1,11 @@
 use std::env::Args;
 
+const USE_TEMPLATE_FLAGS: &[&str] = &["-t", "--template"];
+const CHAIN_FLAGS: &[&str] = &["-c", "--chain"];
+const READ_FLAGS: &[&str] = &["-r", "--read"];
+const WRITE_FLAGS: &[&str] = &["-w", "--write"];
+const MAPPED_OUTPUT_FLAGS: &[&str] = &["-m", "--map"];
+
 use crate::{APPLY_CMD, CHAR_HELP_CMD, HELP_CMD, NEW_CMD};
 #[cfg(any(feature = "gen_vscode_grammar"))]
 use crate::GEN_CMD;
@@ -9,22 +15,20 @@ use crate::VSC_EXT;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CliCommand {
     Apply {
-        write: Option<String>,
         paths: Vec<String>,
-        input: InputType
+        output_data: OutputData,
+        input: InputType,
     },
     Chars { words: Vec<String> },
     Help { extra_args: bool },
     New {
-        base: bool,
+        use_template: bool,
         path: String,
-        extra_args: bool
     },
     #[cfg(any(feature = "gen_vscode_grammar"))]
     Gen {
         tooling: GenType,
         path: String,
-        extra_args: bool
     },
     None,
 }
@@ -39,7 +43,23 @@ pub enum GenType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InputType {
     Read(String),
-    Raw(String)
+    Raw(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OutputData {
+    write: Option<String>,
+    map: bool,
+}
+
+impl OutputData {
+    pub const fn map(&self) -> bool {
+        self.map
+    }
+
+    pub const fn write_path(&self) -> Option<&String> {
+        self.write.as_ref()
+    }
 }
 
 impl CliCommand {
@@ -52,15 +72,18 @@ impl CliCommand {
                 APPLY_CMD => parse_sca(&mut args),
                 CHAR_HELP_CMD => Ok(Self::Chars { words: args.collect() }),
                 NEW_CMD => {
-                    let base = args.next_if(|s| matches!(s.as_str(), "--base" | "-b")).is_some();
+                    let use_template = args.next_if(|s| USE_TEMPLATE_FLAGS.contains(&s.as_str())).is_some();
 
                     let path = match args.next() {
                         Some(path) => path,
                         None => return Err(ArgumentParseError::ExpectedFileName),
                     };
-                    let extra_args = args.next().is_some();
+                    
+                    if let Some(cmd) = args.next() {
+                        return Err(ArgumentParseError::UnexpectedCommand(cmd));
+                    }
 
-                    Ok(Self::New { base, path, extra_args })
+                    Ok(Self::New { use_template, path })
                 }
                 #[cfg(any(feature = "gen_vscode_grammar"))]
                 GEN_CMD => {
@@ -78,7 +101,11 @@ impl CliCommand {
                         None => return Err(ArgumentParseError::ExpectedFileName),
                     };
 
-                    Ok(CliCommand::Gen { tooling, path, extra_args: args.next().is_some()})
+                    if let Some(cmd) = args.next() {
+                        return Err(ArgumentParseError::UnexpectedCommand(cmd));
+                    }
+
+                    Ok(CliCommand::Gen { tooling, path })
                 },
                 HELP_CMD => Ok(Self::Help { extra_args: args.next().is_some() }),
                 _ => Err(ArgumentParseError::UnexpectedCommand(cmd)),
@@ -98,14 +125,14 @@ fn parse_sca(args: &mut std::iter::Peekable<impl Iterator<Item = String>>) -> Re
             return Err(ArgumentParseError::ExpectedFileName);
         }
 
-        if matches!(args.peek().map(|s| s.as_str()), Some("--chain" | "-c")) {
-            _ = args.next();
-        } else {
+        if args.next_if(|s| CHAIN_FLAGS.contains(&s.as_str())).is_none() {
             break;
         }
     }
+    
+    let map = args.next_if(|s| MAPPED_OUTPUT_FLAGS.contains(&s.as_str())).is_some();
 
-    let write = if args.next_if(|s| matches!(s.as_str(), "--write" | "-w")).is_some() {
+    let write = if args.next_if(|s| WRITE_FLAGS.contains(&s.as_str())).is_some() {
         match args.next() {
             Some(path) => Some(path),
             None => return Err(ArgumentParseError::ExpectedFileName),
@@ -114,22 +141,20 @@ fn parse_sca(args: &mut std::iter::Peekable<impl Iterator<Item = String>>) -> Re
         None
     };
 
-    let input = if args.next_if(|s| matches!(s.as_str(), "--read" | "-r")).is_some() {
-        let input = match args.next() {
+    let input = if args.next_if(|s| READ_FLAGS.contains(&s.as_str())).is_some() {
+        match args.next() {
             Some(path) => InputType::Read(path),
             None => return Err(ArgumentParseError::ExpectedFileName),
-        };
-
-        if let Some(cmd) = args.next() {
-            return Err(ArgumentParseError::UnexpectedCommand(cmd));
-        } else {
-            input
         }
     } else {
         InputType::Raw(args.collect::<Vec<_>>().join(" "))
     };
 
-    Ok(CliCommand::Apply { write, paths, input })
+    if let Some(cmd) = args.next() {
+        return Err(ArgumentParseError::UnexpectedCommand(cmd));
+    }
+
+    Ok(CliCommand::Apply { paths, output_data: OutputData { write, map }, input })
 }
 
 #[derive(Debug)]

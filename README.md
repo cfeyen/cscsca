@@ -185,9 +185,11 @@ Applies the rules in *file* to *text* and prints the result
 
 After *file*, you may add a series of --chain *file* or -c *file* commands to chain the output of one file into the input of the next
 
+Add --map or -m to write each input with each output
+
 Add --write *write_file* or -w *write_file* before *text* to write the final output to *write_file*
 
-Replace *text* --read *read_file* or -r *read_file* to read the input text from *read_file*
+Replace *text* --read *read_file* or -r *read_file* to read each line of *read_file* as an individual input text
 
 
 ### cscsca gen vscode_grammar *path*
