@@ -100,7 +100,11 @@ fn apply_changes(paths: &[String], mut input: String, map: bool) -> Result<Strin
         return Err("No input provided".to_string())
     }
 
-    let mut full_output = input.clone();
+    let mut full_output = if map {
+        input.clone()
+    } else {
+        String::new()
+    };
 
     for path in paths {
         let code = &match fs::read_to_string(path) {
@@ -122,6 +126,10 @@ fn apply_changes(paths: &[String], mut input: String, map: bool) -> Result<Strin
             },
             Err(e) => return Err(e.to_string()),
         }
+    }
+
+    if !map {
+        full_output = input;
     }
 
     Ok(full_output)
