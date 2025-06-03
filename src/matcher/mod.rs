@@ -213,9 +213,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
         let mut content_env = self.with_new_tokens(content);
 
         if let Some(id) = id {
-            println!("pre-choice");
             if let Some(choice) = choices.optional.get(id).copied() {
-                println!("choice: {choice}");
                 if choice {
                     let content_matches = content_env.tokens_match_phones(choices)?;
                     if !content_matches {
