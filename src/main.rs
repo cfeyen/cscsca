@@ -1,4 +1,4 @@
-use std::{env, fs};
+use std::fs;
 
 mod color;
 mod cli_parser;
@@ -24,7 +24,7 @@ const MAP_SPACER: &str = "->";
 /// 
 /// See `README.md` for more information
 fn main() {
-    match CliCommand::from_args(env::args()) {
+    match CliCommand::from_args() {
         Ok(CliCommand::Apply { paths, output_data, input })
             => run_apply(&paths, &output_data, input),
         Ok(CliCommand::Chars { words }) => for text in words {
@@ -73,6 +73,11 @@ fn run_apply(paths: &[String], output_data: &OutputData, input: InputType) {
         },
     };
 
+    if input.is_empty() {
+        error("No input provided");
+        return;
+    }
+
     let mut full_output = String::new();
 
     for input in input.lines() {
@@ -96,10 +101,6 @@ fn run_apply(paths: &[String], output_data: &OutputData, input: InputType) {
 
 /// Applies changes to an input
 fn apply_changes(paths: &[String], mut input: String, map: bool) -> Result<String, String> {
-    if input.is_empty() {
-        return Err("No input provided".to_string())
-    }
-
     let mut full_output = if map {
         input.clone()
     } else {

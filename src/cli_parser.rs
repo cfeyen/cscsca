@@ -1,5 +1,3 @@
-use std::env::Args;
-
 const USE_TEMPLATE_FLAGS: &[&str] = &["-t", "--template"];
 const CHAIN_FLAGS: &[&str] = &["-c", "--chain"];
 const READ_FLAGS: &[&str] = &["-r", "--read"];
@@ -63,8 +61,8 @@ impl OutputData {
 }
 
 impl CliCommand {
-    pub fn from_args(args: Args) -> Result<Self, ArgumentParseError> {
-        let mut args = args.peekable();
+    pub fn from_args() -> Result<Self, ArgumentParseError> {
+        let mut args = std::env::args().peekable();
         let _path = args.next();
 
         match args.next() {
