@@ -4,12 +4,15 @@ const READ_FLAGS: &[&str] = &["-r", "--read"];
 const WRITE_FLAGS: &[&str] = &["-w", "--write"];
 const MAPPED_OUTPUT_FLAGS: &[&str] = &["-m", "--map"];
 
+use std::env;
+
 use crate::{APPLY_CMD, CHAR_HELP_CMD, HELP_CMD, NEW_CMD};
 #[cfg(any(feature = "gen_vscode_grammar"))]
 use crate::GEN_CMD;
 #[cfg(feature = "gen_vscode_grammar")]
 use crate::VSC_EXT;
 
+/// Parsed CLI input
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CliCommand {
     Apply {
@@ -61,8 +64,9 @@ impl OutputData {
 }
 
 impl CliCommand {
+    /// Parses the CLI arguments into a command that can be executed by `main`
     pub fn from_args() -> Result<Self, ArgumentParseError> {
-        let mut args = std::env::args().peekable();
+        let mut args = env::args().peekable();
         let _path = args.next();
 
         match args.next() {
@@ -113,7 +117,8 @@ impl CliCommand {
     }
 }
 
-fn parse_sca(args: &mut std::iter::Peekable<impl Iterator<Item = String>>) -> Result<CliCommand, ArgumentParseError> {
+/// Parses the application command's arguments
+fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, ArgumentParseError> {
     let mut paths = Vec::new();
 
     loop {
