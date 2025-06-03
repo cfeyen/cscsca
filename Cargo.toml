@@ -5,7 +5,7 @@ version = "0.14.4"
 edition = "2024"
 readme = "README.md"
 keywords = ["linguistics", "conlang"]
-categories = ["command-line-utilities"]
+categories = []
 description = "Charles' Super Cool Sound Change Applier - A tool for simulating phonetic evolution"
 
 [features]
