@@ -19,7 +19,7 @@ impl EscapedString {
     }
 
     /// Returns a reference the internal `String` as an `EscapedStr`
-    pub fn inner(&self) -> EscapedStr<'_> {
+    pub fn as_escaped_str(&self) -> EscapedStr<'_> {
         EscapedStr(&self.0)
     }
 }

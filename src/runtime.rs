@@ -127,12 +127,12 @@ impl Runtime {
     pub fn apply(&mut self, input: &str, code: &str) -> Result<String, ScaError> {
         let escaped = EscapedString::from(input);
 
-        let phones = build_phone_list(escaped.inner());
+        let phones = build_phone_list(escaped.as_escaped_str());
 
         self.apply_all_lines(phones, code)
     }
 
-    /// Applies all lines, errors are returned as formated strings
+    /// Applies all lines
     // ! must take ownership of phones so that the input sources can safely be freed to prevent memory leaks
     fn apply_all_lines<'s>(&mut self, mut phones: Vec<Phone<'s>>, code: &'s str) -> Result<String, ScaError> {
         // gets lines of code with line numbers,
@@ -164,7 +164,7 @@ impl Runtime {
         Ok(output)
     }
 
-    /// Applies a line within the runtime, errers are returned as formated strings
+    /// Applies a line within the runtime
     fn apply_line<'s>(&mut self, line: &'s str, line_num: usize, phones: &mut Vec<Phone<'s>>, tokenization_data: &mut TokenizationData<'s>) -> Result<(), ScaError> {
         // converts the line to ir
         let ir_line = tokenize_line_or_create_command(line, tokenization_data)

@@ -13,17 +13,17 @@ fn shifting_bounds() {
 #[test]
 fn phone_list() {
     assert_eq!(
-        build_phone_list(EscapedString::from("a b c").inner()),
+        build_phone_list(EscapedString::from("a b c").as_escaped_str()),
         vec![Phone::Symbol("a"), Phone::Bound, Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
     );
 
     assert_eq!(
-        build_phone_list(EscapedString::from("ab c").inner()),
+        build_phone_list(EscapedString::from("ab c").as_escaped_str()),
         vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
     );
 
     assert_eq!(
-        build_phone_list(EscapedString::from(format!("a{BOUND_CHAR}b c").as_str()).inner()),
+        build_phone_list(EscapedString::from(format!("a{BOUND_CHAR}b c").as_str()).as_escaped_str()),
         vec![Phone::Symbol("a"), Phone::Symbol(&format!("{ESCAPE_CHAR}{BOUND_CHAR}").to_string()), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
     );
 }
