@@ -187,6 +187,8 @@ After *file*, you may add a series of --chain *file* or -c *file* commands to ch
 
 Add --map or -m to write each output with its input and all intermediate steps
 
+Ass --separator *sep* or -s *sep* after --map or -m to change the default mapping separator from `->` to *sep*
+
 Add --write *write_file* or -w *write_file* before *text* to write the final output to *write_file*
 
 Replace *text* --read *read_file* or -r *read_file* to read each line of *read_file* as an individual input text

@@ -18,8 +18,6 @@ const HELP_CMD: &str = "help";
 const NEW_CMD: &str = "new";
 const FILE_EXTENTION: &str = ".sca";
 
-const MAP_SPACER: &str = "->";
-
 /// Reads the command line arguments and acts upon them
 /// 
 /// See `README.md` for more information
@@ -100,8 +98,8 @@ fn run_apply(paths: &[String], output_data: &OutputData, input: InputType) {
 }
 
 /// Applies changes to an input
-fn apply_changes(paths: &[String], mut input: String, map: bool) -> Result<String, String> {
-    let mut full_output = if map {
+fn apply_changes(paths: &[String], mut input: String, map: Option<&String>) -> Result<String, String> {
+    let mut full_output = if map.is_some() {
         input.clone()
     } else {
         String::new()
@@ -119,9 +117,9 @@ fn apply_changes(paths: &[String], mut input: String, map: bool) -> Result<Strin
 
         match cscsca::apply_fallible(&input, code) {
             Ok(output) => {
-                if map {
+                if let Some(sep) = map {
                     use std::fmt::Write as _;
-                    _ = write!(full_output, " {MAP_SPACER} {output}");
+                    _ = write!(full_output, " {sep} {output}");
                 }
                 input = output;
             },
@@ -129,7 +127,7 @@ fn apply_changes(paths: &[String], mut input: String, map: bool) -> Result<Strin
         }
     }
 
-    if !map {
+    if map.is_none() {
         full_output = input;
     }
 

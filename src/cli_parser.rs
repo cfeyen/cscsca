@@ -3,6 +3,9 @@ const CHAIN_FLAGS: &[&str] = &["-c", "--chain"];
 const READ_FLAGS: &[&str] = &["-r", "--read"];
 const WRITE_FLAGS: &[&str] = &["-w", "--write"];
 const MAPPED_OUTPUT_FLAGS: &[&str] = &["-m", "--map"];
+const MAP_SEPARATOR_FLAGS: &[&str] = &["-s", "--separator"];
+
+const DEFAULT_MAP_SPACER: &str = "->";
 
 use std::env;
 
@@ -50,12 +53,12 @@ pub enum InputType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OutputData {
     write: Option<String>,
-    map: bool,
+    map: Option<String>,
 }
 
 impl OutputData {
-    pub const fn map(&self) -> bool {
-        self.map
+    pub const fn map(&self) -> Option<&String> {
+        self.map.as_ref()
     }
 
     pub const fn write_path(&self) -> Option<&String> {
@@ -133,7 +136,19 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         }
     }
     
-    let map = args.next_if(|s| MAPPED_OUTPUT_FLAGS.contains(&s.as_str())).is_some();
+    let map = if args.next_if(|s| MAPPED_OUTPUT_FLAGS.contains(&s.as_str())).is_some() {
+        if args.next_if(|s| MAP_SEPARATOR_FLAGS.contains(&s.as_str())).is_some() {
+            if let Some(sep) = args.next() {
+                Some(sep)
+            } else {
+                return Err(ArgumentParseError::ExpectedSeparator);
+            }
+        } else {
+            Some(DEFAULT_MAP_SPACER.to_string())
+        }
+    } else {
+        None
+    };
 
     let write = if args.next_if(|s| WRITE_FLAGS.contains(&s.as_str())).is_some() {
         match args.next() {
@@ -164,6 +179,7 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
 pub enum ArgumentParseError {
     UnexpectedCommand(String),
     ExpectedFileName,
+    ExpectedSeparator,
     #[cfg(any(feature = "gen_vscode_grammar"))]
     ExpectedCommand,
 }
@@ -175,6 +191,7 @@ impl std::fmt::Display for ArgumentParseError {
         match self {
             Self::UnexpectedCommand(cmd) => write!(f, "Unexpected command '{cmd}'"),
             Self::ExpectedFileName => write!(f, "Input ended unexpectedly, expected a file name"),
+            Self::ExpectedSeparator => write!(f, "Expected a seperator after flag {}", MAP_SEPARATOR_FLAGS.join(" or ")),
             #[cfg(any(feature = "gen_vscode_grammar"))]
             Self::ExpectedCommand => write!(f, "Input ended unexpectedly, expected a command"),
         }
