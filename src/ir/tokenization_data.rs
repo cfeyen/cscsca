@@ -17,7 +17,7 @@ use super::{tokens::IrToken, tokenize_line, IrError};
 /// ## Warning
 /// If variable io is used and `free_sources` is never called on this struct,
 /// a memory leak will occur
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct TokenizationData<'s> {
     definitions: HashMap<&'s str, Vec<IrToken<'s>>>,
     variables: HashMap<&'s str, Vec<IrToken<'s>>>,
