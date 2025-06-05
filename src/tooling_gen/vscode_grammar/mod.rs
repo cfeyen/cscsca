@@ -116,7 +116,7 @@ fn build_grammar() -> String {
         "expression",
         PatternList {
             list: vec![
-                Pattern::new("statement", vec!["keyword", "strong"], format!("{LINE_START}{GROUP_START}{DEFINITION_LINE_START}{OR}{PRINT_LINE_START}{OR}{GET_LINE_START}{OR}{GET_AS_CODE_LINE_START}{GROUP_END}")),
+                Pattern::new("statement", vec!["keyword", "strong"], format!("{LINE_START}{GROUP_START}{DEFINITION_LINE_START}{OR}{PRINT_LINE_START}{OR}{GET_AS_CODE_LINE_START}{OR}{GET_LINE_START}{GROUP_END}")),
                 Pattern::new("escape", vec!["constant.character.escape"], format!("{ESCAPE}\\{ESCAPE_CHAR}{ANY}")),
                 Pattern::new("potentially_special_characters", vec!["keyword"], format!("{}{GROUP_START}{UNDERSCORE_CHAR}{OR}{ESCAPE}{DOT_CHAR}{ESCAPE}{DOT_CHAR}{GROUP_END}{break_ahead}", look_behind(&breaking))),
                 Pattern::new("special_characters", vec!["keyword"], format!("{ESCAPE}{BOUND_CHAR}{OR}{ESCAPE}{ANY_CHAR}{OR}{MATCH_CHAR}")),
