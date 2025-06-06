@@ -91,13 +91,35 @@ pub fn build_phone_list(input: EscapedStr) -> Vec<Phone<'_>> {
 /// reformating word bounderies as whitespace
 #[must_use]
 pub fn phone_list_to_string(phone_list: &[Phone]) -> String {
-    phone_list
-        .iter()
-        .fold(String::new(), |acc, phone| acc + phone.as_str())
-        .split(&format!("{ESCAPE_CHAR}{ESCAPE_CHAR}"))
-        .map(|s| s.replace(ESCAPE_CHAR, ""))
-        .reduce(|acc, s| format!("{acc}{ESCAPE_CHAR}{s}"))
-        .unwrap_or_default()
-        .trim()
-        .to_string()
+    // creates a string
+    let s = phone_list.iter()
+        .map(Phone::as_str)
+        .collect::<String>();
+
+    // splits on escape characters
+    let mut v = s.split(ESCAPE_CHAR).collect::<Vec<_>>();
+
+    // removes empty strings on the ends of `v`
+    v.pop_if(|s| s.is_empty());
+    let slice = if let Some(&"") = v.first() {
+        &v[1..]
+    } else {
+        &v[..]
+    };
+
+    // reinserts escaped escaped chars
+    slice.iter()
+        .map(|s| if s.is_empty() {
+            const {
+                // makes a string out of `ESCAPE_CHAR`
+                let utf8 = std::ptr::from_ref(&ESCAPE_CHAR)
+                    .cast::<[u8; ESCAPE_CHAR.len_utf8()]>();
+                unsafe {
+                    str::from_utf8_unchecked(&*utf8)
+                }
+            }
+        } else {
+            s
+        })
+        .collect()
 }

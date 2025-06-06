@@ -1,4 +1,4 @@
-use crate::phones::Phone;
+use crate::{phones::Phone, executor::commands::RuntimeCommand};
 
 use super::*;
 
@@ -292,7 +292,7 @@ fn tokenize_input_with_contacting() {
 
 #[test]
 fn print_statement() {
-    assert_eq!(Ok(vec![IrLine::Cmd(Command::Print, "test message")]), tokenize("PRINT test message"))
+    assert_eq!(Ok(vec![IrLine::Cmd(Command::RuntimeCommand(RuntimeCommand::Print { msg: "test message" }))]), tokenize("PRINT test message"))
 }
 
 #[test]

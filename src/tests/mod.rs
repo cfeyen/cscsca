@@ -1,4 +1,4 @@
-use crate::{apply, apply_fallible, runtime::Runtime};
+use crate::{apply, apply_fallible, executor::{LineByLineExecuter, runtime::CliRuntime, getter::IoGetter}};
 
 mod demo_tests;
 mod failure_tests;
@@ -18,34 +18,39 @@ fn reserved_chars() {
     assert!(apply_fallible("..", ". >> b").is_err());
 }
 
+struct SingleInputRuntime(&'static str);
+
+impl IoGetter for SingleInputRuntime {
+    fn get_io(&mut self, _: &str) -> Result<String, Box<dyn std::error::Error>> {
+        Ok(self.0.to_string())
+    }
+}
+
 #[test]
 fn input() {
+    let runtime = CliRuntime::default();
+
     assert_eq!(
-        Runtime::new()
-            .set_io_get_fn(Box::new(|_| Ok(String::from("a"))))
-            .apply("a", "GET a :\n%a >> b")
-            , Ok("b".to_string())
+        LineByLineExecuter::new(runtime, SingleInputRuntime("a"))
+            .apply_fallible("a", "GET a :\n%a >> b"),
+        Ok("b".to_string())
     );
 
     assert_eq!(
-        Runtime::new()
-            .set_io_get_fn(Box::new(|_| Ok(String::from("b"))))
-            .apply("a", "GET a :\n%a >> b")
-            , Ok("a".to_string())
+        LineByLineExecuter::new(runtime, SingleInputRuntime("b"))
+            .apply_fallible("a", "GET a :\n%a >> b"),
+        Ok("a".to_string())
     );
+
+    let mut executor = LineByLineExecuter::new(runtime, SingleInputRuntime("a >> b"));
     
     assert!(
-        Runtime::new()
-            .set_io_get_fn(Box::new(|_| Ok(String::from("a >> b"))))
-            .apply("a", "GET rule :\n%rule")
-            .is_err()
+        executor.apply_fallible("a", "GET rule :\n%rule").is_err()
     );
     
     assert_eq!(
-        Runtime::new()
-            .set_io_get_fn(Box::new(|_| Ok(String::from("a >> b"))))
-            .apply("a", "GET_AS_CODE rule :\n%rule")
-            , Ok("b".to_string())
+        executor.apply_fallible("a", "GET_AS_CODE rule :\n%rule"),
+        Ok("b".to_string())
     );
 }
 

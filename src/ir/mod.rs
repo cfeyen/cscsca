@@ -1,5 +1,9 @@
 use crate::{
-    escaped_strings::check_escapes, keywords::{is_special_char, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX}, phones::Phone, rules::conditions::{AndType, CondType}, runtime::Command, sub_string::SubString, tokens::{Direction, ScopeType, Shift, ShiftType}
+    escaped_strings::check_escapes,
+    keywords::{is_special_char, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX}, phones::Phone, rules::conditions::{AndType, CondType},
+    executor::commands::{Command, ComptimeCommand, GetType, RuntimeCommand},
+    sub_string::SubString,
+    tokens::{Direction, ScopeType, Shift, ShiftType},
 };
 
 use tokenization_data::TokenizationData;
@@ -18,7 +22,7 @@ mod tests;
 #[derive(Debug, Clone)]
 pub enum IrLine<'s> {
     Ir(Vec<IrToken<'s>>),
-    Cmd(Command, &'s str),
+    Cmd(Command<'s>),
     Empty,
 }
 
@@ -39,13 +43,29 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mu
         IrLine::Empty
     } else if let Some(args) = line.strip_prefix(PRINT_LINE_START) {
         // handles print statement
-        IrLine::Cmd(Command::Print, args.trim())
+        IrLine::Cmd(Command::RuntimeCommand(RuntimeCommand::Print { msg: args.trim() }))
     } else if let Some(args) = line.strip_prefix(GET_AS_CODE_LINE_START) {
-        // handles get statement
-        IrLine::Cmd(Command::GetAsCode, args.trim())
+        // handles get as code
+        if let Some((var, msg)) = args.trim().split_once(char::is_whitespace) {
+            IrLine::Cmd(Command::ComptimeCommand(ComptimeCommand::Get {
+                get_type: GetType::Code,
+                var,
+                msg: msg.trim(),
+            }))
+        } else {
+            return Err(IrError::InvalidGetFormat(GetType::Code))
+        }
     } else if let Some(args) = line.strip_prefix(GET_LINE_START) {
-        // handles get statement
-        IrLine::Cmd(Command::Get, args.trim())
+        // handles get
+        if let Some((var, msg)) = args.trim().split_once(char::is_whitespace) {
+            IrLine::Cmd(Command::ComptimeCommand(ComptimeCommand::Get {
+                get_type: GetType::Phones,
+                var,
+                msg: msg.trim(),
+            }))
+        } else {
+            return Err(IrError::InvalidGetFormat(GetType::Code))
+        }
     } else {
         // handles rules
         let mut ir_line = IrLine::Ir(tokenize_line(line, tokenization_data)?);
@@ -268,6 +288,7 @@ pub enum IrError<'s> {
     BadEscape(Option<char>),
     ReservedCharacter(char),
     UnexpectedNot,
+    InvalidGetFormat(GetType),
 }
 
 impl std::error::Error for IrError<'_> {}
@@ -282,7 +303,8 @@ impl std::fmt::Display for IrError<'_> {
             Self::BadEscape(None) => write!(f, "Found '{ESCAPE_CHAR}' with no following character"),
             Self::BadEscape(Some(c)) => write!(f, "Escaped normal character '{c}' ({ESCAPE_CHAR}{c})"),
             Self::ReservedCharacter(c) => write!(f, "Found reserved character '{c}' consider escaping it ('{ESCAPE_CHAR}{c}')"),
-            Self::UnexpectedNot => write!(f, "Found '{NOT_CHAR}' not after '{COND_CHAR}' or '{AND_CHAR}'")
+            Self::UnexpectedNot => write!(f, "Found '{NOT_CHAR}' not after '{COND_CHAR}' or '{AND_CHAR}'"),
+            Self::InvalidGetFormat(get_type) => write!(f, "Invalid format after '{get_type}', expected variable name and message"),
         }
     }
 }

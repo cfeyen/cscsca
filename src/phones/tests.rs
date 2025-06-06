@@ -41,6 +41,24 @@ fn phone_list_to_str() {
     );
 
     assert_eq!(
+        phone_list_to_string(&[Phone::Symbol(&BOUND_CHAR.to_string())]),
+        BOUND_CHAR.to_string()
+    );
+}
+
+#[test]
+fn phone_list_to_str_with_escapes() {
+    assert_eq!(
+        phone_list_to_string(&[Phone::Symbol(&format!("{ESCAPE_CHAR}.")), Phone::Symbol("b"), Phone::Symbol("c")]),
+        ".bc".to_string()
+    );
+
+    assert_eq!(
+        phone_list_to_string(&[Phone::Symbol(&format!("a{ESCAPE_CHAR}.")), Phone::Bound, Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]),
+        "a. b c".to_string()
+    );
+
+    assert_eq!(
         phone_list_to_string(&[Phone::Symbol("a"), Phone::Bound, Phone::Symbol(&format!("{ESCAPE_CHAR}b")), Phone::Bound, Phone::Symbol("c")]),
         "a b c".to_string()
     );
@@ -61,16 +79,6 @@ fn text_matches_text () {
     assert!(Phone::Symbol("test").matches(&Phone::Symbol("test")));
     assert!(!Phone::Symbol("test").matches(&Phone::Symbol("not test")));
 }
-
-// #[test]
-// fn escapes() {
-//     assert!(Phone::Symbol("\\@").matches(&Phone::Symbol("@")));
-//     assert!(!Phone::Symbol("@").matches(&Phone::Symbol("\\@")));
-//     assert!(Phone::Symbol("\\\\@").matches(&Phone::Symbol("\\@")));
-//     assert!(!Phone::Symbol("\\@").matches(&Phone::Symbol("\\@")));
-//     assert!(!Phone::Symbol(&format!("\\{BOUND_STR}")).matches(&Phone::Bound));
-//     assert!(!Phone::Bound.matches(&Phone::Symbol(&format!("\\{BOUND_STR}"))));
-// }
 
 #[test]
 fn bound_matches_phone() {

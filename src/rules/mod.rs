@@ -5,8 +5,9 @@ use sound_change_rule::SoundChangeRule;
 use tokens::{LabelType, RuleToken, ScopeId};
 
 use crate::{
-    keywords::AND_CHAR,
     ir::{tokens::{Break, IrToken}, IrLine},
+    keywords::AND_CHAR,
+    executor::commands::{Command, RuntimeCommand},
     tokens::{ScopeType, Shift}
 };
 
@@ -22,7 +23,7 @@ mod tests;
 #[derive(Debug, Clone)]
 pub enum RuleLine<'s> {
     Rule(SoundChangeRule<'s>),
-    Cmd,
+    Cmd(RuntimeCommand<'s>),
     Empty,
 }
 
@@ -35,15 +36,18 @@ struct DefaultScopeIds {
 }
 
 /// Builds a sound change rule out of a line of ir tokens
-pub fn build_rule<'s>(line: &IrLine<'s>) -> Result<RuleLine<'s>, RuleStructureError<'s>> {
+/// 
+/// ## Warning:
+/// Compile time commands should be handled before this function is called
+pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
     let line = match line {
-        IrLine::Empty => return Ok(RuleLine::Empty),
-        IrLine::Cmd(_cmd, _args) => return Ok(RuleLine::Cmd),
+        IrLine::Empty | IrLine::Cmd(Command::ComptimeCommand(_)) => return Ok(RuleLine::Empty),
+        IrLine::Cmd(Command::RuntimeCommand(cmd)) => return Ok(RuleLine::Cmd(cmd)),
         IrLine::Ir(tokens) if tokens.is_empty() => return Ok(RuleLine::Empty),
         IrLine::Ir(tokens) => tokens
     };
 
-    let (input_region, other_regions) = regionize_ir(line);
+    let (input_region, other_regions) = regionize_ir(&line);
     let mut other_regions = other_regions.into_iter();
 
     let input = ir_to_input_output(&input_region)?;

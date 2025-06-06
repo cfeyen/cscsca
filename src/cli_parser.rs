@@ -1,3 +1,5 @@
+#![allow(clippy::non_minimal_cfg)]
+
 const USE_TEMPLATE_FLAGS: &[&str] = &["-t", "--template"];
 const CHAIN_FLAGS: &[&str] = &["-c", "--chain"];
 const READ_FLAGS: &[&str] = &["-r", "--read"];

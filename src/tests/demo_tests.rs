@@ -1,4 +1,4 @@
-use crate::{apply, apply_with_runtime, Runtime, color::*};
+use crate::{apply, executor::{runtime::LogRuntime, LineByLineExecuter, getter::CliGetter}};
 
 const DEMO: &'static str = include_str!("../assets/demo.sca");
 
@@ -52,21 +52,12 @@ fn demo_harmony() {
 
 #[test]
 fn demo_print() {
-    use std::{rc::Rc, cell::RefCell};
-
-    let logs = Rc::new(RefCell::new(Vec::new()));
-    let logs_clone = logs.clone();
-
-    let mut runtime = Runtime::new();
-    runtime.set_io_put_fn(Box::new(move |msg| {
-        logs_clone.borrow_mut().push(msg.to_string());
-        Ok(())
-    }));
-
-    _ = apply_with_runtime("pata takan", DEMO, &mut runtime);
+    let mut executor = LineByLineExecuter::new(LogRuntime::default(), CliGetter);
+    
+    _ = executor.apply_fallible("pata takan", DEMO);
 
     assert_eq!(
-        &vec![format!("before h-loss: '{BLUE}pat taga{RESET}'")],
-        &*logs.borrow()
+        executor.runtime().logs(),
+        &[("before h-loss:".to_string(), "pat taga".to_string())]
     )
 }

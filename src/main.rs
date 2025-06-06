@@ -1,4 +1,6 @@
-use std::fs;
+#![allow(clippy::non_minimal_cfg)]
+
+use std::{fs, fmt::Write as _};
 
 mod color;
 mod cli_parser;
@@ -59,35 +61,53 @@ fn main() {
 }
 
 /// Applies changes to every input from CLI data
-fn run_apply(paths: &[String], output_data: &OutputData, input: InputType) {
-    let input = match input {
+fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) {
+    let input = match input_type {
+        InputType::Raw(raw) if raw.is_empty() => return error("No input provided"),
         InputType::Raw(raw) => raw,
+        InputType::Read(path) if path.is_empty() => return error("No input provided"),
         InputType::Read(path) => match fs::read_to_string(&path) {
             Ok(s) => s,
-            Err(_) => {
-                error(&format!("An error occured when reading the input from {BLUE}{path}{RESET}"));
-                return;
-            },
+            Err(_) => return error(&format!("An error occured when reading the input from {BLUE}{path}{RESET}")),
         },
     };
 
-    if input.is_empty() {
-        error("No input provided");
-        return;
-    }
-
     let mut full_output = String::new();
+    let compile = input.contains('\n');
 
-    for input in input.lines() {
-        match apply_changes(paths, input.to_string(), output_data.map()) {
-            Ok(output) => {
-                full_output += &output;
-                println!("{output}");
-            },
-            Err(e) => error(&e),
+    if compile {
+        let rule_sets = match paths.iter()
+            .map(fs::read_to_string)
+            .collect::<Result<Vec<_>, _>>() {
+                Ok(rules) => rules,
+                Err(_) => return error("Could not find file '{BLUE}{path}{RESET}'"),
+            };
+        
+        let appliable_rule_sets = match rule_sets.iter()
+            .map(|rule_set| cscsca::compile_rules(rule_set, &mut cscsca::CliGetter))
+            .collect::<Result<Vec<_>, _>>() {
+                Ok(rules) => rules,
+                Err(e) => return println!("{e}"),
+            };
+        
+        let mut runtime = cscsca::CliRuntime::default();
+
+        for input in input.lines() {
+            let line_output = apply_compiled_changes(paths, output_data, &appliable_rule_sets, &mut runtime, input);
+            _ = writeln!(full_output, "{line_output}");
         }
+    } else {
+        for input in input.lines() {
+            match apply_changes(paths, input.to_string(), output_data.map()) {
+                Ok(output) => {
+                    full_output += &output;
+                    println!("{output}");
+                },
+                Err(e) => error(&e),
+            }
 
-        full_output.push('\n');
+            full_output.push('\n');
+        }
     }
 
     if let Some(path) = output_data.write_path() {
@@ -95,6 +115,38 @@ fn run_apply(paths: &[String], output_data: &OutputData, input: InputType) {
             error(&format!("An error occured when writing the output to {BLUE}{path}{RESET}"));
         }
     }
+}
+
+fn apply_compiled_changes(paths: &[String], output_data: &OutputData, appliable_rule_sets: &[cscsca::AppliableRules<'_>], runtime: &mut cscsca::CliRuntime, input: &str) -> String {
+    let mut line_output = if output_data.map().is_some() {
+        input.to_string()
+    } else {
+        String::new()
+    };
+            
+    let mut input = input.to_string();
+
+    for (i, rule_set) in appliable_rule_sets.iter().enumerate() {
+        println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{input}{GREEN}'{RESET}", &paths[i]);
+
+        match rule_set.apply_fallible(&input, runtime) {
+            Ok(output) => {
+                if let Some(sep) = output_data.map() {
+                    _ = write!(line_output, " {sep} {output}");
+                } else {
+                    _ = write!(line_output, "{output}")
+                }
+                input = output;
+            },
+            Err(e) => {
+                println!("{e}");
+                break;
+            },
+        }
+    }
+
+    println!("{line_output}");
+    line_output
 }
 
 /// Applies changes to an input
@@ -118,7 +170,6 @@ fn apply_changes(paths: &[String], mut input: String, map: Option<&String>) -> R
         match cscsca::apply_fallible(&input, code) {
             Ok(output) => {
                 if let Some(sep) = map {
-                    use std::fmt::Write as _;
                     _ = write!(full_output, " {sep} {output}");
                 }
                 input = output;

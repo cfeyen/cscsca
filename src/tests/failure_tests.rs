@@ -1,9 +1,17 @@
-use crate::{apply_fallible, apply_fallible_with_runtime, runtime::{LineApplicationLimit, Runtime}};
+use std::time::Duration;
+
+use crate::{apply_fallible, executor::{LineByLineExecuter, runtime::{CliRuntime, LineApplicationLimit}, getter::CliGetter}};
 
 #[test]
 fn time_out_of_infinte_loop() {
     assert!(apply_fallible("a", "{a, b} > {b, a}").is_err());
-    assert!(apply_fallible_with_runtime("a", "{a, b} > {b, a}", Runtime::default().set_line_application_limit(LineApplicationLimit::Attempts(1000))).is_err());
+
+    let mut exector = LineByLineExecuter::new(
+        CliRuntime::new(LineApplicationLimit::Time(Duration::from_millis(100))),
+        CliGetter::new()
+    );
+
+    assert!(exector.apply_fallible("a", "{a, b} > {b, a}").is_err());
 }
 
 #[test]

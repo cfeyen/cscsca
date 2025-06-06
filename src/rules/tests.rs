@@ -6,9 +6,9 @@ use super::*;
 /// Builds a sound change rules out of lines of ir tokens,
 /// if there is an error it is returned with its line number
 #[cfg(test)]
-fn build_rules<'s>(token_lines: &'s [IrLine<'s>]) -> Result<Vec<RuleLine<'s>>, (RuleStructureError<'s>, usize)> {
+fn build_rules<'s>(token_lines: Vec<IrLine<'s>>) -> Result<Vec<RuleLine<'s>>, (RuleStructureError<'s>, usize)> {
     token_lines
-        .iter()
+        .into_iter()
         .enumerate()
         .map(|(num, line)| build_rule(line).map_err(|e| (e, num + 1)))
         .collect()
@@ -16,13 +16,13 @@ fn build_rules<'s>(token_lines: &'s [IrLine<'s>]) -> Result<Vec<RuleLine<'s>>, (
 
 #[test]
 fn no_rule() {
-    assert_eq!(Ok(Vec::new()), build_rules(&Vec::new()));
+    assert_eq!(Ok(Vec::new()), build_rules(Vec::new()));
 }
 
 #[test]
 fn empty_line() {
-    assert_eq!(Ok(RuleLine::Empty), build_rule(&IrLine::Empty));
-    assert_eq!(Ok(RuleLine::Empty), build_rule(&IrLine::Ir(Vec::new())));
+    assert_eq!(Ok(RuleLine::Empty), build_rule(IrLine::Empty));
+    assert_eq!(Ok(RuleLine::Empty), build_rule(IrLine::Ir(Vec::new())));
 }
 
 #[test]
@@ -36,7 +36,7 @@ fn one_to_one() {
         conds: vec![Cond::default()],
         anti_conds: Vec::new()
 
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
         IrToken::Phone(Phone::Symbol("b")),
@@ -54,7 +54,7 @@ fn three_to_three() {
         conds: vec![Cond::default()],
         anti_conds: Vec::new()
 
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Phone(Phone::Symbol("b")),
         IrToken::Phone(Phone::Symbol("c")),
@@ -84,7 +84,7 @@ fn selected_three_to_selected_three() {
         conds: vec![Cond::default()],
         anti_conds: Vec::new()
 
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::ScopeStart(ScopeType::Selection),
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::ArgSep,
@@ -122,7 +122,7 @@ fn labeled_selected_three_to_selected_three() {
         conds: vec![Cond::default()],
         anti_conds: Vec::new()
 
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Label("label"),
         IrToken::ScopeStart(ScopeType::Selection),
         IrToken::Phone(Phone::Symbol("a")),
@@ -149,7 +149,7 @@ fn labeled_phone_to_phone() {
 
     assert_eq!(
         Err((RuleStructureError::LabelNotFollowedByScope("label"), 1)),
-        build_rules(&[IrLine::Ir(vec![
+        build_rules(vec![IrLine::Ir(vec![
             IrToken::Label("label"),
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::Break(Break::Shift(shift)),
@@ -162,7 +162,7 @@ fn labeled_phone_to_phone() {
 fn no_shift() {
     assert_eq!(
         Err((RuleStructureError::NoShift, 1)),
-        build_rules(&[IrLine::Ir(vec![
+        build_rules(vec![IrLine::Ir(vec![
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::Phone(Phone::Symbol("b")),
             IrToken::Phone(Phone::Symbol("c")),
@@ -180,7 +180,7 @@ fn no_left() {
         output: Vec::new(),
         conds: vec![Cond::default()],
         anti_conds: Vec::new()
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
     ])));
@@ -198,7 +198,7 @@ fn single_option() {
         output: Vec::new(),
         conds: vec![Cond::default()],
         anti_conds: Vec::new()
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::ScopeStart(ScopeType::Optional),
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::ScopeEnd(ScopeType::Optional),
@@ -250,7 +250,7 @@ fn nested_scopes() {
             conds: vec![Cond::default()],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::ScopeStart(ScopeType::Selection),
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::ArgSep,
@@ -296,7 +296,7 @@ fn single_cond() {
             vec![RuleToken::Phone(Phone::Symbol("d"))],
         )],
         anti_conds: Vec::new()
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
         IrToken::Phone(Phone::Symbol("b")),
@@ -333,7 +333,7 @@ fn three_conds() {
             ),
         ],
         anti_conds: Vec::new()
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
         IrToken::Phone(Phone::Symbol("b")),
@@ -364,7 +364,7 @@ fn single_anti_cond() {
             vec![RuleToken::Phone(Phone::Symbol("c"))],
             vec![RuleToken::Phone(Phone::Symbol("d"))],
         )],
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
         IrToken::Phone(Phone::Symbol("b")),
@@ -401,7 +401,7 @@ fn three_anti_conds() {
                 vec![RuleToken::Phone(Phone::Symbol("f"))],
             ),
         ],
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
         IrToken::Phone(Phone::Symbol("b")),
@@ -436,7 +436,7 @@ fn cond_and_anti_cond() {
             vec![RuleToken::Phone(Phone::Symbol("e"))],
             vec![RuleToken::Phone(Phone::Symbol("f"))],
         )],
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
         IrToken::Phone(Phone::Symbol("b")),
@@ -493,7 +493,7 @@ fn three_conds_and_anti_conds() {
                 vec![RuleToken::Phone(Phone::Symbol("j"))],
             ),
         ],
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
         IrToken::Phone(Phone::Symbol("b")),
@@ -534,7 +534,7 @@ fn shift_cond_gap_input() {
             Vec::new(),
         )],
         anti_conds: Vec::new(),
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
         IrToken::Gap,
@@ -556,7 +556,7 @@ fn shift_anti_cond_gap_input() {
             vec![RuleToken::Gap { id: None }],
             Vec::new(),
     )],
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::AntiCond),
         IrToken::Gap,
@@ -578,7 +578,7 @@ fn shift_cond_label_gap_input() {
             Vec::new(),
     )],
         anti_conds: Vec::new(),
-    })), build_rule(&IrLine::Ir(vec![
+    })), build_rule(IrLine::Ir(vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
         IrToken::Label("label"),
@@ -599,7 +599,7 @@ fn any_to_any() {
             conds: vec![Cond::default()],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Any,
             IrToken::Break(Break::Shift(shift)),
             IrToken::Any,
@@ -625,7 +625,7 @@ fn any_any_to_any_any() {
             conds: vec![Cond::default()],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Any,
             IrToken::Any,
             IrToken::Break(Break::Shift(shift)),
@@ -647,7 +647,7 @@ fn labeled_any_to_any() {
             conds: vec![Cond::default()],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Label("label"),
             IrToken::Any,
             IrToken::Break(Break::Shift(shift)),
@@ -677,7 +677,7 @@ fn selections_around_any_to_any() {
             conds: vec![Cond::default()],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::ScopeStart(ScopeType::Selection),
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::ScopeEnd(ScopeType::Selection),
@@ -717,7 +717,7 @@ fn cond_with_scope() {
                 )],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::Break(Break::Shift(shift)),
             IrToken::Phone(Phone::Symbol("b")),
@@ -752,7 +752,7 @@ fn anti_cond_with_scope() {
                 vec![RuleToken::Phone(Phone::Symbol("d"))],
             )],
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::Break(Break::Shift(shift)),
             IrToken::Phone(Phone::Symbol("b")),
@@ -783,7 +783,7 @@ fn equality_cond() {
             )],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::Break(Break::Shift(shift)),
             IrToken::Phone(Phone::Symbol("b")),
@@ -819,7 +819,7 @@ fn and_cond() {
             conds: vec![cond],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::Break(Break::Shift(shift)),
             IrToken::Break(Break::Cond),
@@ -856,7 +856,7 @@ fn and_anticond() {
             conds: vec![Cond::default()],
             anti_conds: vec![cond],
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::Break(Break::Shift(shift)),
             IrToken::Break(Break::AntiCond),
@@ -900,7 +900,7 @@ fn double_and() {
             conds: vec![cond],
             anti_conds: Vec::new(),
         })),
-        build_rule(&IrLine::Ir(vec![
+        build_rule(IrLine::Ir(vec![
             IrToken::Phone(Phone::Symbol("a")),
             IrToken::Break(Break::Shift(shift)),
             IrToken::Break(Break::Cond),

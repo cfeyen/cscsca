@@ -8,19 +8,37 @@
 
 use std::error::Error;
 
-use runtime::Runtime;
+mod ir;
+mod phones;
+mod tokens;
+mod rules;
+mod applier;
+mod matcher;
+mod sub_string;
+mod escaped_strings;
+mod color;
+mod executor;
+mod keywords;
 
-pub(crate) mod ir;
-pub(crate) mod phones;
-pub(crate) mod tokens;
-pub(crate) mod rules;
-pub(crate) mod applier;
-pub(crate) mod matcher;
-pub(crate) mod sub_string;
-pub(crate) mod escaped_strings;
-pub mod color;
-pub mod runtime;
-pub mod keywords;
+pub use crate::{
+    executor::{
+        LineByLineExecuter,
+        appliable_rules::{
+            compile_rules,
+            AppliableRules,
+        },
+        runtime::{
+            Runtime,
+            LineApplicationLimit,
+            CliRuntime,
+            LogRuntime,
+        },
+        getter::{
+            IoGetter,
+            CliGetter,
+        },
+    },
+};
 
 #[cfg(test)]
 mod tests;
@@ -31,46 +49,28 @@ pub mod tooling_gen;
 /// Applies sca source code to an input string
 /// 
 /// Returns a string of either the final text or a formatted error
+/// 
+/// ## Note:
+/// IO is done through the standard io
 #[inline]
 #[must_use]
-pub fn apply(input: &str, code: &str) -> String {
-    apply_with_runtime(input, code, &mut Runtime::default())
-}
-
-/// Applies sca source code to an input string
-/// 
-/// ## Errors
-/// Errors are the result of providing invalid code, failed io, or application timing out
-#[inline]
-pub fn apply_fallible(input: &str, code: &str) -> Result<String, ScaError> {
-    apply_fallible_with_runtime(input, code, &mut Runtime::default())
-}
-
-/// Applies sca source code to an input string
-/// 
-/// Returns a string of either the final text or a formatted error
-/// 
-/// ## Note
-/// This requires a mutable reference to the runtime because its IO functions implement `FnMut`.
-/// Only the captures of those functions may be mutated
-#[inline]
-#[must_use]
-pub fn apply_with_runtime(input: &str, code: &str, runtime: &mut Runtime) -> String {
-    apply_fallible_with_runtime(input, code, runtime)
+pub fn apply(input: &str, rules: &str) -> String {
+    apply_fallible(input, rules)
         .unwrap_or_else(|e| e.to_string())
 }
 
 /// Applies sca source code to an input string
 /// 
-/// ## Note
-/// This requires a mutable reference to the runtime because its IO functions implement `FnMut`.
-/// Only the captures of those functions may be mutated
-/// 
 /// ## Errors
-/// Errors are the result of providing invalid code, failed io, or application timing out
+/// Errors on invalid rules, application that takes too long, and failed io
+/// 
+/// ## Note:
+/// IO is done through the standard io
 #[inline]
-pub fn apply_fallible_with_runtime(input: &str, code: &str, runtime: &mut Runtime) -> Result<String, ScaError> {
-    runtime.apply(input, code)
+pub fn apply_fallible(input: &str, rules: &str) -> Result<String, ScaError> {
+    let getter = CliGetter::new();
+    let runtime = CliRuntime::default();
+    LineByLineExecuter::new(runtime, getter).apply_fallible(input, rules)
 }
 
 #[cfg(feature = "docs")]
@@ -86,21 +86,58 @@ pub fn docs() -> &'static str {
 
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
-pub struct ScaError(String);
+pub struct ScaError {
+    err: String,
+    line: String,
+    line_num: usize,
+    from_io: bool, 
+}
 
 impl Error for ScaError {}
 
 impl ScaError {
+    /// Returns the number of the line on which the error occured
+    #[must_use]
+    pub fn line_number(&self) -> usize {
+        self.line_num
+    }
+
+    /// Returns `true` if the error was caused by getting or writing IO
+    #[must_use]
+    pub fn is_io_error(&self) -> bool {
+        self.from_io
+    }
+
     /// Builds a new `ScaError` from any error,
     /// with the line and line number it occurred on
     fn from_error<E: Error + ?Sized>(e: &E, line: &str, line_num: usize) -> Self {
-        Self(format!("{}Error:{} {e}\nLine {line_num}: {line}", color::RED, color::RESET))
+        Self {
+            err: e.to_string(),
+            line: line.to_string(),
+            line_num,
+            from_io: false,
+        }
+    }
+
+    fn from_io_error<E: Error + ?Sized>(e: &E, line: &str, line_num: usize) -> Self {
+        Self {
+            err: e.to_string(),
+            line: line.to_string(),
+            line_num,
+            from_io: true,
+        }
     }
 }
 
 impl std::fmt::Display for ScaError {
     #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        if self.from_io {
+            write!(f, "{}IO Error: {}", color::RED, color::RESET)?;
+        } else {
+            write!(f, "{}Error: {}", color::RED, color::RESET)?;
+        }
+        writeln!(f, "{}", self.err)?;
+        write!(f, "Line {}: {}", self.line_num, self.line)
     }
 }

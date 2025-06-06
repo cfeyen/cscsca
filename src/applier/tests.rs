@@ -1,4 +1,4 @@
-use crate::{rules::{conditions::{Cond, CondType}, tokens::{LabelType, ScopeId}}, runtime::DEFAULT_LINE_APPLICATION_LIMIT, tokens::{ScopeType, Shift}};
+use crate::{rules::{conditions::{Cond, CondType}, tokens::{LabelType, ScopeId}}, executor::runtime::DEFAULT_LINE_APPLICATION_LIMIT, tokens::{ScopeType, Shift}};
 use super::*;
 
 #[test]

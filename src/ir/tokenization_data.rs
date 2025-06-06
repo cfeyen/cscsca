@@ -123,6 +123,11 @@ impl<'s> TokenizationData<'s> {
     fn add_source(&mut self, source: &'s str) {
         self.sources.push(std::ptr::from_ref(source));
     }
+
+    /// Consumes the `TokenizationData` and returns the sources buffer
+    pub fn take_sources(self) -> Vec<*const str> {
+        self.sources
+    }
 }
 
 #[cfg(test)]

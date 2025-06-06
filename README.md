@@ -209,13 +209,28 @@ Generates a VSCode syntax highlighting extension for `.sca`/`.cscsca` files in a
 
 ## Library API
 ### Fallible and Infallible Application
-There are both fallible and infallable variants of the crates API functions. The fallible variants return a `Result<String, ScaError>` and the infallible variants format any errors into a `String` and does not distinguish between successful and failed application
+There are both fallible and infallable variants of the crate's application functions. The fallible variants return a `Result<String, ScaError>` and the infallible variants format any errors into a `String` and do not distinguish between successful and failed application
+
+### IoGetters
+Objects implementing the `IoGetter` trait allow you to control where and how input is fetched
+
+The provided `CliGetter` uses standard IO and trims the input
 
 ### Runtimes
-Runtimes allow you to control some of CSCSCA's runtime behavior
-- User Input: Allows you to control where input is fetched from
+Objects implementing the `Runtime` trait allow you to control some of CSCSCA's runtime behavior
 - Output: Allows you to control how printing works
 - Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time/attempts applying a rule can take. This limit may be set via runtimes.
 
-The default runtime uses standard IO, removes all ending newlines from input, and uses a limit 10000 application attempts per line.
-If a time limit is used, it does require a call to fetch system time. In the case of Web Assembly, this causes an error.
+The provided `CliRuntime` uses standard IO and uses a limit 10000 application attempts per line.
+
+**Warning**:
+If a time limit is used, it does require a call to fetch system time. In the case of Web Assembly, this causes a panic.
+
+### LineByLineExecuter
+A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. You may then call the `apply` and `apply_fallible` methods to us the executer to compile then execute each line one at a time
+
+**note**:
+Here compiling does not refer to converting to machine code, rules are simply converted to the format that is used when they are applied
+
+### AppliableRules
+If compiling lines every time you apply a change is not ideal, you may use the function `compile_rules` to convert the entire rule set to an appliable form. Then you can call the `apply` and `apply_fallible` methods to apply rules any number of times.
