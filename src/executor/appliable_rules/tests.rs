@@ -7,7 +7,7 @@ fn appliable_rules() {
 {p, t, k} >> {b, d, g} / @V _ @V
 @V >> / _ #";
 
-    let appliable_rules = compile_rules(rules, &mut CliGetter)
+    let appliable_rules = build_rules(rules, &mut CliGetter)
         .expect("rules should compile");
 
     assert_eq!(
@@ -30,7 +30,7 @@ fn appliable_rules() {
 fn appliable_rule_runtime_errors() {
     let rules = "{a, b} >> {c}";
 
-    let appliable_rules = compile_rules(rules, &mut CliGetter)
+    let appliable_rules = build_rules(rules, &mut CliGetter)
         .expect("rules should compile");
 
     let result = appliable_rules.apply_fallible("b", &mut CliRuntime::default());
@@ -38,10 +38,10 @@ fn appliable_rule_runtime_errors() {
 }
 
 #[test]
-fn appliable_rule_compile_time_errors() {
+fn appliable_rule_build_time_errors() {
     let rules = "a > b > c";
 
-    let result = compile_rules(rules, &mut CliGetter);
+    let result = build_rules(rules, &mut CliGetter);
     println!("{result:?}");
     assert!(result.is_err_and(|e| e.line == rules && e.line_num == 1));
 }

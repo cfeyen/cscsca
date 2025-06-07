@@ -4,7 +4,7 @@ mod tests;
 use crate::{
     escaped_strings::EscapedString,
     executor::{
-        compile_line,
+        build_line,
         runtime::{Runtime, RuntimeApplier},
         getter::IoGetter,
     },
@@ -14,21 +14,29 @@ use crate::{
     ScaError,
 };
 
-/// Compiles all rules to a form that may be applied more easily
+/// Builds all rules to a form that may be applied more easily
 /// 
 /// ## Errors
 /// Errors on invalid rules or failed io
-pub fn compile_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
+pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
     let mut line_num = 0;
     let mut rule_lines = Vec::new();
     let mut tokenization_data = TokenizationData::new();
 
+    // prepares the getter to start fetching a new set of input
+    getter.on_start();
+
+    // builds each line
     for line in rules.lines() {
         line_num += 1;
 
-        let rule_line = match compile_line(line, line_num, &mut tokenization_data, getter) {
+        // builds the line and returns any errors
+        let rule_line = match build_line(line, line_num, &mut tokenization_data, getter) {
             Ok(rule_line) => rule_line,
             Err(e) => {
+                // signals to the getter that the rules are done being built
+                getter.on_end();
+
                 drop(rule_lines);
                 // Safety: Since the output is a ScaError,
                 // which owns all of its values, and `rule_lines` is dropped,
@@ -39,6 +47,9 @@ pub fn compile_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<
         };
         rule_lines.push(rule_line);
     }
+
+    // signals to the getter that the rules are done being built
+    getter.on_end();
 
     Ok(AppliableRules {
         lines: rules.lines().collect(),
@@ -53,7 +64,7 @@ pub fn compile_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<
 pub struct AppliableRules<'s> {
     /// References to each line of the input text (for error messages)
     lines: Vec<&'s str>,
-    /// The compiled rules
+    /// The built rules
     rules: Vec<RuleLine<'s>>,
     /// Pointers to input (freed when dropped)
     sources: Vec<*const str>,
@@ -77,12 +88,23 @@ impl AppliableRules<'_> {
 
         let mut line_num = 0;
 
+        // prepares the runtime for a new set of applications
+        runtime.on_start();
+
+        // applies rules
         for rule_line in &self.rules {
             let line = self.lines.get(line_num).copied().unwrap_or_default();
             line_num += 1;
 
-            runtime.apply_line(rule_line, &mut phones, line, line_num)?;
+            if let Err(e) = runtime.apply_line(rule_line, &mut phones, line, line_num) {
+                // signals to the runtime that execution is complete
+                runtime.on_end();
+                return Err(e);
+            }
         }
+
+        // signals to the runtime that execution is complete
+        runtime.on_end();
 
         Ok(phone_list_to_string(&phones))
     }
@@ -91,7 +113,7 @@ impl AppliableRules<'_> {
 impl Drop for AppliableRules<'_> {
     fn drop(&mut self) {
         for source in &self.sources {
-            // Safety: Using `CompiledRules` should not
+            // Safety: Using `AppliableRules` should not
             // leak references to sources and the source
             // pointers should never be cloned
             unsafe {

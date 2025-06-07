@@ -4,7 +4,7 @@ use crate::keywords::{GET_LINE_START, GET_AS_CODE_LINE_START};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Command<'s> {
     RuntimeCommand(RuntimeCommand<'s>),
-    ComptimeCommand(ComptimeCommand<'s>),
+    BuildtimeCommand(ComptimeCommand<'s>),
 }
 
 /// Non rule commands executed by the runtime durring tokenization

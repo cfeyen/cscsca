@@ -219,18 +219,20 @@ The provided `CliGetter` uses standard IO and trims the input
 ### Runtimes
 Objects implementing the `Runtime` trait allow you to control some of CSCSCA's runtime behavior
 - Output: Allows you to control how printing works
-- Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time/attempts applying a rule can take. This limit may be set via runtimes.
+- Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time/attempts applying a rule can take. This limit may be set via runtimes
 
-The provided `CliRuntime` uses standard IO and uses a limit 10000 application attempts per line.
+The provided `CliRuntime` uses standard IO and uses a limit 10000 application attempts per line
+
+The provided `LogRuntime` logs output internally, refreshes the logs before starting each group of applications, and uses the same limit as the `CliRuntime`
 
 **Warning**:
 If a time limit is used, it does require a call to fetch system time. In the case of Web Assembly, this causes a panic.
 
 ### LineByLineExecuter
-A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. You may then call the `apply` and `apply_fallible` methods to us the executer to compile then execute each line one at a time
+A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. You may then call the `apply` and `apply_fallible` methods to us the executer to build then execute each line one at a time
 
 **note**:
-Here compiling does not refer to converting to machine code, rules are simply converted to the format that is used when they are applied
+Building refers to converting the raw text input into rules that can be easily applied
 
 ### AppliableRules
-If compiling lines every time you apply a change is not ideal, you may use the function `compile_rules` to convert the entire rule set to an appliable form. Then you can call the `apply` and `apply_fallible` methods to apply rules any number of times.
+If building lines every time you apply a change is not ideal, you may use the function `build_rules` to convert the entire rule set to an appliable form. Then you can call the `apply` and `apply_fallible` methods to apply rules any number of times.

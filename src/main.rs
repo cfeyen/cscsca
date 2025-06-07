@@ -73,9 +73,9 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     };
 
     let mut full_output = String::new();
-    let compile = input.contains('\n');
+    let build = input.contains('\n');
 
-    if compile {
+    if build {
         let rule_sets = match paths.iter()
             .map(fs::read_to_string)
             .collect::<Result<Vec<_>, _>>() {
@@ -84,7 +84,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
             };
         
         let appliable_rule_sets = match rule_sets.iter()
-            .map(|rule_set| cscsca::compile_rules(rule_set, &mut cscsca::CliGetter))
+            .map(|rule_set| cscsca::build_rules(rule_set, &mut cscsca::CliGetter))
             .collect::<Result<Vec<_>, _>>() {
                 Ok(rules) => rules,
                 Err(e) => return println!("{e}"),
@@ -93,7 +93,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
         let mut runtime = cscsca::CliRuntime::default();
 
         for input in input.lines() {
-            let line_output = apply_compiled_changes(paths, output_data, &appliable_rule_sets, &mut runtime, input);
+            let line_output = apply_rule_sets(paths, output_data, &appliable_rule_sets, &mut runtime, input);
             _ = writeln!(full_output, "{line_output}");
         }
     } else {
@@ -117,7 +117,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     }
 }
 
-fn apply_compiled_changes(paths: &[String], output_data: &OutputData, appliable_rule_sets: &[cscsca::AppliableRules<'_>], runtime: &mut cscsca::CliRuntime, input: &str) -> String {
+fn apply_rule_sets(paths: &[String], output_data: &OutputData, appliable_rule_sets: &[cscsca::AppliableRules<'_>], runtime: &mut cscsca::CliRuntime, input: &str) -> String {
     let mut line_output = if output_data.map().is_some() {
         input.to_string()
     } else {

@@ -24,7 +24,7 @@ pub use crate::{
     executor::{
         LineByLineExecuter,
         appliable_rules::{
-            compile_rules,
+            build_rules,
             AppliableRules,
         },
         runtime::{

@@ -38,10 +38,10 @@ struct DefaultScopeIds {
 /// Builds a sound change rule out of a line of ir tokens
 /// 
 /// ## Warning:
-/// Compile time commands should be handled before this function is called
+/// Built time commands should be handled before this function is called
 pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
     let line = match line {
-        IrLine::Empty | IrLine::Cmd(Command::ComptimeCommand(_)) => return Ok(RuleLine::Empty),
+        IrLine::Empty | IrLine::Cmd(Command::BuildtimeCommand(_)) => return Ok(RuleLine::Empty),
         IrLine::Cmd(Command::RuntimeCommand(cmd)) => return Ok(RuleLine::Cmd(cmd)),
         IrLine::Ir(tokens) if tokens.is_empty() => return Ok(RuleLine::Empty),
         IrLine::Ir(tokens) => tokens

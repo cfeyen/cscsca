@@ -47,7 +47,7 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mu
     } else if let Some(args) = line.strip_prefix(GET_AS_CODE_LINE_START) {
         // handles get as code
         if let Some((var, msg)) = args.trim().split_once(char::is_whitespace) {
-            IrLine::Cmd(Command::ComptimeCommand(ComptimeCommand::Get {
+            IrLine::Cmd(Command::BuildtimeCommand(ComptimeCommand::Get {
                 get_type: GetType::Code,
                 var,
                 msg: msg.trim(),
@@ -58,7 +58,7 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mu
     } else if let Some(args) = line.strip_prefix(GET_LINE_START) {
         // handles get
         if let Some((var, msg)) = args.trim().split_once(char::is_whitespace) {
-            IrLine::Cmd(Command::ComptimeCommand(ComptimeCommand::Get {
+            IrLine::Cmd(Command::BuildtimeCommand(ComptimeCommand::Get {
                 get_type: GetType::Phones,
                 var,
                 msg: msg.trim(),

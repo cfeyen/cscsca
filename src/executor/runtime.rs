@@ -39,6 +39,16 @@ pub trait Runtime {
     /// This method should *not* be called outside of the `cscsca` crate
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>>;
 
+    /// Called before applying a set of rules
+    /// 
+    /// Does nothing by default
+    fn on_start(&mut self) {}
+
+    /// Called once applying a set of rules is complete
+    /// 
+    /// Does nothing by default
+    fn on_end(&mut self) {}
+
     /// The maximum limit for applying changes to a line
     fn line_application_limit(&self) -> LineApplicationLimit;
 }
@@ -102,6 +112,8 @@ impl Runtime for CliRuntime {
 }
 
 /// A basic `Runtime` that logs outputs to itself
+/// 
+/// Clears it's logs before starting to apply a new set of rules
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct LogRuntime {
     logs: Vec<(String, String)>,
@@ -141,6 +153,11 @@ impl Runtime for LogRuntime {
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
         self.logs.push((msg.to_string(), phones));
         Ok(())
+    }
+
+    #[inline]
+    fn on_start(&mut self) {
+        self.logs = Vec::new();
     }
 
     #[inline]

@@ -19,7 +19,7 @@ use getter::{IoGetter, ComptimeCommandExecuter};
 
 /// An executer that contains both an `IoGetter` and a `Runtime`
 /// 
-/// Compiles then applies one line at a time
+/// Builds then applies one line at a time
 #[derive(Debug, Clone, Copy)]
 pub struct LineByLineExecuter<R: Runtime, G: IoGetter> {
     runtime: R,
@@ -79,13 +79,24 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
         let mut tokenization_data = TokenizationData::new();
         let mut line_num = 0;
 
+        // prepares the runtime and getter for a new set of applications
+        self.getter.on_start();
+        self.runtime.on_start();
+
+        // builds and applies rules line by line
         for line in lines {
             line_num += 1;
 
-            let application_result = compile_line(line, line_num, &mut tokenization_data, &mut self.getter)
+            // builds and attempts to apply the rules
+            let application_result = build_line(line, line_num, &mut tokenization_data, &mut self.getter)
                 .map(|rule_line| self.runtime.apply_line(&rule_line, &mut phones, line, line_num));
 
+            // handles errors
             if let Err(e) | Ok(Err(e)) = application_result {
+                // signals to the runtime and getter that execution is complete
+                self.getter.on_end();
+                self.runtime.on_end();
+
                 drop(phones);
                 // Safety: Since the output is a ScaError,
                 // which owns all of its values, and `phones` is dropped,
@@ -94,6 +105,10 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
                 return Err(e);
             }
         }
+
+        // signals to the runtime and getter that execution is complete
+        self.getter.on_end();
+        self.runtime.on_end();
 
         let output = phone_list_to_string(&phones);
 
@@ -107,8 +122,8 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
     }
 }
 
-/// Compiles a line from a string to a `RuleLine`
-fn compile_line<'s, G>(line: &'s str, line_num: usize, tokenization_data: &mut TokenizationData<'s>, getter: &mut G) -> Result<RuleLine<'s>, ScaError>
+/// Builds a line from a string to a `RuleLine`
+fn build_line<'s, G>(line: &'s str, line_num: usize, tokenization_data: &mut TokenizationData<'s>, getter: &mut G) -> Result<RuleLine<'s>, ScaError>
 where
     G: IoGetter
 {
@@ -116,8 +131,8 @@ where
         .map_err(|e| ScaError::from_error(&e, line, line_num))?;
 
     match ir_line {
-        IrLine::Cmd(Command::ComptimeCommand(cmd)) => {
-            getter.run_compile_time_command(&cmd, tokenization_data, line, line_num)?;
+        IrLine::Cmd(Command::BuildtimeCommand(cmd)) => {
+            getter.run_build_time_command(&cmd, tokenization_data, line, line_num)?;
             Ok(RuleLine::Empty)
         },
         // builds a rule from ir
