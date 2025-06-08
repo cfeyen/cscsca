@@ -9,8 +9,8 @@ categories = []
 description = "Charles' Super Cool Sound Change Applier - A tool for simulating phonetic evolution"
 
 [features]
-docs = []
 ansi = []
+docs = []
 gen_vscode_grammar = []
 
 [profile.release]

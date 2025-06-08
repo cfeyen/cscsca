@@ -58,6 +58,7 @@ impl<T: IoGetter> ComptimeCommandExecuter for T {}
 pub struct CliGetter;
 
 impl CliGetter {
+    /// Creates a new `CliGetter`
     #[inline]
     #[must_use]
     pub const fn new() -> Self {
