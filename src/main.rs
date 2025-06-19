@@ -103,7 +103,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
                     full_output += &output;
                     println!("{output}");
                 },
-                Err(e) => error(&e),
+                Err(e) => return println!("{e}"),
             }
 
             full_output.push('\n');
