@@ -211,5 +211,5 @@ fn help() {
 
 /// returns the template file
 const fn template() -> &'static str {
-    include_str!("assets/base.sca")
+    include_str!("assets/template.sca")
 }

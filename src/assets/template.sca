@@ -1,0 +1,39 @@
+## Vowels
+DEFINE _Vs- i, e, a, u, o
+DEFINE _Vs+ i', e', a', u', o'
+DEFINE Vs- { @_Vs- }
+DEFINE Vs+ { @_Vs+ }
+DEFINE V { @_Vs-, @_Vs+ }
+
+## Nasals
+DEFINE N { m, n, ng }
+
+## Stops
+DEFINE _Pv- p, t, k
+DEFINE _Pv+ b, d, g
+DEFINE Pv- { @_Pv- }
+DEFINE Pv+ { @_Pv+ }
+DEFINE P { @_Pv-, @_Pv+ }
+
+## Fricatives
+DEFINE _Fv- f, s, x
+DEFINE _Fv+ v, z, gh
+DEFINE Fv- { @_Fv- }
+DEFINE Fv+ { @_Fv+ }
+DEFINE F { @_Fv-, @_Fv+ }
+
+## Approximants, Glides
+DEFINE _G j, w
+DEFINE G { @_G }
+DEFINE L { l }
+DEFINE A { r, l, @_G }
+
+## Conditions
+DEFINE intervocalic @V _ @V
+DEFINE word_final _ #
+DEFINE word_initial # _
+
+## merges digraphs
+$_{n, g, @Vs-} $_{g, h, '} >> $_{ng, gh, @Vs+}
+
+PRINT Initial:
