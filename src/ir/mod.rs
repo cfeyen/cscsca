@@ -251,11 +251,9 @@ fn check_reserved(input: &str) -> Result<(), IrError<'_>> {
         return Ok(());
     }
 
-    let mut chars = input.chars();
-
     let mut escaped = false;
 
-    while let Some(c) = chars.next() {
+    for c in input.chars() {
         match c {
             ESCAPE_CHAR if !escaped => escaped = true,
             _ if is_special_char(c) && !escaped
