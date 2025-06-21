@@ -247,8 +247,21 @@ fn tokenize_gap_with_suroundings() {
 }
 
 #[test]
-fn tokenize_gap_with_close_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a..b"))])]), tokenize("a..b"));
+fn tokenize_dot_with_suroundings() {
+    assert_eq!(
+        tokenize("a..b"),
+        Err((IrError::ReservedCharacter('.'), 1))
+    );
+
+    assert_eq!(
+        tokenize("a.b"),
+        Err((IrError::ReservedCharacter('.'), 1))
+    );
+
+    assert_eq!(
+        tokenize("a\\.b"),
+        Ok(vec![IrLine::Ir(vec![IrToken::Phone(Phone::Symbol("a\\.b"))])])
+    );
 }
 
 #[test]

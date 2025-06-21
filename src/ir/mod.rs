@@ -247,31 +247,21 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
 
 /// Ensures all special characters are escaped
 fn check_reserved(input: &str) -> Result<(), IrError<'_>> {
+    if SPECIAL_STRS.contains(&input) {
+        return Ok(());
+    }
+
     let mut chars = input.chars();
 
     let mut escaped = false;
-    let mut i = 0;
 
-    'outer: while let Some(c) = chars.next() {
+    while let Some(c) = chars.next() {
         match c {
             ESCAPE_CHAR if !escaped => escaped = true,
-            _ if is_special_char(c) && !escaped => {
-                for s in SPECIAL_STRS {
-                    if input[i..].starts_with(s) {
-                        for _ in s.chars() {
-                            chars.next();
-                        }
-                        i += s.len();
-                        continue 'outer;
-                    }
-                }
-
-                return Err(IrError::ReservedCharacter(c));
-            },
+            _ if is_special_char(c) && !escaped
+                => return Err(IrError::ReservedCharacter(c)),
             _ => escaped = false,
         }
-
-        i += c.len_utf8();
     }
 
     Ok(())
