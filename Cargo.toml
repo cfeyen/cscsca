@@ -5,8 +5,23 @@ version = "0.16.2"
 edition = "2024"
 readme = "README.md"
 keywords = ["linguistics", "conlang"]
-categories = []
+license = "MIT"
+categories = ["command-line-utilities", "simulation"]
 description = "Charles' Super Cool Sound Change Applier - A tool for simulating phonetic evolution"
+
+[lints.clippy]
+non_minimal_cfg = { level = "allow", priority = -1 }
+correctness = { level = "warn", priority = -2 }
+suspicious  = { level = "warn", priority = -2 }
+complexity = { level = "warn", priority = -2 }
+perf = { level = "warn", priority = -2 }
+pedantic = { level = "warn", priority = -2 }
+panic = { level = "warn", priority = -2 }
+style = { level = "warn", priority = -2 }
+cargo = { level = "warn", priority = -2 }
+
+[lints.rust]
+missing_docs = { level = "warn", priority = -2 }
 
 [features]
 ansi = []

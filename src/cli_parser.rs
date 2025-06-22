@@ -81,9 +81,8 @@ impl CliCommand {
                 NEW_CMD => {
                     let use_template = args.next_if(|s| USE_TEMPLATE_FLAGS.contains(&s.as_str())).is_some();
 
-                    let path = match args.next() {
-                        Some(path) => path,
-                        None => return Err(ArgumentParseError::ExpectedFileName),
+                    let Some(path) = args.next() else {
+                        return Err(ArgumentParseError::ExpectedFileName);
                     };
                     
                     if let Some(cmd) = args.next() {

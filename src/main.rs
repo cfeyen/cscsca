@@ -1,4 +1,6 @@
-#![allow(clippy::non_minimal_cfg)]
+//! # CSCSCA
+//! CSCSCA (Charles' Super Cool Sound Change Applier) is a tool for simulating phonentic sound change,
+//! applying written rules (see `README.md`) to an input.
 
 use std::{fs, fmt::Write as _};
 
@@ -8,7 +10,7 @@ mod cli_parser;
 use cli_parser::{CliCommand, InputType, OutputData};
 #[cfg(any(feature = "gen_vscode_grammar"))]
 use cli_parser::GenType;
-use color::*;
+use color::{BLUE, BOLD, GREEN, RED, RESET, YELLOW};
 
 const APPLY_CMD: &str = "sca";
 #[cfg(any(feature = "gen_vscode_grammar"))]
@@ -76,11 +78,10 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     let build = input.contains('\n');
 
     if build {
-        let rule_sets = match paths.iter()
+        let Ok(rule_sets) = paths.iter()
             .map(fs::read_to_string)
-            .collect::<Result<Vec<_>, _>>() {
-                Ok(rules) => rules,
-                Err(_) => return error("Could not find file '{BLUE}{path}{RESET}'"),
+            .collect::<Result<Vec<_>, _>>() else {
+                return error("Could not find file '{BLUE}{path}{RESET}'");
             };
         
         let appliable_rule_sets = match rule_sets.iter()
@@ -134,7 +135,7 @@ fn apply_rule_sets(paths: &[String], output_data: &OutputData, appliable_rule_se
                 if let Some(sep) = output_data.map() {
                     _ = write!(line_output, " {sep} {output}");
                 } else {
-                    _ = write!(line_output, "{output}")
+                    _ = write!(line_output, "{output}");
                 }
                 input = output;
             },
@@ -196,17 +197,17 @@ fn print_chars(text: &str) {
 
 /// Prints an error
 fn error(e: &str) {
-    println!("{RED}Error:{RESET} {e}")
+    println!("{RED}Error:{RESET} {e}");
 }
 
 /// Prints a warning
 fn warn(w: &str) {
-    println!("{YELLOW}Warning:{RESET} {w}")
+    println!("{YELLOW}Warning:{RESET} {w}");
 }
 
 /// prints the README fule
 fn help() {
-    println!("{}", include_str!("../README.md"))
+    println!("{}", include_str!("../README.md"));
 }
 
 /// returns the template file
