@@ -16,6 +16,7 @@ A sound change applier based on linguistic sound change notation.
 ## Drawbacks
 - No built-in support for syllables or suprasegmentals
 - Rules must be written on a single line
+- Does not include chain shift syntax (must be written as multiple rules or with scopes)
 
 ## Writing Sound Change Rules with CSCSCA
 ### Phones
