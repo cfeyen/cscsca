@@ -3,17 +3,19 @@
 A sound change applier based on linguistic sound change notation.
 
 ## Cool and Useful Features
-- digraphs (should be merged from single phone at the very start of the file)
-- application direction
-- expansive conditions and anti-conditions
-- definitions that can be inserted anywhere in a rule
-- automatic and manual matching for lists of phones
-- gaps of arbitrary phones in conditions (useful for harmony)
-- can get information to use in conditions at runtime (variables)
-- reasonably minimalist and simple but also highly expressive and versitile
+- Digraphs (should be merged from single phones at the very start of the file)
+- Application direction
+- Expansive conditions and anti-conditions
+- Definitions that can be inserted anywhere in a rule
+- Automatic and manual matching for lists of phones
+- Gaps of arbitrary phones in conditions (useful for harmony)
+- Can get information to use in conditions at runtime (variables)
+- Reasonably minimalist and simple but also highly expressive and versitile
+- Usable as a crate that can be adapted to fit many mediums beyond CLI
 
 ## Drawbacks
-- no built-in support for syllables or supersegmentals
+- No built-in support for syllables or supersegmentals
+- Rules must be written on a single line
 
 ## Writing Sound Change Rules with CSCSCA
 ### Phones
@@ -21,17 +23,17 @@ A phone is a group of non-special characters not seperated by spaces
 
 Examples: `a` `ts` `á` `litteraly_a_phone`
 
-notes:
-- to convert an input *ts* (phones `t`, `s`) to the phone `ts` use the rule ```t s >> ts```
+**Notes**:
+- to convert an input `ts` (phones `t`, `s`) to the phone `ts` use the rule ```t s >> ts```
 
 ### Shifts
-A shift tells the SCA how changes are to applied and seperates inputs from outputs
+A shift tells CSCSCA how changes are to applied and seperates inputs from outputs
 - `>>`: Left to right
 - `<<`: Right to left
 - `>`: Left to right, attempts to reapply the rule to the output of the last successful change
 - `<`: Right to left, attempts to reapply the rule to the output of the last successful change
 
-warning: as it is technically possible to create an infinite loop with `>` or `<`, if applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
+**Warning**: as it is technically possible to create an infinite loop with `>` or `<`, if applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
 
 ### Rules
 A sound change
@@ -50,7 +52,7 @@ t j >> c
 h >>
 ```
 
-note: a line starting with `##` is a comment
+**Note**: a line starting with `##` is a comment
 
 ### Scopes
 Scopes are a way to dynamically determine which phone, group of phones, or lack there of exists in a rule.
@@ -71,7 +73,7 @@ l (j) >> j
 ```
 
 ### Labels
-As seen in the example above corresponding scopes in the input and output try to agree in what they choose however there are times when we want this behavior to be different than the default or expanded to conditions
+As seen in the example above, corresponding scopes in the input and output try to agree in what they choose. However there are times when we want this behavior to be different than the default or expanded to conditions
 
 To force scopes to agree in what they choose, we can use labels. A label has a name that starts with `$` and proceeds a scope
 
@@ -89,7 +91,7 @@ A condition starts with a `/` and comes in two flavors: **pattern** and **equali
 | Condition Type | Structure | How it Checks |
 |-|-|-|
 | **Pattern** | *before* `_` *after* | checks if the rule's input is proceeded by *before* and followed by *after* |
-| **Match** | *left* `=` *right* | checks if the tokens in *right* match the phones in *left* (most useful with variables) |
+| **Equality** | *left* `=` *right* | checks if the tokens in *right* match the phones in *left* (most useful with variables) |
 
 A rule executes if any condition matches, to make a rule execute only if two sub-conditions apply replace the `/` at the start of the second with `&`
 
@@ -108,9 +110,12 @@ h >> // # _
 ## stops are voiced intervocalically or after nasals
 {p, t, k} >> {b, d, g} / {i, e, a, u, o} _ {i, e, a, u, o} / {m, n} _
 
-## stops are voiced intervocalically but using and this time
-{p, t, k} >> {b, d, g} / {i, e, a, u, o} _ & _ {i, e, a, u, o}
+## stops are voiced intervocalically but only in the `east` dialect
+GET %dialect Enter dialect:
+{p, t, k} >> {b, d, g} / {i, e, a, u, o} _ {i, e, a, u, o} & %dialect = e a s t
 ```
+
+**Note**: See **IO and Variables** for more on `GET` and `%`
 
 ### Definitions
 Oftentimes we want to group phones by attributes, while CSCSCA does not have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code
@@ -118,7 +123,7 @@ Oftentimes we want to group phones by attributes, while CSCSCA does not have sup
 To define a *Definition* type `DEFINE` at the start of a line, followed by the name, then its contents.
 To access the contents later type the name prefixed with `@`
 
-*Definition*s are not limitted to lists of phones, they may contain any arbitrary code
+**Note**: *Definition*s are not limitted to lists of phones, they may contain any arbitrary code
 
 Examples:
 ```cscsca
@@ -136,7 +141,7 @@ DEFINE intervocalic @V _ @V
 
 ### Special Characters
 - `*`: represents any non-boundary phone, may be proceeded by a label to agree in what phone is represented
-- `..`: a gap of zero or more non-boundary phones (notes: must have a space on both sides, only allowed in conditions), may be proceeded by a label to limit gap length to less than or equal to the length of the first gap with the same label
+- `..`: a gap of zero or more non-boundary phones (**Notes**: must have a space on both sides, only allowed in conditions), may be proceeded by a label to limit gap length to less than or equal to the length of the first gap with the same label
 - `#`: a word boundary
 - `\`: escapes the effects of the following character
 
@@ -151,7 +156,7 @@ To print the current phonetic form, type `PRINT` at the start of a line followed
 
 To get input at runtime, type `GET` *variable_name* *message* where *message* is what you want to display to prompt input. To access the input later prefix *variable_name* with `%`
 
-note: here the content of *variable_name* will be a list phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
+**Note**: here the content of *variable_name* will be a list phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
 
 You may replace `GET` with `GET_AS_CODE` to interpret the variable contents as code instead of phones
 
@@ -161,7 +166,7 @@ Examples:
 GET dialect Enter dialect:
 
 ## h is lost in the northern and north-west dialects
-## (note spaces in the words as each character is an individual phone)
+## (**Note**: spaces in the words as each character is an individual phone)
 h >> / %dialect = {n o r t h e r n, n o r t h - w e s t}
 
 PRINT h-loss:
@@ -231,7 +236,7 @@ If a time limit is used, it does require a call to fetch system time. In the cas
 ### LineByLineExecuter
 A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. You may then call the `apply` and `apply_fallible` methods to us the executer to build then execute each line one at a time
 
-**note**:
+**Note**:
 Building refers to converting the raw text input into rules that can be easily applied
 
 ### AppliableRules
