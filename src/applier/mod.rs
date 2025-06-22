@@ -107,7 +107,7 @@ fn apply_at<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, 
     let dir = kind.dir;
 
     let matches = if dir.ltr() {
-        tokens_match_phones_from_left(input,&phones[phone_index..], &mut choices)?
+        tokens_match_phones_from_left(input, &phones[phone_index..], &mut choices)?
     } else{
         tokens_match_phones_from_right(input, &phones[0..=phone_index], &mut choices)?
     };
@@ -118,7 +118,7 @@ fn apply_at<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, 
 
     'cond_loop: for cond in conds {
         // saves choices to reset between conditions
-        // ? this process could probably be optimized
+        // ? this process could probably be optimized (some sort of copy on write map?)
         let initial_choices = choices.clone();
 
         if cond.eval(phones, phone_index, input_len, &mut choices, dir)? {
