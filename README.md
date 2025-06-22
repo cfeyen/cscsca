@@ -14,7 +14,7 @@ A sound change applier based on linguistic sound change notation.
 - Usable as a crate that can be adapted to fit many mediums beyond CLI
 
 ## Drawbacks
-- No built-in support for syllables or supersegmentals
+- No built-in support for syllables or suprasegmentals
 - Rules must be written on a single line
 
 ## Writing Sound Change Rules with CSCSCA
