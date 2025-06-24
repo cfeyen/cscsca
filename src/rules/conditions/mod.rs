@@ -70,7 +70,7 @@ impl<'s> Cond<'s> {
 
     /// Checks if the condition matches the phones in a list around a given index
     /// assuming the input of a given size matches and based on the application direction
-    pub fn eval<'c>(&'c self, phones: &[Phone<'s>], phone_index: usize, input_len: usize, choices: &mut Choices<'c, 's>, dir: Direction) -> Result<bool, MatchError<'c, 's>> {
+    pub fn eval<'c, 'r>(&'r self, phones: &[Phone<'s>], phone_index: usize, input_len: usize, choices: &mut Choices<'c, 'r, 's>, dir: Direction) -> Result<bool, MatchError<'r, 's>> {
         let cond_succeeds = match self.kind {
             CondType::Pattern => {
                 let (before_phones, after_phones) = match dir {

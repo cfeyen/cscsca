@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use crate::{
     keywords::MATCH_CHAR,
@@ -22,12 +22,12 @@ mod empty_form_tests;
 
 
 /// Checks if tokens match phones starting from the left
-pub fn tokens_match_phones_from_right<'r, 's>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+pub fn tokens_match_phones_from_right<'r, 's>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'_, 'r, 's>) -> Result<bool, MatchError<'r, 's>> {
     MatchEnviroment::new(tokens, phones, Direction::Rtl).tokens_match_phones(choices)
 }
 
 /// Checks if tokens match phones starting from the left
-pub fn tokens_match_phones_from_left<'r, 's>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+pub fn tokens_match_phones_from_left<'r, 's>(tokens: &'r [RuleToken<'s>], phones: &[Phone<'s>], choices: &mut Choices<'_, 'r, 's>) -> Result<bool, MatchError<'r, 's>> {
     MatchEnviroment::new(tokens, phones, Direction::Ltr).tokens_match_phones(choices)
 }
 
@@ -84,7 +84,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
     /// ## Side Effects
     /// - may mutate the `token_index` and/or `phone_index` fields
     /// - may mutate `choices`
-    pub fn tokens_match_phones(&mut self, choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+    pub fn tokens_match_phones<'c>(&mut self, choices: &mut Choices<'c, 'r, 's>) -> Result<bool, MatchError<'r, 's>> {
         let Some(token) = self.tokens.get(self.token_index) else {
             return Ok(true);
         };
@@ -119,7 +119,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
 
     /// Checks if a selection scope and all following tokens match a list of phones
     /// based on the scope's id and options
-    fn selection_and_after_match_phones(&mut self, id: Option<&'r ScopeId<'s>>, options: &'r [Vec<RuleToken<'s>>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+    fn selection_and_after_match_phones<'c>(&mut self, id: Option<&'r ScopeId<'s>>, options: &'r [Vec<RuleToken<'s>>], choices: &mut Choices<'c, 'r, 's>) -> Result<bool, MatchError<'r, 's>> {
         if let Some(id) = id {
             if let Some(choice) = choices.selection.get(id).copied() {
                 let Some(content) = options.get(choice) else {
@@ -143,9 +143,9 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
 
             let mut option_env = self.with_new_tokens(option);
 
-            let mut new_choices = choices.clone();
+            let mut new_choices = choices.partial_clone();
             if let Some(id) = id {
-                new_choices.selection.insert(id, option_num);
+                new_choices.selection.to_mut().insert(id, option_num);
             }
 
             if option_env.tokens_match_phones(&mut new_choices)? {
@@ -154,7 +154,9 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
                 self.phone_index = option_env.phone_index;
 
                 if self.tokens_match_phones(&mut new_choices)? {
-                    *choices = new_choices;
+                    let owned_new_choices = new_choices.owned_choices();
+                    choices.take_owned(owned_new_choices);
+
                     return Ok(true);
                 }
 
@@ -167,7 +169,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
 
     /// Checks if a gap and all following tokens match a list of phones
     /// based on the gap's id
-    fn gap_and_after_match_phones(&mut self, id: Option<&'s str>, choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+    fn gap_and_after_match_phones<'c>(&mut self, id: Option<&'s str>, choices: &mut Choices<'c, 'r, 's>) -> Result<bool, MatchError<'r, 's>> {
         for len in 0.. {
             if len > 0 {
                 let pre_phone_index = self.direction.change_by(self.phone_index, len - 1);
@@ -176,7 +178,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
                 }
             }
 
-            let mut new_choices = choices.clone();
+            let mut new_choices = choices.partial_clone();
 
             if let Some(id) = id {
                 if let Some(max_len) = choices.gap.get(id).copied() {
@@ -185,7 +187,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
                     }
                 }
 
-                new_choices.gap.insert(id, len);
+                new_choices.gap.to_mut().insert(id, len);
             }
 
             let mut after_env = *self;
@@ -193,7 +195,9 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
             after_env.phone_index = after_env.direction.change_by(after_env.phone_index, len);
 
             if after_env.tokens_match_phones(&mut new_choices)? {
-                *choices = new_choices;
+                let owned_new_choices = new_choices.owned_choices();
+                choices.take_owned(owned_new_choices);
+
                 return Ok(true);
             }
         }
@@ -203,7 +207,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
 
     /// Checks if an optional scope and all following tokens match a list of phones
     /// based on the scope's id and contents
-    fn optional_and_after_match_phones(&mut self, id: Option<&'r ScopeId<'s>>, content: &'r [RuleToken<'s>], choices: &mut Choices<'r, 's>) -> Result<bool, MatchError<'r, 's>> {
+    fn optional_and_after_match_phones<'c>(&mut self, id: Option<&'r ScopeId<'s>>, content: &'r [RuleToken<'s>], choices: &mut Choices<'c, 'r, 's>) -> Result<bool, MatchError<'r, 's>> {
         let starting_phone_index = self.phone_index;
         let starting_token_index = self.token_index;
 
@@ -227,18 +231,19 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
             }
         }
 
-        let mut new_choices = choices.clone();
+        let mut new_choices = choices.partial_clone();
 
         let content_matches = content_env.tokens_match_phones(&mut new_choices)?;
         
         if content_matches {
             after_env.phone_index = content_env.phone_index;
             if let Some(id) = id {
-                new_choices.optional.insert(id, true);
+                new_choices.optional.to_mut().insert(id, true);
             }
 
             if after_env.tokens_match_phones(&mut new_choices)? {
-                *choices = new_choices;
+                let owned_new_choices = new_choices.owned_choices();
+                choices.take_owned(owned_new_choices);
                 
                 return Ok(true);
             }
@@ -249,14 +254,14 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
         self.inc_token_index();
 
         if let Some(id) = id {
-            choices.optional.insert(id, false);
+            choices.optional.to_mut().insert(id, false);
         }
 
         self.tokens_match_phones(choices)
     }
 
     /// Checks if an any matches a phone based on its id
-    fn any_matches_phone(id: Option<&'r ScopeId<'s>>, phone: Option<&Phone<'s>>, choices: &mut Choices<'r, 's>) -> bool {
+    fn any_matches_phone<'c>(id: Option<&'r ScopeId<'s>>, phone: Option<&Phone<'s>>, choices: &mut Choices<'c, 'r, 's>) -> bool {
         let Some(phone) = phone.copied() else {
             return false;
         };
@@ -269,7 +274,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
             if let Some(choice) = choices.any.get(id).copied() {
                 phone == choice
             } else {
-                choices.any.insert(id, phone);
+                choices.any.to_mut().insert(id, phone);
                 true
             }
         } else {
@@ -281,7 +286,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
 /// Returns the number of phones the tokens match to using the choices as reference
 /// 
 /// Note: Should only be used on inputs and outputs, not conditions
-pub fn match_len<'r, 's>(tokens: &'r [RuleToken<'s>], choices: &Choices<'r, 's>) -> Result<usize, MatchError<'r, 's>> {
+pub fn match_len<'r, 's>(tokens: &'r [RuleToken<'s>], choices: &Choices<'_, 'r, 's>) -> Result<usize, MatchError<'r, 's>> {
     let mut len = 0;
 
     for token in tokens {
@@ -337,11 +342,72 @@ pub fn has_empty_form(tokens: &[RuleToken]) -> bool {
 
 /// Choices for how agreement should occur
 #[derive(Debug, Clone, Default)]
-pub struct Choices<'r, 's> {
-    pub selection: HashMap<&'r ScopeId<'s>, usize>,
-    pub optional: HashMap<&'r ScopeId<'s>, bool>,
-    pub any: HashMap<&'r ScopeId<'s>, Phone<'s>>,
-    pub gap: HashMap<&'s str, usize>,
+pub struct Choices<'c, 'r, 's> {
+    pub selection: Cow<'c, HashMap<&'r ScopeId<'s>, usize>>,
+    pub optional: Cow<'c, HashMap<&'r ScopeId<'s>, bool>>,
+    pub any: Cow<'c, HashMap<&'r ScopeId<'s>, Phone<'s>>>,
+    pub gap: Cow<'c, HashMap<&'s str, usize>>,
+}
+
+impl<'c, 'r, 's> Choices<'c, 'r, 's> {
+    /// A cheeper way to clone `Choices` with less heap allocation
+    pub fn partial_clone<'d: 'c>(&'d self) -> Choices<'d, 'r, 's> {
+        Self {
+            selection: Cow::Borrowed(&*self.selection),
+            optional: Cow::Borrowed(&*self.optional),
+            any: Cow::Borrowed(&*self.any),
+            gap: Cow::Borrowed(&*self.gap),
+        }
+    }
+
+    /// Converts a set of copy-on-write choices to only the owned choices
+    fn owned_choices(self) -> OwnedChoices<'r, 's> {
+        OwnedChoices {
+            selection: take_owned_from_cow(self.selection),
+            optional: take_owned_from_cow(self.optional),
+            any: take_owned_from_cow(self.any),
+            gap: take_owned_from_cow(self.gap),
+        }
+    }
+
+    /// Takes the choices from `owned`
+    fn take_owned(&mut self, owned: OwnedChoices<'r, 's>) {
+        if let Some(selection) = owned.selection {
+            self.selection = Cow::Owned(selection);
+        }
+
+        if let Some(optional) = owned.optional {
+            self.optional = Cow::Owned(optional);
+        }
+
+        if let Some(any) = owned.any {
+            self.any = Cow::Owned(any);
+        }
+
+        if let Some(gap) = owned.gap {
+            self.gap = Cow::Owned(gap);
+        }
+    }
+}
+
+/// A varient of `Choices` where each map is either owned or does not exist
+///
+/// Used to optimise some clones
+#[derive(Debug)]
+struct OwnedChoices<'r, 's> {
+    selection: Option<HashMap<&'r ScopeId<'s>, usize>>,
+    optional: Option<HashMap<&'r ScopeId<'s>, bool>>,
+    any: Option<HashMap<&'r ScopeId<'s>, Phone<'s>>>,
+    gap: Option<HashMap<&'s str, usize>>,
+}
+
+/// Returns the owned content of a `Cow` if it exists
+fn take_owned_from_cow<T: Clone>(cow: Cow<'_, T>) -> Option<T> {
+    if let Cow::Owned(t) = cow {
+        Some(t)
+    } else {
+        None
+    }
 }
 
 /// Errors that occur when trying to match tokens to phones
