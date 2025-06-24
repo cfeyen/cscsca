@@ -343,15 +343,30 @@ pub fn has_empty_form(tokens: &[RuleToken]) -> bool {
 /// Choices for how agreement should occur
 #[derive(Debug, Clone, Default)]
 pub struct Choices<'c, 'r, 's> {
-    pub selection: Cow<'c, HashMap<&'r ScopeId<'s>, usize>>,
-    pub optional: Cow<'c, HashMap<&'r ScopeId<'s>, bool>>,
-    pub any: Cow<'c, HashMap<&'r ScopeId<'s>, Phone<'s>>>,
-    pub gap: Cow<'c, HashMap<&'s str, usize>>,
+    selection: Cow<'c, HashMap<&'r ScopeId<'s>, usize>>,
+    optional: Cow<'c, HashMap<&'r ScopeId<'s>, bool>>,
+    any: Cow<'c, HashMap<&'r ScopeId<'s>, Phone<'s>>>,
+    gap: Cow<'c, HashMap<&'s str, usize>>,
 }
 
 impl<'c, 'r, 's> Choices<'c, 'r, 's> {
+    /// Gets the selection scope choices
+    pub fn selection(&self) -> &HashMap<&'r ScopeId<'s>, usize> {
+        &self.selection
+    }
+
+    /// Gets the optional scope choices
+    pub fn optional(&self) -> &HashMap<&'r ScopeId<'s>, bool> {
+        &self.optional
+    }
+
+    /// Gets the any phone choices
+    pub fn any(&self) -> &HashMap<&'r ScopeId<'s>, Phone<'s>> {
+        &self.any
+    }
+
     /// A cheeper way to clone `Choices` with less heap allocation
-    pub fn partial_clone<'d: 'c>(&'d self) -> Choices<'d, 'r, 's> {
+    pub fn partial_clone(&'c self) -> Self {
         Self {
             selection: Cow::Borrowed(&*self.selection),
             optional: Cow::Borrowed(&*self.optional),
@@ -438,7 +453,7 @@ impl std::fmt::Display for MatchError<'_, '_> {
                 format!("Cannot resove scope as a value\nTry adding a label '{}' before the scope and ensuring it is used in the input\nScope:\t{scope}", IrToken::Label("name"))
             },
             Self::CannotCheckLenOfGap => format!("Cannot check the length of '{}' in an input", RuleToken::Gap { id: None }),
-            Self::LeftMustBePhones(token) => format!("Left side of '{MATCH_CHAR}' may only contain phones, found: {token}")
+            Self::LeftMustBePhones(token) => format!("The left side of '{MATCH_CHAR}' may only contain phones, found: {token}")
         };
 
         write!(f, "{s}")

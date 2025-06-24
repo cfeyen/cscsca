@@ -203,14 +203,14 @@ fn tokens_to_phones<'r, 's>(tokens: &'r [RuleToken<'s>], choices: &Choices<'_, '
         match token {
             RuleToken::Phone(phone) => phones.push(*phone),
             RuleToken::Any { id: Some(id) } => {
-                if let Some(phone) = choices.any.get(id) {
+                if let Some(phone) = choices.any().get(id) {
                     phones.push(*phone);
                 } else {
                     return Err(ApplicationError::UnmatchedTokenInOutput(token));
                 }
             },
             RuleToken::OptionalScope { id: Some(id), content } => {
-                if let Some(insert) = choices.optional.get(id) {
+                if let Some(insert) = choices.optional().get(id) {
                     if *insert {
                         for phone in tokens_to_phones(content, choices)? {
                             phones.push(phone);
@@ -221,7 +221,7 @@ fn tokens_to_phones<'r, 's>(tokens: &'r [RuleToken<'s>], choices: &Choices<'_, '
                 }
             },
             RuleToken::SelectionScope { id: Some(id), options } => {
-                if let Some(choice) = choices.selection.get(id) {
+                if let Some(choice) = choices.selection().get(id) {
                     if let Some(content) = options.get(*choice) {
                         for phone in tokens_to_phones(content, choices)? {
                             phones.push(phone);
