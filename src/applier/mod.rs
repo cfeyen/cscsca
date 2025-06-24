@@ -13,21 +13,22 @@ mod tests;
 
 /// The condition for a line application limit
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum LimitCondition {
-    /// No limit
-    None,
+pub (crate) enum LimitCondition {
     /// End time
     Time(Instant),
-    /// Application attempts (current, maximum)
-    Count(usize, usize),
+    /// Application attempts
+    Count {
+        attempts: usize,
+        max: usize,
+    },
 }
 
-impl From<LineApplicationLimit> for LimitCondition {
-    fn from(value: LineApplicationLimit) -> Self {
-        match value {
-            LineApplicationLimit::Unlimited => LimitCondition::None,
-            LineApplicationLimit::Time(time) => LimitCondition::Time(Instant::now() + time),
-            LineApplicationLimit::Attempts(max) => LimitCondition::Count(0, max),
+impl From<LineApplicationLimit> for Option<LimitCondition> {
+    fn from(val: LineApplicationLimit) -> Self {
+        match val {
+            LineApplicationLimit::Unlimited => None,
+            LineApplicationLimit::Time(time) => Some(LimitCondition::Time(Instant::now() + time)),
+            LineApplicationLimit::Attempts(max) => Some(LimitCondition::Count { attempts: 0, max }),
         }
     }
 }
@@ -37,11 +38,10 @@ impl LimitCondition {
     /// moves `Count` varient closer to completion
     fn check(&mut self) -> bool {
         match self {
-            Self::None => false,
             Self::Time(time) => Instant::now() >= *time,
-            Self::Count(cur, max) if *cur >= *max => true,
-            Self::Count(cur, _) => {
-                *cur += 1;
+            Self::Count { attempts, max } if *attempts >= *max => true,
+            Self::Count { attempts, max: _ } => {
+                *attempts += 1;
                 false
             }
         }
@@ -52,7 +52,7 @@ impl LimitCondition {
 pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, limit: LineApplicationLimit) -> Result<(), ApplicationError<'r, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
-    let mut limit_condition: LimitCondition = limit.into();
+    let mut limit_condition: Option<LimitCondition> = limit.into();
     
     while phone_index < phones.len() {
         if let Some((replace_len, input_len)) = apply_at(rule, phones, phone_index)? {
@@ -63,8 +63,10 @@ pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>,
 
         // returns an error if the limit is exceeded
         // protects against infinite loops
-        if limit_condition.check() {
-            return Err(ApplicationError::TimeLimitExceeded);
+        if let Some(limit_condition) = limit_condition.as_mut() {
+            if limit_condition.check() {
+                return Err(ApplicationError::ExceededLimit(*limit_condition));
+            }
         }
     }
 
@@ -245,7 +247,7 @@ pub enum ApplicationError<'r, 's> {
     MatchError(MatchError<'r, 's>),
     UnmatchedTokenInOutput(&'r RuleToken<'s>),
     InvalidSelectionAccess(&'r RuleToken<'s>, usize),
-    TimeLimitExceeded,
+    ExceededLimit(LimitCondition),
 }
 
 impl<'r, 's> From<MatchError<'r, 's>> for ApplicationError<'r, 's> {
@@ -266,7 +268,10 @@ impl std::fmt::Display for ApplicationError<'_, '_> {
             Self::UnmatchedTokenInOutput(token) => {
                 format!("Cannot match the following token in the output to a token in the input: {token}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
             },
-            Self::TimeLimitExceeded => "Could not apply changes in allotted time".to_string()
+            Self::ExceededLimit(limit) => match limit {
+                LimitCondition::Time(_) => "Could not apply changes in allotted time",
+                LimitCondition::Count { attempts: _, max: _ } => "Could not apply changes with the allotted application attempts",
+            }.to_string()
         };
 
         write!(f, "{s}")
