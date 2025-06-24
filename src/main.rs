@@ -8,15 +8,9 @@ mod color;
 mod cli_parser;
 
 use cli_parser::{CliCommand, InputType, OutputData};
-#[cfg(any(feature = "gen_vscode_grammar"))]
-use cli_parser::GenType;
 use color::{BLUE, BOLD, GREEN, RED, RESET, YELLOW};
 
 const APPLY_CMD: &str = "sca";
-#[cfg(any(feature = "gen_vscode_grammar"))]
-const GEN_CMD: &str = "gen";
-#[cfg(feature = "gen_vscode_grammar")]
-const VSC_EXT: &str = "vscode_grammar";
 const CHAR_HELP_CMD: &str = "chars";
 const HELP_CMD: &str = "help";
 const NEW_CMD: &str = "new";
@@ -40,13 +34,6 @@ fn main() {
             } else if fs::write(&path, if use_template { template() } else { "" }).is_err() {
                 error(&format!("An error occured when writing to {BLUE}{path}{RESET}"));
             }
-        },
-        #[cfg(any(feature = "gen_vscode_grammar"))]
-        Ok(CliCommand::Gen { tooling, path }) => match tooling {
-            #[cfg(feature = "gen_vscode_grammar")]
-            GenType::VsCodeGrammar => if let Err(e) = cscsca::tooling_gen::vscode_grammar::gen_vscode_grammar(&path) {
-                error(&e.to_string());
-            },
         },
         Ok(CliCommand::Help { extra_args }) => {
             if extra_args {

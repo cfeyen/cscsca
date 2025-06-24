@@ -12,10 +12,6 @@ const DEFAULT_MAP_SPACER: &str = "->";
 use std::env;
 
 use crate::{APPLY_CMD, CHAR_HELP_CMD, HELP_CMD, NEW_CMD};
-#[cfg(any(feature = "gen_vscode_grammar"))]
-use crate::GEN_CMD;
-#[cfg(feature = "gen_vscode_grammar")]
-use crate::VSC_EXT;
 
 /// Parsed CLI input
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -31,19 +27,7 @@ pub enum CliCommand {
         use_template: bool,
         path: String,
     },
-    #[cfg(any(feature = "gen_vscode_grammar"))]
-    Gen {
-        tooling: GenType,
-        path: String,
-    },
     None,
-}
-
-#[cfg(any(feature = "gen_vscode_grammar"))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum GenType {
-    #[cfg(feature = "gen_vscode_grammar")]
-    VsCodeGrammar,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,28 +74,6 @@ impl CliCommand {
                     }
 
                     Ok(Self::New { use_template, path })
-                }
-                #[cfg(any(feature = "gen_vscode_grammar"))]
-                GEN_CMD => {
-                    let tooling = if let Some(cmd) = args.next() {
-                        match cmd.as_str() {
-                            VSC_EXT => GenType::VsCodeGrammar,
-                            _ => return Err(ArgumentParseError::UnexpectedCommand(cmd)),
-                        }
-                    } else {
-                        return Err(ArgumentParseError::ExpectedCommand);
-                    };
-
-                    let path = match args.next() {
-                        Some(path) => path,
-                        None => return Err(ArgumentParseError::ExpectedFileName),
-                    };
-
-                    if let Some(cmd) = args.next() {
-                        return Err(ArgumentParseError::UnexpectedCommand(cmd));
-                    }
-
-                    Ok(CliCommand::Gen { tooling, path })
                 },
                 HELP_CMD => Ok(Self::Help { extra_args: args.next().is_some() }),
                 _ => Err(ArgumentParseError::UnexpectedCommand(cmd)),
@@ -181,8 +143,6 @@ pub enum ArgumentParseError {
     UnexpectedCommand(String),
     ExpectedFileName,
     ExpectedSeparator,
-    #[cfg(any(feature = "gen_vscode_grammar"))]
-    ExpectedCommand,
 }
 
 impl std::error::Error for ArgumentParseError {}
@@ -193,8 +153,6 @@ impl std::fmt::Display for ArgumentParseError {
             Self::UnexpectedCommand(cmd) => write!(f, "Unexpected command '{cmd}'"),
             Self::ExpectedFileName => write!(f, "Input ended unexpectedly, expected a file name"),
             Self::ExpectedSeparator => write!(f, "Expected a seperator after flag {}", MAP_SEPARATOR_FLAGS.join(" or ")),
-            #[cfg(any(feature = "gen_vscode_grammar"))]
-            Self::ExpectedCommand => write!(f, "Input ended unexpectedly, expected a command"),
         }
     }
 }

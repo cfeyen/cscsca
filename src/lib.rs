@@ -39,9 +39,6 @@ pub use crate::{
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "gen_vscode_grammar")] // | other | other | ...
-pub mod tooling_gen;
-
 /// Applies sca source code to an input string
 /// 
 /// Returns a string of either the final text or a formatted error
@@ -71,10 +68,11 @@ pub fn apply_fallible(input: &str, rules: &str) -> Result<String, ScaError> {
 
 #[cfg(feature = "docs")]
 /// Returns the content of the README file pertaining to writing sound change rules
+#[must_use]
 pub fn docs() -> &'static str {
     let readme = include_str!("../README.md");
     if let (Some(start), Some(end)) = (readme.find("## Writing Sound Change Rules with CSCSCA"), readme.find("## Command Line Interface")) {
-        &readme[start..end].trim()
+        readme[start..end].trim()
     } else {
         readme
     }
