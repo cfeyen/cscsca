@@ -98,10 +98,10 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
         }
     }
 
-    if let Some(path) = output_data.write_path() {
-        if fs::write(path, full_output).is_err() {
-            error(&format!("An error occured when writing the output to {BLUE}{path}{RESET}"));
-        }
+    if let Some(path) = output_data.write_path()
+        && fs::write(path, full_output).is_err()
+    {
+        error(&format!("An error occured when writing the output to {BLUE}{path}{RESET}"));
     }
 }
 

@@ -120,20 +120,20 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
     /// Checks if a selection scope and all following tokens match a list of phones
     /// based on the scope's id and options
     fn selection_and_after_match_phones<'c>(&mut self, id: Option<&'r ScopeId<'s>>, options: &'r [Vec<RuleToken<'s>>], choices: &mut Choices<'c, 'r, 's>) -> Result<bool, MatchError<'r, 's>> {
-        if let Some(id) = id {
-            if let Some(choice) = choices.selection.get(id).copied() {
-                let Some(content) = options.get(choice) else {
-                    return Err(MatchError::InvalidSelectionChoice(id.clone(), choice));
-                };
+        if let Some(id) = id
+            && let Some(choice) = choices.selection.get(id).copied()
+        {
+            let Some(content) = options.get(choice) else {
+                return Err(MatchError::InvalidSelectionChoice(id.clone(), choice));
+            };
 
-                let mut content_env = self.with_new_tokens(content);
+            let mut content_env = self.with_new_tokens(content);
 
-                let choice_matches = content_env.tokens_match_phones(choices)?;
-                self.phone_index = content_env.phone_index;
-                self.inc_token_index();
+            let choice_matches = content_env.tokens_match_phones(choices)?;
+            self.phone_index = content_env.phone_index;
+            self.inc_token_index();
 
-                return Ok(choice_matches && self.tokens_match_phones(choices)?);
-            }
+            return Ok(choice_matches && self.tokens_match_phones(choices)?);
         }
 
         let starting_phone_index = self.phone_index;
@@ -181,10 +181,8 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
             let mut new_choices = choices.partial_clone();
 
             if let Some(id) = id {
-                if let Some(max_len) = choices.gap.get(id).copied() {
-                    if len > max_len {
-                        break;
-                    }
+                if let Some(max_len) = choices.gap.get(id).copied() && len > max_len {
+                    break;
                 }
 
                 new_choices.gap.to_mut().insert(id, len);

@@ -63,10 +63,10 @@ pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>,
 
         // returns an error if the limit is exceeded
         // protects against infinite loops
-        if let Some(limit_condition) = limit_condition.as_mut() {
-            if limit_condition.check() {
-                return Err(ApplicationError::ExceededLimit(*limit_condition));
-            }
+        if let Some(limit_condition) = limit_condition.as_mut()
+            && limit_condition.check()
+        {
+            return Err(ApplicationError::ExceededLimit(*limit_condition));
         }
     }
 

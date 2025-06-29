@@ -71,8 +71,8 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mu
         let mut ir_line = IrLine::Ir(tokenize_line(line, tokenization_data)?);
         
         // converts empty rules to the empty varient
-        if let IrLine::Ir(ir) = &ir_line {
-            if ir.is_empty() { ir_line = IrLine::Empty; }
+        if let IrLine::Ir(ir) = &ir_line && ir.is_empty() {
+            ir_line = IrLine::Empty;
         }
 
         ir_line
