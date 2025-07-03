@@ -184,20 +184,25 @@ Prints the this file
 ### cscsca new *path*
 Creates a new file at *path*.sca
 
-If -b or --base proceeds *path*, the new file has general defintions in it
+If `-t` or `--template` proceeds *path*, the new file has general defintions in it
 
 ### cscsca sca *file* *text*
 Applies the rules in *file* to *text* and prints the result
 
-After *file*, you may add a series of --chain *file* or -c *file* commands to chain the output of one file into the input of the next
+After *file*, you may add a series of `--chain` *file* or `-c` *file* commands to chain the output of one file into the input of the next
 
-Add --map or -m to write each output with its input and all intermediate steps
+Add one of the following map flags:
+- `--map_outputs` or `-o` to write each output with its input and all intermediate steps between files
+- `--map_prints` or `-p` to write each print output
+- `--map_all` or `-m` to write each output with its input and all intermediate steps including prints
 
-Add --separator *sep* or -s *sep* after --map or -m to change the default mapping separator from `->` to *sep*
+Add `--reduce` or `-x` to remove consecutive dupicates in the output chain
 
-Add --write *write_file* or -w *write_file* before *text* to write the final output to *write_file*
+Add `--separator` *sep* or `-s` *sep* after any of the map flags or reduce flag to change the default mapping separator from `->` to *sep*
 
-Replace *text* --read *read_file* or -r *read_file* to read each line of *read_file* as an individual input text
+Add `--write` *write_file* or `-w` *write_file* before *text* to write the final output to *write_file*
+
+Replace *text* `--read` *read_file* or `-r` *read_file* to read each line of *read_file* as an individual input text
 
 
 ### cscsca gen vscode_grammar *path*

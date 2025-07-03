@@ -1,11 +1,14 @@
 #![allow(clippy::non_minimal_cfg)]
 
-const USE_TEMPLATE_FLAGS: &[&str] = &["-t", "--template"];
-const CHAIN_FLAGS: &[&str] = &["-c", "--chain"];
-const READ_FLAGS: &[&str] = &["-r", "--read"];
-const WRITE_FLAGS: &[&str] = &["-w", "--write"];
-const MAPPED_OUTPUT_FLAGS: &[&str] = &["-m", "--map"];
-const MAP_SEPARATOR_FLAGS: &[&str] = &["-s", "--separator"];
+const USE_TEMPLATE_FLAGS: [&str; 2] = ["-t", "--template"];
+const CHAIN_FLAGS: [&str; 2] = ["-c", "--chain"];
+const READ_FLAGS: [&str; 2] = ["-r", "--read"];
+const WRITE_FLAGS: [&str; 2] = ["-w", "--write"];
+const MAP_OUTPUT_FLAGS: [&str; 2] = ["-o", "--map_outputs"];
+const MAP_LOGS_FLAGS: [&str; 2] = ["-p", "--map_prints"];
+const MAP_ALL_FLAGS: [&str; 2] = ["-m", "--map_all"];
+const REDUCE_OUTPUT_FLAGS: [&str; 2] = ["-x", "--reduce"];
+const MAP_SEPARATOR_FLAGS: [&str; 2] = ["-s", "--separator"];
 
 const DEFAULT_MAP_SPACER: &str = "->";
 
@@ -39,16 +42,49 @@ pub enum InputType {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OutputData {
     write: Option<String>,
-    map: Option<String>,
+    map: Option<MapData>,
 }
 
 impl OutputData {
-    pub const fn map(&self) -> Option<&String> {
+    pub const fn map_data(&self) -> Option<&MapData> {
         self.map.as_ref()
     }
 
     pub const fn write_path(&self) -> Option<&String> {
         self.write.as_ref()
+    }
+}
+
+/// What outputs are mapped
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MapType {
+    Final,
+    Logs,
+    FinalAndLogs,
+}
+
+/// Data about mapped output
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MapData {
+    map_type: MapType,
+    reduce: bool,
+    sep: String,
+}
+
+impl MapData {
+    /// Gets the map type
+    pub fn map_type(&self) -> MapType {
+        self.map_type
+    }
+
+    /// Whether or not the output should be deduped
+    pub fn reduce(&self) -> bool {
+        self.reduce
+    }
+
+    /// Returns the map separator
+    pub fn sep(&self) -> &str {
+        &self.sep
     }
 }
 
@@ -99,16 +135,34 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         }
     }
     
-    let map = if args.next_if(|s| MAPPED_OUTPUT_FLAGS.contains(&s.as_str())).is_some() {
-        if args.next_if(|s| MAP_SEPARATOR_FLAGS.contains(&s.as_str())).is_some() {
+    let map_type = if args.next_if(|s| MAP_OUTPUT_FLAGS.contains(&s.as_str())).is_some() {
+        Some(MapType::Final)
+    } else if args.next_if(|s| MAP_ALL_FLAGS.contains(&s.as_str())).is_some() {
+        Some(MapType::FinalAndLogs)
+    } else if args.next_if(|s| MAP_LOGS_FLAGS.contains(&s.as_str())).is_some() {
+        Some(MapType::Logs)
+    } else {
+        None
+    };
+
+    let map = if let Some(map_type) = map_type {
+        let reduce = args.next_if(|s| REDUCE_OUTPUT_FLAGS.contains(&s.as_str())).is_some();
+
+        let sep = if args.next_if(|s| MAP_SEPARATOR_FLAGS.contains(&s.as_str())).is_some() {
             if let Some(sep) = args.next() {
-                Some(sep)
+                sep
             } else {
                 return Err(ArgumentParseError::ExpectedSeparator);
             }
         } else {
-            Some(DEFAULT_MAP_SPACER.to_string())
-        }
+            DEFAULT_MAP_SPACER.to_string()
+        };
+
+        Some(MapData {
+            map_type,
+            reduce,
+            sep,
+        })
     } else {
         None
     };

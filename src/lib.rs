@@ -28,6 +28,7 @@ pub use crate::{
             LineApplicationLimit,
             CliRuntime,
             LogRuntime,
+            LogAndPrintRuntime,
         },
         getter::{
             IoGetter,

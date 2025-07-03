@@ -10,6 +10,8 @@ mod cli_parser;
 use cli_parser::{CliCommand, InputType, OutputData};
 use color::{BLUE, BOLD, GREEN, RED, RESET, YELLOW};
 
+use crate::cli_parser::{MapData, MapType};
+
 const APPLY_CMD: &str = "sca";
 const CHAR_HELP_CMD: &str = "chars";
 const HELP_CMD: &str = "help";
@@ -64,38 +66,44 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     let mut full_output = String::new();
     let build = input.contains('\n');
 
+    let Ok(rule_sets) = paths.iter()
+        .map(fs::read_to_string)
+        .collect::<Result<Vec<_>, _>>() else {
+            return error("Could not find file '{BLUE}{path}{RESET}'");
+        };
+
     if build {
-        let Ok(rule_sets) = paths.iter()
-            .map(fs::read_to_string)
-            .collect::<Result<Vec<_>, _>>() else {
-                return error("Could not find file '{BLUE}{path}{RESET}'");
-            };
-        
         let appliable_rule_sets = match rule_sets.iter()
             .map(|rule_set| cscsca::build_rules(rule_set, &mut cscsca::CliGetter))
             .collect::<Result<Vec<_>, _>>() {
                 Ok(rules) => rules,
                 Err(e) => return println!("{e}"),
             };
-        
-        let mut runtime = cscsca::CliRuntime::default();
 
         for input in input.lines() {
-            let line_output = apply_rule_sets(paths, output_data, &appliable_rule_sets, &mut runtime, input);
+            let line_output = apply_rule_sets(paths, output_data.map_data(), &appliable_rule_sets, input.to_string())
+                .unwrap_or_else(|e| {
+                    let error = e.to_string()
+                        // removes ansi
+                        .replace(RED, "")
+                        .replace(RESET, "");
+
+                    format!("{input}: {error}")
+            });
+
+            println!("{line_output}");
             _ = writeln!(full_output, "{line_output}");
         }
     } else {
-        for input in input.lines() {
-            match apply_changes(paths, input.to_string(), output_data.map()) {
-                Ok(output) => {
-                    full_output += &output;
-                    println!("{output}");
-                },
-                Err(e) => return println!("{e}"),
-            }
-
-            full_output.push('\n');
+        match apply_changes(paths, output_data.map_data(), &rule_sets, input) {
+            Ok(output) => {
+                full_output += &output;
+                println!("{output}");
+            },
+            Err(e) => return println!("{e}"),
         }
+
+        full_output.push('\n');
     }
 
     if let Some(path) = output_data.write_path()
@@ -105,72 +113,87 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     }
 }
 
-fn apply_rule_sets(paths: &[String], output_data: &OutputData, appliable_rule_sets: &[cscsca::AppliableRules<'_>], runtime: &mut cscsca::CliRuntime, input: &str) -> String {
-    let mut line_output = if output_data.map().is_some() {
-        input.to_string()
-    } else {
-        String::new()
-    };
-            
-    let mut input = input.to_string();
+/// Applies each pre-built rule set to an input
+fn apply_rule_sets(paths: &[String], map_data: Option<&MapData>, rule_sets: &[cscsca::AppliableRules<'_>], input: String) -> Result<String, cscsca::ScaError> {
+    let mut mapping = new_mapping(map_data.map(MapData::map_type), &input);
 
-    for (i, rule_set) in appliable_rule_sets.iter().enumerate() {
-        println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{input}{GREEN}'{RESET}", &paths[i]);
+    let mut last_output = input;
 
-        match rule_set.apply_fallible(&input, runtime) {
-            Ok(output) => {
-                if let Some(sep) = output_data.map() {
-                    _ = write!(line_output, " {sep} {output}");
-                } else {
-                    _ = write!(line_output, "{output}");
-                }
-                input = output;
-            },
-            Err(e) => {
-                println!("{e}");
-                break;
-            },
+    let mut runtime = cscsca::LogAndPrintRuntime::default();
+
+    for (i, rule_set) in rule_sets.iter().enumerate() {
+        println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{last_output}{GREEN}'{RESET}", &paths[i]);
+
+        let set_output = rule_set.apply_fallible(&last_output, &mut runtime)?;
+        
+        if let Some(map_data) = map_data {
+            extend_mapping(map_data.map_type(), &set_output, &mut mapping, &mut runtime);
         }
+
+        last_output = set_output;
     }
 
-    println!("{line_output}");
-    line_output
+    Ok(mapped_output(map_data, mapping, last_output))
 }
 
-/// Applies changes to an input
-fn apply_changes(paths: &[String], mut input: String, map: Option<&String>) -> Result<String, String> {
-    let mut full_output = if map.is_some() {
-        input.clone()
+/// Applies each rule set to an input
+fn apply_changes(paths: &[String], map_data: Option<&MapData>, rule_sets: &[String], input: String) -> Result<String, cscsca::ScaError> {
+    let mut mapping = new_mapping(map_data.map(MapData::map_type), &input);
+
+    let mut last_output = input;
+
+    let runtime = cscsca::LogAndPrintRuntime::default();
+    let getter = cscsca::CliGetter;
+    let mut executor = cscsca::LineByLineExecuter::new(runtime, getter);
+
+    for (i, rule_set) in rule_sets.iter().enumerate() {
+        println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{last_output}{GREEN}'{RESET}", &paths[i]);
+
+        let set_output = executor.apply_fallible(&last_output, rule_set)?;
+
+        if let Some(map_data) = map_data {
+            extend_mapping(map_data.map_type(), &set_output, &mut mapping, executor.runtime_mut());
+        }
+
+        last_output = set_output;
+    }
+
+    Ok(mapped_output(map_data, mapping, last_output))
+}
+
+/// Creates a mapped output from a mapping `Vec` and the last output
+fn mapped_output(map_data: Option<&MapData>, mut mapping: Vec<String>, output: String) -> String {
+    if let Some(map_data) = map_data {
+        if map_data.reduce() {
+            mapping.dedup();
+        }
+
+        mapping.join(&format!(" {} ", map_data.sep()))
     } else {
-        String::new()
-    };
+        output
+    }
+}
 
-    for path in paths {
-        let code = &match fs::read_to_string(path) {
-            Ok(code) => code,
-            Err(_) => {
-                return Err(format!("Could not find file '{BLUE}{path}{RESET}'"));
-            }
-        };
+/// Creates a new mapping `Vec` based on the `MapType` and input
+fn new_mapping(map_type: Option<MapType>, input: &str) -> Vec<String> {
+    if map_type.is_some_and(|t| matches!(t, MapType::Final | MapType::FinalAndLogs)) {
+        vec![input.to_string()]
+    } else {
+        Vec::new()
+    }
+}
 
-        println!("{GREEN}Applying changes in {BLUE}{path}{GREEN} to '{BLUE}{input}{GREEN}'{RESET}");
-
-        match cscsca::apply_fallible(&input, code) {
-            Ok(output) => {
-                if let Some(sep) = map {
-                    _ = write!(full_output, " {sep} {output}");
-                }
-                input = output;
-            },
-            Err(e) => return Err(e.to_string()),
+/// Extends the mapping based on type and outputs
+fn extend_mapping(map_type: MapType, output: &str, mapping: &mut Vec<String>, runtime: &mut cscsca::LogAndPrintRuntime) {
+    if matches!(map_type, MapType::Logs | MapType::FinalAndLogs) {
+        for (_msg, phones) in runtime.flush_logs() {
+            mapping.push(phones);
         }
     }
 
-    if map.is_none() {
-        full_output = input;
+    if matches!(map_type, MapType::Final | MapType::FinalAndLogs) {
+        mapping.push(output.to_string());
     }
-
-    Ok(full_output)
 }
 
 /// prints the characters in a string

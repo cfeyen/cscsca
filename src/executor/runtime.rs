@@ -113,7 +113,7 @@ impl Runtime for CliRuntime {
 
 /// A basic `Runtime` that logs outputs to itself
 /// 
-/// Clears it's logs before starting to apply a new set of rules
+/// Clears its logs before starting to apply a new set of rules
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct LogRuntime {
     logs: Vec<(String, String)>,
@@ -163,5 +163,42 @@ impl Runtime for LogRuntime {
     #[inline]
     fn line_application_limit(&self) -> LineApplicationLimit {
         self.line_application_limit
+    }
+}
+
+/// A basic `Runtime` that logs outputs to itself and prints its logs to standard output
+/// 
+/// Clears its logs before starting to apply a new set of rules
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct LogAndPrintRuntime(LogRuntime);
+
+impl LogAndPrintRuntime {
+    /// Returns the logs
+    #[must_use]
+    pub fn logs(&self) -> &[(String, String)] {
+        self.0.logs()
+    }
+
+    /// Returns the logs and replaces them with empty logs
+    pub fn flush_logs(&mut self) -> Vec<(String, String)> {
+        self.0.flush_logs()
+    }
+}
+
+impl Runtime for LogAndPrintRuntime {
+    #[inline]
+    fn line_application_limit(&self) -> LineApplicationLimit {
+        self.0.line_application_limit()
+    }
+
+    #[inline]
+    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
+        println!("{msg} '{BLUE}{phones}{RESET}'");
+        self.0.put_io(msg, phones)
+    }
+
+    #[inline]
+    fn on_start(&mut self) {
+        self.0.on_start();
     }
 }
