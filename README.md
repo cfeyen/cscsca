@@ -215,6 +215,7 @@ Generates a VSCode syntax highlighting extension for `.sca`/`.cscsca` files in a
 
 ## Crate Features
 - `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
+- `async_io`: Allows for IO to be done through asyncronous functions instead of syncronous ones. Cannot be active when compiling CSCSCA to an executable 
 - `docs`: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
 - `gen_vscode_grammar`: adds the `gen vscode_grammar` CLI command and exposes the function used to do so in the crate
 

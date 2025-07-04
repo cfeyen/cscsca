@@ -1,11 +1,15 @@
 use std::{error::Error, time::Duration};
+
 use crate::{
     applier::apply,
     color::{BLUE, RESET},
     phones::{phone_list_to_string, Phone},
     rules::RuleLine,
     ScaError,
+    await_io,
+    io_fn,
 };
+
 use super::commands::RuntimeCommand;
 
 pub(crate) const DEFAULT_LINE_APPLICATION_LIMIT: LineApplicationLimit = LineApplicationLimit::Attempts(10000);
@@ -37,6 +41,7 @@ pub trait Runtime {
     /// 
     /// ## Note:
     /// This method should *not* be called outside of the `cscsca` crate
+    #[io_fn]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>>;
 
     /// Called before applying a set of rules
@@ -61,21 +66,26 @@ pub trait Runtime {
 /// Default methods should not be overridden
 pub(super) trait RuntimeApplier: Runtime {
     /// Applies changes for a single `RuleLine`
+    #[io_fn]
     fn apply_line<'s>(&mut self, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'s>>, line: &str, line_num: usize) -> Result<(), ScaError> {
         match rule_line {
             RuleLine::Empty => Ok(()),
-            RuleLine::Cmd(cmd) => self.execute_runtime_command(cmd, phones, line, line_num),
+            RuleLine::Cmd(cmd) => await_io! {
+                self.execute_runtime_command(cmd, phones, line, line_num)
+            },
             RuleLine::Rule(rule) => apply(rule, phones, self.line_application_limit())
                 .map_err(|e| ScaError::from_error(&e, line, line_num))
         }
     }
 
     /// Executes a command at runtime
-    fn execute_runtime_command(&mut self, cmd: &RuntimeCommand, phones: &[Phone], line: &str, line_num: usize) -> Result<(), ScaError> {
+    #[io_fn]
+    fn execute_runtime_command(&mut self, cmd: &RuntimeCommand<'_>, phones: &[Phone<'_>], line: &str, line_num: usize) -> Result<(), ScaError> {
         match cmd {
             RuntimeCommand::Print { msg } => {
-                self.put_io(msg, phone_list_to_string(phones))
-                    .map_err(|e| ScaError::from_io_error(&*e, line, line_num))
+                await_io! {
+                    self.put_io(msg, phone_list_to_string(phones))
+                }.map_err(|e| ScaError::from_io_error(&*e, line, line_num))
             }
         }
     }
@@ -105,6 +115,7 @@ impl Runtime for CliRuntime {
     }
 
     #[inline]
+    #[io_fn]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
         println!("{msg} '{BLUE}{phones}{RESET}'");
         Ok(())
@@ -150,6 +161,7 @@ impl LogRuntime {
 }
 
 impl Runtime for LogRuntime {
+    #[io_fn]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
         self.logs.push((msg.to_string(), phones));
         Ok(())
@@ -192,9 +204,10 @@ impl Runtime for LogAndPrintRuntime {
     }
 
     #[inline]
+    #[io_fn]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
         println!("{msg} '{BLUE}{phones}{RESET}'");
-        self.0.put_io(msg, phones)
+        await_io!{ self.0.put_io(msg, phones) }
     }
 
     #[inline]

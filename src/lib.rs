@@ -15,6 +15,7 @@ mod escaped_strings;
 mod color;
 mod executor;
 mod keywords;
+mod io_macros;
 
 pub use crate::{
     executor::{
@@ -37,6 +38,11 @@ pub use crate::{
     },
 };
 
+use io_macros::{
+    await_io,
+    io_fn,
+};
+
 #[cfg(test)]
 mod tests;
 
@@ -48,9 +54,11 @@ mod tests;
 /// IO is done through the standard io
 #[inline]
 #[must_use]
+#[io_fn]
 pub fn apply(input: &str, rules: &str) -> String {
-    apply_fallible(input, rules)
-        .unwrap_or_else(|e| e.to_string())
+    await_io! {
+        apply_fallible(input, rules)
+    }.unwrap_or_else(|e| e.to_string())
 }
 
 /// Applies sca source code to an input string
@@ -61,10 +69,13 @@ pub fn apply(input: &str, rules: &str) -> String {
 /// ## Note:
 /// IO is done through the standard io
 #[inline]
+#[io_fn]
 pub fn apply_fallible(input: &str, rules: &str) -> Result<String, ScaError> {
     let getter = CliGetter::new();
     let runtime = CliRuntime::default();
-    LineByLineExecuter::new(runtime, getter).apply_fallible(input, rules)
+    await_io! {
+        LineByLineExecuter::new(runtime, getter).apply_fallible(input, rules)
+    }
 }
 
 #[cfg(feature = "docs")]

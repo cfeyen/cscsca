@@ -12,6 +12,8 @@ use crate::{
     phones::{build_phone_list, phone_list_to_string},
     rules::{build_rule, RuleLine},
     ScaError,
+    await_io,
+    io_fn,
 };
 use commands::Command;
 use runtime::{Runtime, RuntimeApplier};
@@ -62,15 +64,18 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
 
     /// Applies the rules to the input, all errors are a formatted string
     #[inline]
+    #[io_fn]
     pub fn apply(&mut self, input: &str, rules: &str) -> String {
-        self.apply_fallible(input, rules)
-            .unwrap_or_else(|e| e.to_string())
+        await_io! {
+            self.apply_fallible(input, rules)
+        }.unwrap_or_else(|e| e.to_string())
     }
 
     /// Applies the rules to the input
     /// 
     /// ## Errors
     /// Errors on invalid rules, application that takes too long, and failed io
+    #[io_fn]
     pub fn apply_fallible(&mut self, input: &str, rules: &str) -> Result<String, ScaError> {
         let escaped = EscapedString::from(input);
         let mut phones = build_phone_list(escaped.as_escaped_str());
@@ -88,8 +93,14 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
             line_num += 1;
 
             // builds and attempts to apply the rules
-            let application_result = build_line(line, line_num, &mut tokenization_data, &mut self.getter)
-                .map(|rule_line| self.runtime.apply_line(&rule_line, &mut phones, line, line_num));
+            let application_result = match await_io! {
+                build_line(line, line_num, &mut tokenization_data, &mut self.getter)
+            } {
+                Ok(rule_line) => Ok(await_io! {
+                    self.runtime.apply_line(&rule_line, &mut phones, line, line_num)
+                }),
+                Err(e) => Err(e),
+            };
 
             // handles errors
             if let Err(e) | Ok(Err(e)) = application_result {
@@ -123,6 +134,7 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
 }
 
 /// Builds a line from a string to a `RuleLine`
+#[io_fn]
 fn build_line<'s, G>(line: &'s str, line_num: usize, tokenization_data: &mut TokenizationData<'s>, getter: &mut G) -> Result<RuleLine<'s>, ScaError>
 where
     G: IoGetter
@@ -132,7 +144,7 @@ where
 
     match ir_line {
         IrLine::Cmd(Command::BuildtimeCommand(cmd)) => {
-            getter.run_build_time_command(&cmd, tokenization_data, line, line_num)?;
+            await_io! { getter.run_build_time_command(&cmd, tokenization_data, line, line_num) }?;
             Ok(RuleLine::Empty)
         },
         // builds a rule from ir

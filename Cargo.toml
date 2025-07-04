@@ -1,7 +1,7 @@
 [package]
 name = "cscsca"
 authors = ["Charles Feyen"]
-version = "0.18.0"
+version = "0.19.0"
 edition = "2024"
 readme = "README.md"
 keywords = ["linguistics", "conlang"]
@@ -25,6 +25,7 @@ missing_docs = { level = "warn", priority = -2 }
 
 [features]
 ansi = []
+async_io = ["cscsca_macros/async_io"]
 docs = []
 
 [profile.release]
@@ -34,3 +35,8 @@ codegen-units = 1
 panic = "abort"
 
 [dependencies]
+cscsca_macros = { path = "cscsca_macros" }
+
+[dev-dependencies]
+# todo: if posible make only available for the async_io flag
+smol = "2.0.2"

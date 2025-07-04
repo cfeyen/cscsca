@@ -1,5 +1,11 @@
 use std::{error::Error, io::{self, Write}};
-use crate::{ir::tokenization_data::TokenizationData, ScaError};
+
+use crate::{
+    ir::tokenization_data::TokenizationData,
+    ScaError,
+    await_io,
+    io_fn,
+};
 use super::commands::{ComptimeCommand, GetType};
 
 /// A trait that controls how input is fetched when building rules
@@ -11,6 +17,7 @@ pub trait IoGetter {
     /// 
     /// ## Note:
     /// This method should *not* be called outside of the `cscsca` crate
+    #[io_fn]
     fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn Error>>;
 
     /// Called before building a set of rules
@@ -33,11 +40,13 @@ pub trait IoGetter {
 /// Default methods should not be overridden
 pub(super) trait ComptimeCommandExecuter: IoGetter {
     /// Runs a command at build time
+    #[io_fn]
     fn run_build_time_command<'s>(&mut self, cmd: &ComptimeCommand<'s>, tokenization_data: &mut TokenizationData<'s>, line: &str, line_num: usize) -> Result<(), ScaError> {
         match cmd {
             ComptimeCommand::Get { get_type, var, msg } => {
-                let input = self.get_io(msg)
-                    .map_err(|e| ScaError::from_io_error(&*e, line, line_num))?;
+                let input = await_io! {
+                    self.get_io(msg)
+                }.map_err(|e| ScaError::from_io_error(&*e, line, line_num))?;
 
                 match get_type {
                     GetType::Phones => tokenization_data.set_variable(var, &input),
@@ -68,6 +77,7 @@ impl CliGetter {
 
 impl IoGetter for CliGetter {
     #[inline]
+    #[io_fn]
     fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn Error>> {
         print!("{msg} ");
         let mut buffer = String::new();

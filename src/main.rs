@@ -2,6 +2,9 @@
 //! CSCSCA (Charles' Super Cool Sound Change Applier) is a tool for simulating phonentic sound change,
 //! applying written rules (see `README.md`) to an input.
 
+#[cfg(feature = "async_io")]
+compile_error! { "binary cannot be compiled with the feature flag `async_io`" }
+
 use std::{fs, fmt::Write as _};
 
 mod color;

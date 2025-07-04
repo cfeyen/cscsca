@@ -12,12 +12,15 @@ use crate::{
     phones::{build_phone_list, phone_list_to_string},
     rules::RuleLine,
     ScaError,
+    await_io,
+    io_fn
 };
 
 /// Builds all rules to a form that may be applied more easily
 /// 
 /// ## Errors
 /// Errors on invalid rules or failed io
+#[io_fn]
 pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
     let mut line_num = 0;
     let mut rule_lines = Vec::new();
@@ -31,7 +34,9 @@ pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<Ap
         line_num += 1;
 
         // builds the line and returns any errors
-        let rule_line = match build_line(line, line_num, &mut tokenization_data, getter) {
+        let rule_line = match await_io! {
+            build_line(line, line_num, &mut tokenization_data, getter)
+        } {
             Ok(rule_line) => rule_line,
             Err(e) => {
                 // signals to the getter that the rules are done being built
@@ -73,15 +78,18 @@ pub struct AppliableRules<'s> {
 impl AppliableRules<'_> {
     /// Applies all rules to the input using a runtime, errors are formatted as a string
     #[inline]
+    #[io_fn]
     pub fn apply<R: Runtime>(&self, input: &str, runtime: &mut R) -> String {
-        self.apply_fallible(input, runtime)
-            .unwrap_or_else(|e| e.to_string())
+        await_io! {
+            self.apply_fallible(input, runtime)
+        }.unwrap_or_else(|e| e.to_string())
     }
 
     /// Applies all rules to the input using a runtime
     /// 
     /// ## Errors
     /// Errors on invalid rules, application that takes too long, and failed io
+    #[io_fn]
     pub fn apply_fallible<R: Runtime>(&self, input: &str, runtime: &mut R) -> Result<String, ScaError> {
         let escaped_input = EscapedString::from(input);
         let mut phones = build_phone_list(escaped_input.as_escaped_str());
@@ -96,7 +104,9 @@ impl AppliableRules<'_> {
             let line = self.lines.get(line_num).copied().unwrap_or_default();
             line_num += 1;
 
-            if let Err(e) = runtime.apply_line(rule_line, &mut phones, line, line_num) {
+            if let Err(e) = await_io! {
+                runtime.apply_line(rule_line, &mut phones, line, line_num)
+            } {
                 // signals to the runtime that execution is complete
                 runtime.on_end();
                 return Err(e);

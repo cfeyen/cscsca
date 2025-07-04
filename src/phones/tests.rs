@@ -1,13 +1,15 @@
 use crate::{apply, escaped_strings::EscapedString, keywords::BOUND_CHAR};
+use crate::io_macros::{await_io, io_test};
 
 use super::*;
 
-#[test]
-fn shifting_bounds() {
-    assert_eq!(
-        apply("a #c", "\\# >> b"),
-        "a bc".to_string()
-    )
+io_test! {
+    fn shifting_bounds() {
+        assert_eq!(
+            await_io! { apply("a #c", "\\# >> b") },
+            "a bc".to_string()
+        )
+    }
 }
 
 #[test]
