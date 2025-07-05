@@ -1,21 +1,21 @@
 use crate::keywords::{GET_LINE_START, GET_AS_CODE_LINE_START};
 
-/// Non rule commands executed by the runtime
+/// Events that require IO executed by the `IoGetter` or `Runtime`
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Command<'s> {
-    RuntimeCommand(RuntimeCommand<'s>),
-    BuildtimeCommand(ComptimeCommand<'s>),
+pub enum IoEvent<'s> {
+    Runtime(RuntimeIoEvent<'s>),
+    Tokenizer(TokenizerIoEvent<'s>),
 }
 
-/// Non rule commands executed by the runtime durring tokenization
+/// IO event that is executed by the `Runtime` during execution
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RuntimeCommand<'s> {
+pub enum RuntimeIoEvent<'s> {
     Print { msg: &'s str },
 }
 
-/// Non rule commands executed by the runtime durring rule execution
+/// IO event that is executed by the `IoGetter` when building rules
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ComptimeCommand<'s> {
+pub enum TokenizerIoEvent<'s> {
     Get {
         get_type: GetType,
         var: &'s str,
@@ -23,9 +23,12 @@ pub enum ComptimeCommand<'s> {
     },
 }
 
+/// How input is interpreted
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GetType {
+    /// Input is an escaped phone list
     Phones,
+    /// Input is arbitrary code
     Code,
 }
 

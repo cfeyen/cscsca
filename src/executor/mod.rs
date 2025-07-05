@@ -1,7 +1,7 @@
 pub mod runtime;
 pub mod getter;
 pub mod appliable_rules;
-pub(crate) mod commands;
+pub(crate) mod io_events;
 
 #[cfg(test)]
 mod tests;
@@ -15,7 +15,7 @@ use crate::{
     await_io,
     io_fn,
 };
-use commands::Command;
+use io_events::IoEvent;
 use runtime::{Runtime, RuntimeApplier};
 use getter::{IoGetter, ComptimeCommandExecuter};
 
@@ -143,7 +143,7 @@ where
         .map_err(|e| ScaError::from_error(&e, line, line_num))?;
 
     match ir_line {
-        IrLine::Cmd(Command::BuildtimeCommand(cmd)) => {
+        IrLine::IoEvent(IoEvent::Tokenizer(cmd)) => {
             await_io! { getter.run_build_time_command(&cmd, tokenization_data, line, line_num) }?;
             Ok(RuleLine::Empty)
         },

@@ -10,7 +10,7 @@ use crate::{
     io_fn,
 };
 
-use super::commands::RuntimeCommand;
+use super::io_events::RuntimeIoEvent;
 
 pub(crate) const DEFAULT_LINE_APPLICATION_LIMIT: LineApplicationLimit = LineApplicationLimit::Attempts(10000);
 
@@ -32,7 +32,7 @@ impl Default for LineApplicationLimit {
     }
 }
 
-/// A trait that controls the runtime opperations of appying rules
+/// A trait that controls the runtime opperations of appying rules and IO
 pub trait Runtime {
     /// Prints a message
     /// 
@@ -70,7 +70,7 @@ pub(super) trait RuntimeApplier: Runtime {
     fn apply_line<'s>(&mut self, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'s>>, line: &str, line_num: usize) -> Result<(), ScaError> {
         match rule_line {
             RuleLine::Empty => Ok(()),
-            RuleLine::Cmd(cmd) => await_io! {
+            RuleLine::IoEvent(cmd) => await_io! {
                 self.execute_runtime_command(cmd, phones, line, line_num)
             },
             RuleLine::Rule(rule) => apply(rule, phones, self.line_application_limit())
@@ -80,9 +80,9 @@ pub(super) trait RuntimeApplier: Runtime {
 
     /// Executes a command at runtime
     #[io_fn]
-    fn execute_runtime_command(&mut self, cmd: &RuntimeCommand<'_>, phones: &[Phone<'_>], line: &str, line_num: usize) -> Result<(), ScaError> {
+    fn execute_runtime_command(&mut self, cmd: &RuntimeIoEvent<'_>, phones: &[Phone<'_>], line: &str, line_num: usize) -> Result<(), ScaError> {
         match cmd {
-            RuntimeCommand::Print { msg } => {
+            RuntimeIoEvent::Print { msg } => {
                 await_io! {
                     self.put_io(msg, phone_list_to_string(phones))
                 }.map_err(|e| ScaError::from_io_error(&*e, line, line_num))

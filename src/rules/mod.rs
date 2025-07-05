@@ -7,7 +7,7 @@ use tokens::{LabelType, RuleToken, ScopeId};
 use crate::{
     ir::{tokens::{Break, IrToken}, IrLine},
     keywords::AND_CHAR,
-    executor::commands::{Command, RuntimeCommand},
+    executor::io_events::{IoEvent, RuntimeIoEvent},
     tokens::{ScopeType, Shift}
 };
 
@@ -23,7 +23,7 @@ mod tests;
 #[derive(Debug, Clone)]
 pub enum RuleLine<'s> {
     Rule(SoundChangeRule<'s>),
-    Cmd(RuntimeCommand<'s>),
+    IoEvent(RuntimeIoEvent<'s>),
     Empty,
 }
 
@@ -41,8 +41,8 @@ struct DefaultScopeIds {
 /// Built time commands should be handled before this function is called
 pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
     let line = match line {
-        IrLine::Empty | IrLine::Cmd(Command::BuildtimeCommand(_)) => return Ok(RuleLine::Empty),
-        IrLine::Cmd(Command::RuntimeCommand(cmd)) => return Ok(RuleLine::Cmd(cmd)),
+        IrLine::Empty | IrLine::IoEvent(IoEvent::Tokenizer(_)) => return Ok(RuleLine::Empty),
+        IrLine::IoEvent(IoEvent::Runtime(cmd)) => return Ok(RuleLine::IoEvent(cmd)),
         IrLine::Ir(tokens) if tokens.is_empty() => return Ok(RuleLine::Empty),
         IrLine::Ir(tokens) => tokens
     };
@@ -320,9 +320,6 @@ fn any_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Opti
 }
 
 /// An error that occurs when converting ir tokens to rule tokens
-/// 
-/// Some of these errors are duplicates of `TokenStructureError`s
-/// that should be caught when the ir is checked
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum RuleStructureError<'s> {

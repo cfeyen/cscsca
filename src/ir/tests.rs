@@ -1,4 +1,4 @@
-use crate::{phones::Phone, executor::commands::RuntimeCommand};
+use crate::{phones::Phone, executor::io_events::RuntimeIoEvent};
 
 use super::*;
 
@@ -305,7 +305,7 @@ fn tokenize_input_with_contacting() {
 
 #[test]
 fn print_statement() {
-    assert_eq!(Ok(vec![IrLine::Cmd(Command::RuntimeCommand(RuntimeCommand::Print { msg: "test message" }))]), tokenize("PRINT test message"))
+    assert_eq!(Ok(vec![IrLine::IoEvent(IoEvent::Runtime(RuntimeIoEvent::Print { msg: "test message" }))]), tokenize("PRINT test message"))
 }
 
 #[test]

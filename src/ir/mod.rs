@@ -1,7 +1,7 @@
 use crate::{
     escaped_strings::check_escapes,
     keywords::{is_special_char, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX}, phones::Phone, rules::conditions::{AndType, CondType},
-    executor::commands::{Command, ComptimeCommand, GetType, RuntimeCommand},
+    executor::io_events::{IoEvent, TokenizerIoEvent, GetType, RuntimeIoEvent},
     sub_string::SubString,
     tokens::{Direction, ScopeType, Shift, ShiftType},
 };
@@ -22,13 +22,16 @@ mod tests;
 #[derive(Debug, Clone)]
 pub enum IrLine<'s> {
     Ir(Vec<IrToken<'s>>),
-    Cmd(Command<'s>),
+    IoEvent(IoEvent<'s>),
     Empty,
 }
 
 /// Converts source code into intermediate representation tokens
 pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mut TokenizationData<'s>) -> Result<IrLine<'s>, IrError<'s>> {
-    Ok(if let Some(definition_content) = line.strip_prefix(DEFINITION_LINE_START) {
+    Ok(if line.starts_with(COMMENT_LINE_START) {
+        // handles comments
+        IrLine::Empty
+    } else if let Some(definition_content) = line.strip_prefix(DEFINITION_LINE_START) {
         // handles definitions
         let ir = tokenize_line(definition_content, tokenization_data)?;
 
@@ -38,16 +41,13 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mu
         } else {
             return Err(IrError::EmptyDefinition);
         }
-    } else if line.starts_with(COMMENT_LINE_START) {
-        // handles comments
-        IrLine::Empty
     } else if let Some(args) = line.strip_prefix(PRINT_LINE_START) {
         // handles print statement
-        IrLine::Cmd(Command::RuntimeCommand(RuntimeCommand::Print { msg: args.trim() }))
+        IrLine::IoEvent(IoEvent::Runtime(RuntimeIoEvent::Print { msg: args.trim() }))
     } else if let Some(args) = line.strip_prefix(GET_AS_CODE_LINE_START) {
         // handles get as code
         if let Some((var, msg)) = args.trim().split_once(char::is_whitespace) {
-            IrLine::Cmd(Command::BuildtimeCommand(ComptimeCommand::Get {
+            IrLine::IoEvent(IoEvent::Tokenizer(TokenizerIoEvent::Get {
                 get_type: GetType::Code,
                 var,
                 msg: msg.trim(),
@@ -58,7 +58,7 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mu
     } else if let Some(args) = line.strip_prefix(GET_LINE_START) {
         // handles get
         if let Some((var, msg)) = args.trim().split_once(char::is_whitespace) {
-            IrLine::Cmd(Command::BuildtimeCommand(ComptimeCommand::Get {
+            IrLine::IoEvent(IoEvent::Tokenizer(TokenizerIoEvent::Get {
                 get_type: GetType::Phones,
                 var,
                 msg: msg.trim(),
