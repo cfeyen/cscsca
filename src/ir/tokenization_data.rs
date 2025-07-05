@@ -114,9 +114,9 @@ impl<'s> TokenizationData<'s> {
     /// ## Safety
     /// There should be no references remaining to any string in the sources buffer
     pub unsafe fn free_sources(self) {
-        self.sources.into_iter().for_each(|ptr| unsafe {
-            ptr.cast_mut().drop_in_place();
-        });
+        for ptr in self.sources {
+            unsafe { ptr.cast_mut().drop_in_place() };
+        }
     }
 
     /// Adds a source to the sources buffer so it can be freed later
