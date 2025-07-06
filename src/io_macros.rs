@@ -27,7 +27,7 @@ macro_rules! io_test {
     (fn $name:ident() $block:block) => {
         #[test]
         fn $name() {
-            _ = smol::block_on(async $block);
+            pollster::block_on(async $block);
         }
     };
 }
