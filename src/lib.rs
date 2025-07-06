@@ -104,12 +104,28 @@ impl Error for ScaError {}
 impl ScaError {
     /// Returns the number of the line on which the error occured
     #[must_use]
-    pub fn line_number(&self) -> usize {
+    #[inline]
+    pub fn error_message(&self) -> &str {
+        &self.err
+    }
+
+    /// Returns the number of the line on which the error occured
+    #[must_use]
+    #[inline]
+    pub const fn line_number(&self) -> usize {
         self.line_num
+    }
+
+    /// Returns the number of the line on which the error occured
+    #[must_use]
+    #[inline]
+    pub fn line(&self) -> &str {
+        &self.line
     }
 
     /// Returns `true` if the error was caused by getting or writing IO
     #[must_use]
+    #[inline]
     pub fn is_io_error(&self) -> bool {
         self.from_io
     }
