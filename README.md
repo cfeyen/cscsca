@@ -204,12 +204,6 @@ Add `--write` *write_file* or `-w` *write_file* before *text* to write the final
 
 Replace *text* `--read` *read_file* or `-r` *read_file* to read each line of *read_file* as an individual input text
 
-
-### cscsca gen vscode_grammar *path*
-(locked behind `gen_vscode_grammar` feature)
-
-Generates a VSCode syntax highlighting extension for `.sca`/`.cscsca` files in a directory at *path*
-
 ### cscsca chars *text*
 `á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
 
@@ -217,18 +211,17 @@ Generates a VSCode syntax highlighting extension for `.sca`/`.cscsca` files in a
 - `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
 - `async_io`: Allows for IO to be done through asyncronous functions instead of syncronous ones. Cannot be active when compiling CSCSCA to an executable 
 - `docs`: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
-- `gen_vscode_grammar`: adds the `gen vscode_grammar` CLI command and exposes the function used to do so in the crate
 
 ## Library API
 ### Fallible and Infallible Application
 There are both fallible and infallable variants of the crate's application functions. The fallible variants return a `Result<String, ScaError>` and the infallible variants format any errors into a `String` and do not distinguish between successful and failed application
 
-### IoGetters
+### `IoGetter`s
 Objects implementing the `IoGetter` trait allow you to control where and how input is fetched
 
 The provided `CliGetter` uses standard IO and trims the input
 
-### Runtimes
+### `Runtime`s
 Objects implementing the `Runtime` trait allow you to control some of CSCSCA's runtime behavior
 - Output: Allows you to control how printing works
 - Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time/attempts applying a rule can take. This limit may be set via runtimes
@@ -240,11 +233,11 @@ The provided `LogRuntime` logs output internally, refreshes the logs before star
 **Warning**:
 If a time limit is used, it does require a call to fetch system time. In the case of Web Assembly, this causes a panic.
 
-### LineByLineExecuter
+### `LineByLineExecuter`
 A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. You may then call the `apply` and `apply_fallible` methods to us the executer to build then execute each line one at a time
 
 **Note**:
 Building refers to converting the raw text input into rules that can be easily applied
 
-### AppliableRules
+### `AppliableRules`
 If building lines every time you apply a change is not ideal, you may use the function `build_rules` to convert the entire rule set to an appliable form. Then you can call the `apply` and `apply_fallible` methods to apply rules any number of times.
