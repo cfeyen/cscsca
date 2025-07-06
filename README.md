@@ -141,8 +141,8 @@ DEFINE intervocalic @V _ @V
 ```
 
 ### Special Characters
-- `*`: represents any non-boundary phone, may be proceeded by a label to agree in what phone is represented
-- `..`: a gap of zero or more non-boundary phones (**Notes**: must have a space on both sides, only allowed in conditions), may be proceeded by a label to limit gap length to less than or equal to the length of the first gap with the same label
+- `*`: represents any non-boundary phone. `*` may be proceeded by a label to agree in what phone is represented
+- `..`: a gap of zero or more non-boundary phones. (**Notes**: `..` must have a space on both sides and is only allowed in conditions). A gap may be proceeded by a label to limit gap length to less than or equal to the length of the first gap with the same label
 - `#`: a word boundary
 - `\`: escapes the effects of the following character
 

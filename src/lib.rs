@@ -1,6 +1,4 @@
-//! # CSCSCA
-//! CSCSCA (Charles' Super Cool Sound Change Applier) is a tool for simulating phonentic sound change,
-//! applying written rules (see `README.md`) to an input.
+#![doc = include_str!("../README.md")]
 
 use std::error::Error;
 
