@@ -23,11 +23,13 @@ pub trait IoGetter {
     /// Called before building a set of rules
     /// 
     /// Does nothing by default
+    #[inline]
     fn on_start(&mut self) {}
 
     /// Called once a set of rules is done being building
     /// 
     /// Does nothing by default
+    #[inline]
     fn on_end(&mut self) {}
 }
 

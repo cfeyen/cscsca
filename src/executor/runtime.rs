@@ -47,15 +47,20 @@ pub trait Runtime {
     /// Called before applying a set of rules
     /// 
     /// Does nothing by default
+    #[inline]
     fn on_start(&mut self) {}
 
     /// Called once applying a set of rules is complete
     /// 
     /// Does nothing by default
+    #[inline]
     fn on_end(&mut self) {}
 
     /// The maximum limit for applying changes to a line
-    fn line_application_limit(&self) -> LineApplicationLimit;
+    #[inline]
+    fn line_application_limit(&self) -> LineApplicationLimit {
+        DEFAULT_LINE_APPLICATION_LIMIT
+    }
 }
 
 /// An internal secondary trait that controls specifically how rules are applied
