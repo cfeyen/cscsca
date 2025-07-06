@@ -64,7 +64,7 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, tokenization_data: &mu
                 msg: msg.trim(),
             }))
         } else {
-            return Err(IrError::InvalidGetFormat(GetType::Code))
+            return Err(IrError::InvalidGetFormat(GetType::Phones))
         }
     } else {
         // handles rules
@@ -286,7 +286,7 @@ impl std::fmt::Display for IrError<'_> {
         match self {
             Self::EmptyPrefix(prefix) => write!(f, "Found prefix '{prefix}' without a following identifier"),
             Self::UndefinedDefinition(name) => write!(f, "Undefined definiton '{DEFINITION_PREFIX}{name}'"),
-            Self::UndefinedVariable(name) => write!(f, "Undefined definiton '{VARIABLE_PREFIX}{name}'"),
+            Self::UndefinedVariable(name) => write!(f, "Undefined variable '{VARIABLE_PREFIX}{name}'"),
             Self::EmptyDefinition => write!(f, "Found '{DEFINITION_LINE_START}' with out a following name"),
             Self::BadEscape(None) => write!(f, "Found '{ESCAPE_CHAR}' with no following character"),
             Self::BadEscape(Some(c)) => write!(f, "Escaped normal character '{c}' ({ESCAPE_CHAR}{c})"),
