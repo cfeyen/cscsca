@@ -73,7 +73,7 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
 
     /// Applies the rules to the input
     /// 
-    /// ## Errors
+    /// # Errors
     /// Errors on invalid rules, application that takes too long, and failed io
     #[io_fn]
     pub fn apply_fallible(&mut self, input: &str, rules: &str) -> Result<String, ScaError> {

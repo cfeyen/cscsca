@@ -12,10 +12,10 @@ use super::io_events::{TokenizerIoEvent, GetType};
 pub trait IoGetter {
     /// Gets input
     /// 
-    /// ## Errors
+    /// # Errors
     /// Should only error on failed io
     /// 
-    /// ## Note:
+    /// # Note:
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
     fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn Error>>;
@@ -38,7 +38,7 @@ pub trait IoGetter {
 /// 
 /// Is implemented on all implementers of `IoGetter`
 /// 
-/// ## Note
+/// # Note
 /// Default methods should not be overridden
 pub(super) trait ComptimeCommandExecuter: IoGetter {
     /// Runs a command at build time

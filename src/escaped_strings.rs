@@ -12,7 +12,7 @@ impl EscapedString {
 
     /// Leaks into an aribitrary-lifetime `EscapedStr`
     /// 
-    /// ## Warning
+    /// # Warning
     /// If the `EscapedStr` is dropped a memory leak may occur
     pub fn leak<'a>(self) -> EscapedStr<'a> {
         EscapedStr(self.0.leak())

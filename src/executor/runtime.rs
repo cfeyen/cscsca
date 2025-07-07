@@ -18,8 +18,6 @@ pub(crate) const DEFAULT_LINE_APPLICATION_LIMIT: LineApplicationLimit = LineAppl
 /// prevents infinite loops from being infinite
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LineApplicationLimit {
-    /// No limit on line application, allows infinite loops
-    Unlimited,
     /// Maximum time allotted for line application
     Time(Duration),
     /// Maximum times an application attempt may be made by a line
@@ -36,10 +34,10 @@ impl Default for LineApplicationLimit {
 pub trait Runtime {
     /// Prints a message
     /// 
-    /// ## Errors
+    /// # Errors
     /// Should only error on failed io
     /// 
-    /// ## Note:
+    /// # Note:
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>>;
@@ -58,8 +56,8 @@ pub trait Runtime {
 
     /// The maximum limit for applying changes to a line
     #[inline]
-    fn line_application_limit(&self) -> LineApplicationLimit {
-        DEFAULT_LINE_APPLICATION_LIMIT
+    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
+        Some(DEFAULT_LINE_APPLICATION_LIMIT)
     }
 }
 
@@ -67,7 +65,7 @@ pub trait Runtime {
 /// 
 /// Is implemented on all implementers of `Runtime`
 /// 
-/// ## Note
+/// # Note
 /// Default methods should not be overridden
 pub(super) trait RuntimeApplier: Runtime {
     /// Applies changes for a single `RuleLine`
@@ -99,23 +97,23 @@ pub(super) trait RuntimeApplier: Runtime {
 impl<T: Runtime> RuntimeApplier for T {}
 
 /// A basic `Runtime` that prints to standard output
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct CliRuntime {
-    line_application_limit: LineApplicationLimit,
+    line_application_limit: Option<LineApplicationLimit>,
 }
 
 impl CliRuntime {
     /// Creates a new `CliRuntime`
     #[inline]
     #[must_use]
-    pub const fn new(line_application_limit: LineApplicationLimit) -> Self {
+    pub const fn new(line_application_limit: Option<LineApplicationLimit>) -> Self {
         Self { line_application_limit }
     }
 }
 
 impl Runtime for CliRuntime {
     #[inline]
-    fn line_application_limit(&self) -> LineApplicationLimit {
+    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
         self.line_application_limit
     }
 
@@ -127,20 +125,28 @@ impl Runtime for CliRuntime {
     }
 }
 
+impl Default for CliRuntime {
+    fn default() -> Self {
+        Self {
+            line_application_limit: Some(DEFAULT_LINE_APPLICATION_LIMIT),
+        }
+    }
+}
+
 /// A basic `Runtime` that logs outputs to itself
 /// 
 /// Clears its logs before starting to apply a new set of rules
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LogRuntime {
     logs: Vec<(String, String)>,
-    line_application_limit: LineApplicationLimit,
+    line_application_limit: Option<LineApplicationLimit>,
 }
 
 impl LogRuntime {
     /// Creates a new `LogRuntime`
     #[inline]
     #[must_use]
-    pub const fn new(line_application_limit: LineApplicationLimit) -> Self {
+    pub const fn new(line_application_limit: Option<LineApplicationLimit>) -> Self {
         Self {
             logs: Vec::new(),
             line_application_limit,
@@ -178,8 +184,17 @@ impl Runtime for LogRuntime {
     }
 
     #[inline]
-    fn line_application_limit(&self) -> LineApplicationLimit {
+    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
         self.line_application_limit
+    }
+}
+
+impl Default for LogRuntime {
+    fn default() -> Self {
+        Self {
+            logs: Vec::default(),
+            line_application_limit: Some(DEFAULT_LINE_APPLICATION_LIMIT),
+        }
     }
 }
 
@@ -204,7 +219,7 @@ impl LogAndPrintRuntime {
 
 impl Runtime for LogAndPrintRuntime {
     #[inline]
-    fn line_application_limit(&self) -> LineApplicationLimit {
+    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
         self.0.line_application_limit()
     }
 

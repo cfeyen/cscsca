@@ -48,7 +48,7 @@ mod tests;
 /// 
 /// Returns a string of either the final text or a formatted error
 /// 
-/// ## Note:
+/// # Note:
 /// IO is done through the standard io
 #[inline]
 #[must_use]
@@ -61,10 +61,10 @@ pub fn apply(input: &str, rules: &str) -> String {
 
 /// Applies sca source code to an input string
 /// 
-/// ## Errors
+/// # Errors
 /// Errors on invalid rules, application that takes too long, and failed io
 /// 
-/// ## Note:
+/// # Note:
 /// IO is done through the standard io
 #[inline]
 #[io_fn]

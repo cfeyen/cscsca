@@ -14,7 +14,7 @@ use super::{tokens::IrToken, tokenize_line, IrError};
 /// - definitions
 /// - variables
 /// 
-/// ## Warning
+/// # Warning
 /// If variable io is used and `free_sources` is never called on this struct,
 /// a memory leak will occur
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -55,7 +55,7 @@ impl<'s> TokenizationData<'s> {
     /// Tokenizes the source and leaks it to the static scope,
     /// then assigns the tokens to the given name
     /// 
-    /// ## Warning
+    /// # Warning
     /// If `free_sources` is never called on this struct, the input will be leaked forever
     pub fn set_variable_as_ir(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
         let source = self.add_source_string(source);
@@ -69,7 +69,7 @@ impl<'s> TokenizationData<'s> {
     /// Escapes the source then leaks it to the static scope,
     /// then assigns the it as a list of phones to the name
     /// 
-    /// ## Warning
+    /// # Warning
     /// If `free_sources` is never called on this struct, the input will be leaked forever
     pub fn set_variable(&mut self, name: &'s str, source: &str) {
         let source = self.add_source_escaped(EscapedString::from(source));
@@ -82,7 +82,7 @@ impl<'s> TokenizationData<'s> {
 
     /// Leaks a source and adds it to the sources buffer
     /// 
-    /// ## Warning
+    /// # Warning
     /// If `free_sources` is never called on this struct, the source will be leaked forever
     fn add_source_string<'a>(&mut self, mut source: String) -> &'a str {
         // leaking and moving the source to the sources buffer allows variable to be redefined
@@ -96,7 +96,7 @@ impl<'s> TokenizationData<'s> {
 
     /// Leaks a source and adds it to the sources buffer
     /// 
-    /// ## Warning
+    /// # Warning
     /// If `free_sources` is never called on this struct, the source will be leaked forever
     fn add_source_escaped<'a>(&mut self, mut source: EscapedString) -> EscapedStr<'a> {
         // leaking and moving the source to the sources buffer allows variable to be redefined
@@ -111,7 +111,7 @@ impl<'s> TokenizationData<'s> {
 
     /// Frees all variable sources and consumes the struct
     /// 
-    /// ## Safety
+    /// # Safety
     /// There should be no references remaining to any string in the sources buffer
     pub unsafe fn free_sources(self) {
         for ptr in self.sources {

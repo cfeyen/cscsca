@@ -6,7 +6,7 @@ use super::*;
 /// 
 /// If there is an error it is returned with the number of the line it occured on
 /// 
-/// ## Warning
+/// # Warning
 /// Any io fetched during application will be leaked to the static scope
 #[cfg(test)]
 fn tokenize(source: &str) -> Result<Vec<IrLine<'_>>, (IrError<'_>, usize)> {

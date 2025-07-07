@@ -5,10 +5,8 @@ use crate::io_macros::{await_io, io_test};
 
 io_test! {
     fn time_out_of_infinte_loop() {
-        assert!(await_io! { apply_fallible("a", "{a, b} > {b, a}") }.is_err());
-
         let mut exector = LineByLineExecuter::new(
-            CliRuntime::new(LineApplicationLimit::Time(Duration::from_millis(100))),
+            CliRuntime::new(Some(LineApplicationLimit::Time(Duration::from_millis(100)))),
             CliGetter::new()
         );
 

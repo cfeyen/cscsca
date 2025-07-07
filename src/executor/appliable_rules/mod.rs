@@ -18,7 +18,7 @@ use crate::{
 
 /// Builds all rules to a form that may be applied more easily
 /// 
-/// ## Errors
+/// # Errors
 /// Errors on invalid rules or failed io
 #[io_fn]
 pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
@@ -87,7 +87,7 @@ impl AppliableRules<'_> {
 
     /// Applies all rules to the input using a runtime
     /// 
-    /// ## Errors
+    /// # Errors
     /// Errors on invalid rules, application that takes too long, and failed io
     #[io_fn]
     pub fn apply_fallible<R: Runtime>(&self, input: &str, runtime: &mut R) -> Result<String, ScaError> {

@@ -23,12 +23,11 @@ pub (crate) enum LimitCondition {
     },
 }
 
-impl From<LineApplicationLimit> for Option<LimitCondition> {
+impl From<LineApplicationLimit> for LimitCondition {
     fn from(val: LineApplicationLimit) -> Self {
         match val {
-            LineApplicationLimit::Unlimited => None,
-            LineApplicationLimit::Time(time) => Some(LimitCondition::Time(Instant::now() + time)),
-            LineApplicationLimit::Attempts(max) => Some(LimitCondition::Count { attempts: 0, max }),
+            LineApplicationLimit::Time(time) => LimitCondition::Time(Instant::now() + time),
+            LineApplicationLimit::Attempts(max) => LimitCondition::Count { attempts: 0, max },
         }
     }
 }
@@ -49,10 +48,10 @@ impl LimitCondition {
 }
 
 /// Applies a rule to a list of phones within a time limit
-pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, limit: LineApplicationLimit) -> Result<(), ApplicationError<'r, 's>> {
+pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, limit: Option<LineApplicationLimit>) -> Result<(), ApplicationError<'r, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
-    let mut limit_condition: Option<LimitCondition> = limit.into();
+    let mut limit_condition: Option<LimitCondition> = limit.map(|limit| limit.into());
     
     while phone_index < phones.len() {
         if let Some((replace_len, input_len)) = apply_at(rule, phones, phone_index)? {

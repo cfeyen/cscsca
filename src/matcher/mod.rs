@@ -81,7 +81,7 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
 
     /// Checks if the token enviroment matches the phones
     /// 
-    /// ## Side Effects
+    /// # Side Effects
     /// - may mutate the `token_index` and/or `phone_index` fields
     /// - may mutate `choices`
     pub fn tokens_match_phones<'c>(&mut self, choices: &mut Choices<'c, 'r, 's>) -> Result<bool, MatchError<'r, 's>> {

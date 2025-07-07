@@ -37,7 +37,7 @@ struct DefaultScopeIds {
 
 /// Builds a sound change rule out of a line of ir tokens
 /// 
-/// ## Warning:
+/// # Warning:
 /// Built time commands should be handled before this function is called
 pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
     let line = match line {
