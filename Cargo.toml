@@ -41,3 +41,5 @@ cscsca_macros = { path = "cscsca_macros" }
 # This project uses "pollster" (Copyright (c) 2020-2021 Joshua Barretto), licensed under the MIT License.
 # Available at https://https://github.com/zesterer/pollster.
 pollster = "0.4.0"
+
+[build-dependencies]
