@@ -12,14 +12,14 @@ const WRITING_RULES_PLACEHOLDER: &str = "[Writing Rules]";
 
 /// Builds the final `README.md` file from components in the docs folder
 fn create_readme() -> io::Result<()> {
-    let frame = include_str!("docs/README_frame.md");
+    let template = include_str!("docs/README_template.md");
     let writing_rules = include_str!("docs/writing_rules.md");
 
-    let readme = frame.replace(WRITING_RULES_PLACEHOLDER, writing_rules);
-
-    if &readme == frame {
+    if !template.contains(WRITING_RULES_PLACEHOLDER) {
         panic!("Could not find '{WRITING_RULES_PLACEHOLDER}' in the template file");
     }
+
+    let readme = template.replace(WRITING_RULES_PLACEHOLDER, writing_rules);
 
     fs::write("README.md", readme)
 }
