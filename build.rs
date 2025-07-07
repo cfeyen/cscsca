@@ -15,9 +15,10 @@ fn create_readme() -> io::Result<()> {
     let template = include_str!("docs/README_template.md");
     let writing_rules = include_str!("docs/writing_rules.md");
 
-    if !template.contains(WRITING_RULES_PLACEHOLDER) {
-        panic!("Could not find '{WRITING_RULES_PLACEHOLDER}' in the template file");
-    }
+    assert!(
+        template.contains(WRITING_RULES_PLACEHOLDER),
+        "Could not find '{WRITING_RULES_PLACEHOLDER}' in the template file"
+    );
 
     let readme = template.replace(WRITING_RULES_PLACEHOLDER, writing_rules);
 
