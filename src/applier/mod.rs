@@ -51,7 +51,7 @@ impl LimitCondition {
 pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, limit: Option<LineApplicationLimit>) -> Result<(), ApplicationError<'r, 's>> {
     let dir = rule.kind.dir;
     let mut phone_index = dir.start_index(phones);
-    let mut limit_condition: Option<LimitCondition> = limit.map(|limit| limit.into());
+    let mut limit_condition: Option<LimitCondition> = limit.map(Into::into);
     
     while phone_index < phones.len() {
         if let Some((replace_len, input_len)) = apply_at(rule, phones, phone_index)? {

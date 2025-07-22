@@ -26,8 +26,11 @@ const FILE_EXTENTION: &str = ".sca";
 /// See `README.md` for more information
 fn main() {
     match CliCommand::from_args() {
-        Ok(CliCommand::Apply { paths, output_data, input })
-            => run_apply(&paths, &output_data, input),
+        Ok(CliCommand::Apply { paths, output_data, input }) => {
+            if let Err(e) = run_apply(&paths, &output_data, input) {
+                println!("{e}");
+            }
+        },
         Ok(CliCommand::Chars { words }) => for text in words {
             print_chars(&text);
         },
@@ -35,14 +38,14 @@ fn main() {
             let path = path + FILE_EXTENTION;
 
             if std::path::Path::new(&path).exists() {
-                error(&format!("{BLUE}{path}{RESET} already exisits"));
+                println!("{RED}Error: {BLUE}{path}{RESET} already exisits");
             } else if fs::write(&path, if use_template { template() } else { "" }).is_err() {
-                error(&format!("An error occured when writing to {BLUE}{path}{RESET}"));
+                println!("{RED}Error: {RESET}An error occured when writing to {BLUE}{path}{RESET}");
             }
         },
         Ok(CliCommand::Help { extra_args }) => {
             if extra_args {
-                warn(&format!("arguments beyond '{BOLD}{HELP_CMD}{RESET}' do nothing"));
+                println!("{YELLOW} Warning: {RESET}Arguments beyond '{BOLD}{HELP_CMD}{RESET}' do nothing");
             }
             help();
         },
@@ -50,37 +53,60 @@ fn main() {
             println!("Charles' Super Cool Sound Change Applier");
             println!("Run '{BOLD}cscsca help{RESET}' for more information");
         },
-        Err(e) => error(&e.to_string()),
+        Err(e) => println!("{RED}Error: {RESET}{e}"),
+    }
+}
+
+/// An error in the cli wrapper around sound change application
+#[derive(Debug)]
+enum CliError {
+    CouldNotWrite(String),
+    NoFile(String),
+    NoInput,
+}
+
+impl std::error::Error for CliError {}
+
+impl std::fmt::Display for CliError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{RED}Error: {RESET}")?;
+
+        match self {
+            Self::CouldNotWrite(path) => write!(f, "Could not write to file: '{BLUE}{path}{RESET}'"),
+            Self::NoInput => write!(f, "No input phones or source provided"),
+            Self::NoFile(path) => write!(f, "Could not find file: '{BLUE}{path}{RESET}'"),
+        }
     }
 }
 
 /// Applies changes to every input from CLI data
-fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) {
+fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) -> Result<(), CliError> {
     let input = match input_type {
-        InputType::Raw(raw) if raw.is_empty() => return error("No input provided"),
+        InputType::Raw(raw) if raw.is_empty() => return Err(CliError::NoInput),
         InputType::Raw(raw) => raw,
-        InputType::Read(path) if path.is_empty() => return error("No input provided"),
+        InputType::Read(path) if path.is_empty() => return Err(CliError::NoInput),
         InputType::Read(path) => match fs::read_to_string(&path) {
             Ok(s) => s,
-            Err(_) => return error(&format!("An error occured when reading the input from {BLUE}{path}{RESET}")),
+            Err(_) => return Err(CliError::NoFile(path)),
         },
     };
 
     let mut full_output = String::new();
     let build = input.contains('\n');
 
-    let Ok(rule_sets) = paths.iter()
-        .map(fs::read_to_string)
-        .collect::<Result<Vec<_>, _>>() else {
-            return error("Could not find file '{BLUE}{path}{RESET}'");
-        };
+    let rule_sets = paths.iter()
+        .map(|path| fs::read_to_string(path).map_err(|_| CliError::NoFile(path.clone())))
+        .collect::<Result<Vec<_>, _>>()?;
 
     if build {
         let appliable_rule_sets = match rule_sets.iter()
             .map(|rule_set| cscsca::build_rules(rule_set, &mut cscsca::CliGetter))
             .collect::<Result<Vec<_>, _>>() {
                 Ok(rules) => rules,
-                Err(e) => return println!("{e}"),
+                Err(e) => {
+                    println!("{e}");
+                    return Ok(());
+                },
             };
 
         for input in input.lines() {
@@ -103,7 +129,10 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
                 full_output += &output;
                 println!("{output}");
             },
-            Err(e) => return println!("{e}"),
+            Err(e) => {
+                println!("{e}");
+                return Ok(());
+            },
         }
 
         full_output.push('\n');
@@ -112,7 +141,9 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     if let Some(path) = output_data.write_path()
         && fs::write(path, full_output).is_err()
     {
-        error(&format!("An error occured when writing the output to {BLUE}{path}{RESET}"));
+        Err(CliError::CouldNotWrite(path.to_string()))
+    } else {
+        Ok(())
     }
 }
 
@@ -206,16 +237,6 @@ fn print_chars(text: &str) {
     for (i, c) in text.chars().enumerate().map(|(i, c)| (i + 1, c)) {
         println!("{i}:\t{c} ~ '{YELLOW}{}{RESET}'", c.escape_default());
     }
-}
-
-/// Prints an error
-fn error(e: &str) {
-    println!("{RED}Error:{RESET} {e}");
-}
-
-/// Prints a warning
-fn warn(w: &str) {
-    println!("{YELLOW}Warning:{RESET} {w}");
 }
 
 /// prints the README fule
