@@ -1,16 +1,16 @@
 [package]
 name = "cscsca_macros"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [lib]
 proc-macro = true
 
 [features]
-async_io = []
+async_io = ["dep:proc-macro2", "dep:quote", "dep:syn"]
 
 [dependencies]
-proc-macro2 = "1.0.95"
-quote = "1.0.40"
-syn = "2.0.104"
+proc-macro2 = { version = "1.0.95", optional = true }
+quote = { version = "1.0.40", optional = true }
+syn = { version = "2.0.104", optional = true }
 
