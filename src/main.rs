@@ -81,6 +81,7 @@ impl std::fmt::Display for CliError {
 
 /// Applies changes to every input from CLI data
 fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) -> Result<(), CliError> {
+    // gets the initial input
     let input = match input_type {
         InputType::Raw(raw) if raw.is_empty() => return Err(CliError::NoInput),
         InputType::Raw(raw) => raw,
@@ -92,13 +93,16 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     };
 
     let mut full_output = String::new();
+    // determines if rules should be pre-built or line-by-line interpretation
     let build = input.contains('\n');
 
+    // gets each rule set in the chain
     let rule_sets = paths.iter()
         .map(|path| fs::read_to_string(path).map_err(|_| CliError::NoFile(path.clone())))
         .collect::<Result<Vec<_>, _>>()?;
 
     if build {
+        // build each rule set into an appliable form
         let appliable_rule_sets = match rule_sets.iter()
             .map(|rule_set| cscsca::build_rules(rule_set, &mut cscsca::CliGetter))
             .collect::<Result<Vec<_>, _>>() {
@@ -109,6 +113,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
                 },
             };
 
+        // applies each rule set in the rules chain to each line of the input
         for input in input.lines() {
             let line_output = apply_rule_sets(paths, output_data.map_data(), &appliable_rule_sets, input.to_string())
                 .unwrap_or_else(|e| {
@@ -120,12 +125,15 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
                     format!("{input}: {error}")
             });
 
+            // records the output
             println!("{line_output}");
             _ = writeln!(full_output, "{line_output}");
         }
     } else {
+        // applies each rule set in the chain to the input
         match apply_changes(paths, output_data.map_data(), &rule_sets, input) {
             Ok(output) => {
+                // records the output
                 full_output += &output;
                 println!("{output}");
             },
@@ -138,6 +146,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
         full_output.push('\n');
     }
 
+    // writes output to the output file if it exists
     if let Some(path) = output_data.write_path()
         && fs::write(path, full_output).is_err()
     {
@@ -155,6 +164,7 @@ fn apply_rule_sets(paths: &[String], map_data: Option<&MapData>, rule_sets: &[cs
 
     let mut runtime = cscsca::LogAndPrintRuntime::default();
 
+    // applies each rule set
     for (i, rule_set) in rule_sets.iter().enumerate() {
         println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{last_output}{GREEN}'{RESET}", &paths[i]);
 
@@ -164,6 +174,7 @@ fn apply_rule_sets(paths: &[String], map_data: Option<&MapData>, rule_sets: &[cs
             extend_mapping(map_data.map_type(), &set_output, &mut mapping, &mut runtime);
         }
 
+        // records output
         last_output = set_output;
     }
 
@@ -180,6 +191,7 @@ fn apply_changes(paths: &[String], map_data: Option<&MapData>, rule_sets: &[Stri
     let getter = cscsca::CliGetter;
     let mut executor = cscsca::LineByLineExecuter::new(runtime, getter);
 
+    // applies each rule set
     for (i, rule_set) in rule_sets.iter().enumerate() {
         println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{last_output}{GREEN}'{RESET}", &paths[i]);
 
@@ -189,6 +201,7 @@ fn apply_changes(paths: &[String], map_data: Option<&MapData>, rule_sets: &[Stri
             extend_mapping(map_data.map_type(), &set_output, &mut mapping, executor.runtime_mut());
         }
 
+        // records output
         last_output = set_output;
     }
 
@@ -217,7 +230,7 @@ fn new_mapping(map_type: Option<MapType>, input: &str) -> Vec<String> {
     }
 }
 
-/// Extends the mapping based on type and outputs
+/// Extends the mapping based on logs and rule set output
 fn extend_mapping(map_type: MapType, output: &str, mapping: &mut Vec<String>, runtime: &mut cscsca::LogAndPrintRuntime) {
     if matches!(map_type, MapType::Logs | MapType::FinalAndLogs) {
         for (_msg, phones) in runtime.flush_logs() {
