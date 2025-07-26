@@ -136,6 +136,8 @@ impl ScaError {
         }
     }
 
+    /// Builds a new `ScaError` from an error caused by io,
+    /// with the line and line number it occurred on
     fn from_io_error<E: Error + ?Sized>(e: &E, line: &str, line_num: usize) -> Self {
         Self {
             err: e.to_string(),
