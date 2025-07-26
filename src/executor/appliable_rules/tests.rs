@@ -47,3 +47,19 @@ io_test! {
         assert!(result.is_err_and(|e| e.line == rules && e.line_num == 1));
     }
 }
+
+io_test! {
+    fn extend_rules() {
+        let rules_1 = "a >> bc";
+        let rules_2 = "bc >> d";
+
+        let mut rules = await_io! { build_rules(rules_1, &mut CliGetter) }.expect("Rules should be valid");
+        let rules_extension = await_io! { build_rules(rules_2, &mut CliGetter) }.expect("Rules should be valid");
+        
+        rules.extend(rules_extension);
+
+        let output = await_io! { rules.apply_fallible("a bc", &mut CliRuntime::default()) }.expect("Rules should be valid");
+
+        assert_eq!(&output, "d bc");
+    }
+}

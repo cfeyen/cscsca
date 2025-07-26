@@ -71,7 +71,9 @@ pub struct AppliableRules<'s> {
     lines: Vec<&'s str>,
     /// The built rules
     rules: Vec<RuleLine<'s>>,
-    /// Pointers to input (freed when dropped)
+    /// Pointers to input (freed on drop)
+    ///
+    /// Should not be cloned or leaked to other owners
     sources: Vec<*const str>,
 }
 
@@ -117,6 +119,14 @@ impl AppliableRules<'_> {
         runtime.on_end();
 
         Ok(phone_list_to_string(&phones))
+    }
+
+    /// Extends a rule set with rules from another
+    pub fn extend(&mut self, mut other: Self) {
+        self.rules.append(&mut other.rules);
+        self.lines.append(&mut other.lines);
+        // input sources are moved to `self` so it is safe to drop `other`
+        self.sources.append(&mut other.sources);
     }
 }
 
