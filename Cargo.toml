@@ -8,6 +8,7 @@ keywords = ["linguistics", "conlang"]
 license = "MIT"
 categories = ["command-line-utilities", "simulation"]
 description = "Charles' Super Cool Sound Change Applier - A tool for simulating phonetic evolution"
+repository = "https://github.com/cfeyen/cscsca"
 
 [lints.clippy]
 non_minimal_cfg = { level = "allow", priority = -1 }

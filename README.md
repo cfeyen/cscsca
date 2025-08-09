@@ -10,7 +10,7 @@ A sound change applier based on linguistic sound change notation.
 - Automatic and manual matching for lists of phones
 - Gaps of arbitrary phones in conditions (useful for harmony)
 - Can get information to use in conditions at runtime (variables)
-- Reasonably minimalist and simple but also highly expressive and versatile
+- Reasonably minimalist and simple, but also highly expressive and versatile
 - Usable as a crate that can be adapted to fit many mediums beyond CLI
 
 ## Drawbacks
@@ -28,7 +28,8 @@ Examples: `a` `ts` `á` `litteraly_a_phone`
 - to convert an input `ts` (phones `t`, `s`) to the phone `ts` use the rule ```t s >> ts```
 
 ### Shifts
-A shift tells CSCSCA how changes are to applied and seperates inputs from outputs
+
+A shift tells CSCSCA how changes are to be applied and separates inputs from outputs
 - **`>>`**: Left to right
 - **`<<`**: Right to left
 - **`>`**: Left to right, attempts to reapply the rule to the output of the last successful change
@@ -59,7 +60,7 @@ h >>
 Scopes are a way to dynamically determine which phone, group of phones, or lack thereof exists in a rule.
 There are two types of scopes
 - optional **`(`**...**`)`**: a phone or group of phones that is optional
-- selection **`{`**...**`,`**...**`}`**: a list of comma-seperated phones or group of phones that selects one phone or group of phones in that list
+- selection **`{`**...**`,`**...**`}`**: a list of comma-separated phones or a group of phones that selects one phone or group of phones in that list
 
 Examples:
 ```cscsca
@@ -74,9 +75,9 @@ l (j) >> j
 ```
 
 ### Labels
-As seen in the example above, corresponding scopes in the input and output try to agree in what they choose. However, there are times when we want this behavior to be different than the default or expanded to conditions
+As seen in the example above, corresponding scopes in the input and output try to agree on what they choose. However, there are times when we want this behavior to be different than the default or expanded to conditions
 
-To force scopes to agree in what they choose, we can use labels. A label has a name that starts with **`$`** and proceeds a scope
+To force scopes to agree on what they choose, we can use labels. A label has a name that starts with **`$`** and precedes a scope
 
 Examples:
 ```cscsca
@@ -94,9 +95,10 @@ A condition starts with a **`/`** and comes in two flavors: **pattern** and **eq
 | **Pattern** | *`before`* **`_`** *`after`* | checks if the rule's input is proceeded by *`before`* and followed by *`after`* |
 | **Equality** | *`left`* **`=`** *`right`* | checks if the tokens in *`right`* match the phones in *`left`* (most useful with variables) |
 
-A rule executes if any condition matches, to make a rule execute only if two sub-conditions apply replace the **`/`** at the start of the second with **`&`**
+A rule executes if any condition matches. To make a rule execute only if two sub-conditions apply, replace the **`/`** at the start of the second with **`&`**
 
-If **`&!`** is used instead of **`&`**, the proceeding sub-condition must succeed and all sub-conditions up until the next **`/`** must fail for the overarching condition to succeed
+If **`&!`** is used instead of **`&`**, the preceding sub-condition must succeed and all sub-conditions up until the next **`/`** must fail for the overarching condition to succeed
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 
 Anti-Conditions (conditions that stop rules from applying) are the same as conditions, but start with **`//`** or **`/!`**, and should be placed after all conditions
 
@@ -122,7 +124,7 @@ GET %dialect Enter dialect:
 Oftentimes, we want to group phones by attributes, while CSCSCA does not have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code
 
 To define a *Definition* type **`DEFINE`** at the start of a line, followed by the name, then its contents.
-To access the contents later type the name prefixed with **`@`**
+To access the contents later, type the name prefixed with **`@`**
 
 **Note**: *Definition*s are not limited to lists of phones, they may contain any arbitrary code
 
@@ -141,8 +143,9 @@ DEFINE intervocalic @V _ @V
 ```
 
 ### Special Characters
-- **`*`**: represents any non-boundary phone. **`*`** may be proceeded by a label to agree in what phone is represented
-- **`..`**: a gap of zero or more non-boundary phones. (**Notes**: **`..`** must have a space on both sides and is only allowed in conditions). A gap may be proceeded by a label to limit gap length to less than or equal to the length of the first gap with the same label
+- **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
+- **`..`**: a gap of zero or more non-boundary phones. (**Notes**: **`..`** must have a space on both sides and is only allowed in conditions). A gap may be preceded by a label to limit gap length to less than or equal to the length of the first gap with the same label
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 - **`#`**: a word boundary
 - **`\`**: escapes the effects of the following character
 
@@ -153,11 +156,12 @@ Characters that do nothing, but need to be escaped
 - **`]`**
 
 ### IO and Variables
-To print the current phonetic form, type **`PRINT`** at the start of a line followed by the message you would like to print with it
+To print the current phonetic form, type **`PRINT`** at the start of a line, followed by the message you would like to print with it
 
 To get input at runtime, type **`GET`** *`variable_name`* *message* where *message* is what you want to display to prompt input. To access the input later prefix *`variable_name`* with **`%`**
 
-**Note**: here the content of *`variable_name`* will be a list phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
+**Note**: here the content of *`variable_name`* will be a list of phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 
 You may replace **`GET`** with **`GET_AS_CODE`** to interpret the variable contents as code instead of phones
 
@@ -195,7 +199,7 @@ After *`file`*, you may add a series of **`--chain`** *`file`* or **`-c`** *`fil
 Add one of the following map flags:
 - `--map_outputs` or `-o` to write each output with its input and all intermediate steps between files
 - `--map_prints` or `-p` to write each print output
-- `--map_all` or `-m` to write each output with its input and all intermediate steps including prints
+- `--map_all` or `-m` to write each output with its input and all intermediate steps, including prints
 
 Add **`--reduce`** or **`-x`** to remove consecutive dupicates in the output chain
 
@@ -208,12 +212,12 @@ Add **`--write`** *`write_file`* or **`-w`** *`write_file`* before *`text`* to w
 Replace *`text`* with **`--read`** *`read_file`* or **`-r`** *`read_file`* to read each line of *`read_file`* as an individual input text
 
 ### cscsca chars *text*
-`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
+`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text*, separating combining characters
 
 ## Crate Features
-- `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
-- `async_io`: Allows for IO to be done through asyncronous functions instead of syncronous ones. Cannot be active when compiling CSCSCA to an executable 
-- `docs`: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
+- `ansi`: Adds ANSI color codes to IO. Ideal for CLI environments.
+- `async_io`: Allows for IO to be done through asynchronous functions instead of synchronous ones. Cannot be active when compiling CSCSCA to an executable 
+- `docs`: Adds the function `cscsca::docs` that returns everything under the heading `Writing Sound Change Rules With CSCSCA` in this file
 
 ## Library API
 ### Fallible and Infallible Application
