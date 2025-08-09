@@ -8,7 +8,11 @@ Examples: `a` `ts` `á` `litteraly_a_phone`
 - to convert an input `ts` (phones `t`, `s`) to the phone `ts` use the rule ```t s >> ts```
 
 ### Shifts
+<<<<<<< HEAD
 A shift tells CSCSCA how changes are to be applied and separates inputs from outputs
+=======
+A shift tells CSCSCA how changes are to applied and seperates inputs from outputs
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 - **`>>`**: Left to right
 - **`<<`**: Right to left
 - **`>`**: Left to right, attempts to reapply the rule to the output of the last successful change
@@ -39,7 +43,11 @@ h >>
 Scopes are a way to dynamically determine which phone, group of phones, or lack thereof exists in a rule.
 There are two types of scopes
 - optional **`(`**...**`)`**: a phone or group of phones that is optional
+<<<<<<< HEAD
 - selection **`{`**...**`,`**...**`}`**: a list of comma-separated phones or a group of phones that selects one phone or group of phones in that list
+=======
+- selection **`{`**...**`,`**...**`}`**: a list of comma-seperated phones or group of phones that selects one phone or group of phones in that list
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 
 Examples:
 ```cscsca
@@ -56,7 +64,11 @@ l (j) >> j
 ### Labels
 As seen in the example above, corresponding scopes in the input and output try to agree in what they choose. However, there are times when we want this behavior to be different than the default or expanded to conditions
 
+<<<<<<< HEAD
 To force scopes to agree on what they choose, we can use labels. A label has a name that starts with **`$`** and precedes a scope
+=======
+To force scopes to agree in what they choose, we can use labels. A label has a name that starts with **`$`** and proceeds a scope
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 
 Examples:
 ```cscsca
@@ -74,9 +86,15 @@ A condition starts with a **`/`** and comes in two flavors: **pattern** and **eq
 | **Pattern** | *`before`* **`_`** *`after`* | checks if the rule's input is proceeded by *`before`* and followed by *`after`* |
 | **Equality** | *`left`* **`=`** *`right`* | checks if the tokens in *`right`* match the phones in *`left`* (most useful with variables) |
 
+<<<<<<< HEAD
 A rule executes if any condition matches. To make a rule execute only if two sub-conditions apply, replace the **`/`** at the start of the second with **`&`**
 
 If **`&!`** is used instead of **`&`**, the preceding sub-condition must succeed, and all sub-conditions up until the next **`/`** must fail for the overarching condition to succeed
+=======
+A rule executes if any condition matches, to make a rule execute only if two sub-conditions apply replace the **`/`** at the start of the second with **`&`**
+
+If **`&!`** is used instead of **`&`**, the proceeding sub-condition must succeed and all sub-conditions up until the next **`/`** must fail for the overarching condition to succeed
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 
 Anti-Conditions (conditions that stop rules from applying) are the same as conditions, but start with **`//`** or **`/!`**, and should be placed after all conditions
 
@@ -102,7 +120,11 @@ GET %dialect Enter dialect:
 Oftentimes, we want to group phones by attributes, while CSCSCA does not have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code
 
 To define a *Definition* type **`DEFINE`** at the start of a line, followed by the name, then its contents.
+<<<<<<< HEAD
 To access the contents later, type the name prefixed with **`@`**
+=======
+To access the contents later type the name prefixed with **`@`**
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 
 **Note**: *Definition*s are not limited to lists of phones, they may contain any arbitrary code
 
@@ -121,8 +143,13 @@ DEFINE intervocalic @V _ @V
 ```
 
 ### Special Characters
+<<<<<<< HEAD
 - **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
 - **`..`**: a gap of zero or more non-boundary phones. (**Notes**: **`..`** must have a space on both sides and is only allowed in conditions). A gap may be preceded by a label to limit gap length to less than or equal to the length of the first gap with the same label
+=======
+- **`*`**: represents any non-boundary phone. **`*`** may be proceeded by a label to agree in what phone is represented
+- **`..`**: a gap of zero or more non-boundary phones. (**Notes**: **`..`** must have a space on both sides and is only allowed in conditions). A gap may be proceeded by a label to limit gap length to less than or equal to the length of the first gap with the same label
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 - **`#`**: a word boundary
 - **`\`**: escapes the effects of the following character
 
@@ -133,11 +160,19 @@ Characters that do nothing, but need to be escaped
 - **`]`**
 
 ### IO and Variables
+<<<<<<< HEAD
 To print the current phonetic form, type **`PRINT`** at the start of a line, followed by the message you would like to print with it
 
 To get input at runtime, type **`GET`** *`variable_name`* *message* where *message* is what you want to display to prompt input. To access the input later prefix *`variable_name`* with **`%`**
 
 **Note**: here the content of *`variable_name`* will be a list of phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
+=======
+To print the current phonetic form, type **`PRINT`** at the start of a line followed by the message you would like to print with it
+
+To get input at runtime, type **`GET`** *`variable_name`* *message* where *message* is what you want to display to prompt input. To access the input later prefix *`variable_name`* with **`%`**
+
+**Note**: here the content of *`variable_name`* will be a list phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
+>>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 
 You may replace **`GET`** with **`GET_AS_CODE`** to interpret the variable contents as code instead of phones
 
