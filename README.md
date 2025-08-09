@@ -91,11 +91,7 @@ A condition starts with a **`/`** and comes in two flavors: **pattern** and **eq
 
 | Condition Type | Structure | How it Checks |
 |-|-|-|
-<<<<<<< HEAD
-| **Pattern** | *`before`* **`_`** *`after`* | checks if the rule's input is proceeded by *`before`* and followed by *after* |
-=======
 | **Pattern** | *`before`* **`_`** *`after`* | checks if the rule's input is proceeded by *`before`* and followed by *`after`* |
->>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 | **Equality** | *`left`* **`=`** *`right`* | checks if the tokens in *`right`* match the phones in *`left`* (most useful with variables) |
 
 A rule executes if any condition matches, to make a rule execute only if two sub-conditions apply replace the **`/`** at the start of the second with **`&`**
