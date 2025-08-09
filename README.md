@@ -10,7 +10,7 @@ A sound change applier based on linguistic sound change notation.
 - Automatic and manual matching for lists of phones
 - Gaps of arbitrary phones in conditions (useful for harmony)
 - Can get information to use in conditions at runtime (variables)
-- Reasonably minimalist and simple but also highly expressive and versitile
+- Reasonably minimalist and simple but also highly expressive and versatile
 - Usable as a crate that can be adapted to fit many mediums beyond CLI
 
 ## Drawbacks
@@ -20,7 +20,7 @@ A sound change applier based on linguistic sound change notation.
 
 ## Writing Sound Change Rules with CSCSCA
 ### Phones
-A phone is a group of non-special characters not seperated by spaces
+A phone is a group of non-special characters not separated by spaces
 
 Examples: `a` `ts` `á` `litteraly_a_phone`
 
@@ -56,7 +56,7 @@ h >>
 **Note**: a line starting with **`##`** is a comment
 
 ### Scopes
-Scopes are a way to dynamically determine which phone, group of phones, or lack there of exists in a rule.
+Scopes are a way to dynamically determine which phone, group of phones, or lack thereof exists in a rule.
 There are two types of scopes
 - optional **`(`**...**`)`**: a phone or group of phones that is optional
 - selection **`{`**...**`,`**...**`}`**: a list of comma-seperated phones or group of phones that selects one phone or group of phones in that list
@@ -74,18 +74,18 @@ l (j) >> j
 ```
 
 ### Labels
-As seen in the example above, corresponding scopes in the input and output try to agree in what they choose. However there are times when we want this behavior to be different than the default or expanded to conditions
+As seen in the example above, corresponding scopes in the input and output try to agree in what they choose. However, there are times when we want this behavior to be different than the default or expanded to conditions
 
 To force scopes to agree in what they choose, we can use labels. A label has a name that starts with **`$`** and proceeds a scope
 
 Examples:
 ```cscsca
-## `i` and `u` merge with proceeding `h` or `x` into `j` `i` and `w` `u`
+## `i` and `u` merge with preceding `h` or `x` into `j` `i` and `w` `u`
 {h, x} $label{i, u} >> $label{j i, w u}
 ```
 
 ### Conditions and Anti-Conditions
-To apply rules conditionally add a condition after it
+To apply rules, conditionally add a condition after it
 
 A condition starts with a **`/`** and comes in two flavors: **pattern** and **equality**
 
@@ -119,12 +119,12 @@ GET %dialect Enter dialect:
 **Note**: See **IO and Variables** for more on **`GET`** and **`%`**
 
 ### Definitions
-Oftentimes we want to group phones by attributes, while CSCSCA does not have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code
+Oftentimes, we want to group phones by attributes, while CSCSCA does not have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code
 
 To define a *Definition* type **`DEFINE`** at the start of a line, followed by the name, then its contents.
 To access the contents later type the name prefixed with **`@`**
 
-**Note**: *Definition*s are not limitted to lists of phones, they may contain any arbitrary code
+**Note**: *Definition*s are not limited to lists of phones, they may contain any arbitrary code
 
 Examples:
 ```cscsca
@@ -174,12 +174,13 @@ PRINT h-loss:
 ```
 
 
+
 ## Command Line Interface
-All CLI commands are proceeded by the path to CSCSCA's executable binary.
-Bellow this is represended with `cscsca`
+All CLI commands are preceded by the path to CSCSCA's executable binary.
+Below this is represented with `cscsca`
 
 ### cscsca help
-Prints the this file
+Prints this file
 
 ### cscsca new *`path`*
 Creates a new file at *`path`*.sca
@@ -192,9 +193,9 @@ Applies the rules in *`file`* to *`text`* and prints the result
 After *`file`*, you may add a series of **`--chain`** *`file`* or **`-c`** *`file`* commands to chain the output of one file into the input of the next
 
 Add one of the following map flags:
-- **`--map_outputs`** or **`-o`** to write each output with its input and all intermediate steps between files
-- **`--map_prints`** or **`-p`** to write each print output
-- **`--map_all`** or **`-m`** to write each output with its input and all intermediate steps including prints
+- `--map_outputs` or `-o` to write each output with its input and all intermediate steps between files
+- `--map_prints` or `-p` to write each print output
+- `--map_all` or `-m` to write each output with its input and all intermediate steps including prints
 
 Add **`--reduce`** or **`-x`** to remove consecutive dupicates in the output chain
 
@@ -206,17 +207,17 @@ Add **`--write`** *`write_file`* or **`-w`** *`write_file`* before *`text`* to w
 
 Replace *`text`* with **`--read`** *`read_file`* or **`-r`** *`read_file`* to read each line of *`read_file`* as an individual input text
 
-### cscsca chars *`text`*
-`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *`text`* prints every character in *`text`* seperating out combining characters
+### cscsca chars *text*
+`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
 
 ## Crate Features
-- **`ansi`**: Adds ANSI color codes to IO. Ideal for CLI enviroments.
-- **`async_io`**: Allows for IO to be done through asyncronous functions instead of syncronous ones. Cannot be active when compiling CSCSCA to an executable 
-- **`docs`**: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
+- `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
+- `async_io`: Allows for IO to be done through asyncronous functions instead of syncronous ones. Cannot be active when compiling CSCSCA to an executable 
+- `docs`: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
 
 ## Library API
 ### Fallible and Infallible Application
-There are both fallible and infallable variants of the crate's application functions. The fallible variants return a `Result<String, ScaError>` and the infallible variants format any errors into a `String` and do not distinguish between successful and failed application
+There are both fallible and infallible variants of the crate's application functions. The fallible variants return a `Result<String, ScaError>` and the infallible variants format any errors into a `String` and do not distinguish between successful and failed application
 
 ### `IoGetter`s
 Objects implementing the `IoGetter` trait allow you to control where and how input is fetched
@@ -226,9 +227,9 @@ The provided `CliGetter` uses standard IO and trims the input
 ### `Runtime`s
 Objects implementing the `Runtime` trait allow you to control some of CSCSCA's runtime behavior
 - Output: Allows you to control how printing works
-- Infinite Loop Protection: as using the shifts `>` and `<` can create an infinite loop, CSCSCA provides a hard limit on the time/attempts applying a rule can take. This limit may be set via runtimes
+- Infinite Loop Protection: Using the shifts `>` and `<` can create an infinite loop. To avoid this, CSCSCA provides a hard limit on the time/attempts applying a rule can take. This limit may be set via runtimes
 
-The provided `CliRuntime` uses standard IO and uses a limit 10000 application attempts per line
+The provided `CliRuntime` uses standard IO and has a limit of 10000 application attempts per line
 
 The provided `LogRuntime` logs output internally, refreshes the logs before starting each group of applications, and uses the same limit as the `CliRuntime`
 
@@ -236,7 +237,7 @@ The provided `LogRuntime` logs output internally, refreshes the logs before star
 If a time limit is used, it does require a call to fetch system time. In the case of Web Assembly, this causes a panic.
 
 ### `LineByLineExecuter`
-A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. You may then call the `apply` and `apply_fallible` methods to us the executer to build then execute each line one at a time
+A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. You may then call the `apply` and `apply_fallible` methods to use the executor to build and then execute each line one at a time
 
 **Note**:
 Building refers to converting the raw text input into rules that can be easily applied
