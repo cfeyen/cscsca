@@ -10,7 +10,7 @@ A sound change applier based on linguistic sound change notation.
 - Automatic and manual matching for lists of phones
 - Gaps of arbitrary phones in conditions (useful for harmony)
 - Can get information to use in conditions at runtime (variables)
-- Reasonably minimalist and simple but also highly expressive and versatile
+- Reasonably minimalist and simple, but also highly expressive and versatile
 - Usable as a crate that can be adapted to fit many mediums beyond CLI
 
 ## Drawbacks
@@ -41,7 +41,7 @@ After *`file`*, you may add a series of **`--chain`** *`file`* or **`-c`** *`fil
 Add one of the following map flags:
 - `--map_outputs` or `-o` to write each output with its input and all intermediate steps between files
 - `--map_prints` or `-p` to write each print output
-- `--map_all` or `-m` to write each output with its input and all intermediate steps including prints
+- `--map_all` or `-m` to write each output with its input and all intermediate steps, including prints
 
 Add **`--reduce`** or **`-x`** to remove consecutive dupicates in the output chain
 
@@ -54,12 +54,12 @@ Add **`--write`** *`write_file`* or **`-w`** *`write_file`* before *`text`* to w
 Replace *`text`* with **`--read`** *`read_file`* or **`-r`** *`read_file`* to read each line of *`read_file`* as an individual input text
 
 ### cscsca chars *text*
-`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
+`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text*, separating combining characters
 
 ## Crate Features
-- `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
-- `async_io`: Allows for IO to be done through asyncronous functions instead of syncronous ones. Cannot be active when compiling CSCSCA to an executable 
-- `docs`: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
+- `ansi`: Adds ANSI color codes to IO. Ideal for CLI environments.
+- `async_io`: Allows for IO to be done through asynchronous functions instead of synchronous ones. Cannot be active when compiling CSCSCA to an executable 
+- `docs`: Adds the function `cscsca::docs` that returns everything under the heading `Writing Sound Change Rules With CSCSCA` in this file
 
 ## Library API
 ### Fallible and Infallible Application
