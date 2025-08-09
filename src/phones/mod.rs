@@ -49,7 +49,7 @@ impl std::fmt::Display for Phone<'_> {
 /// where each phone is a character or escaped character
 /// and reformats whitespace as word bounderies
 #[must_use]
-pub fn build_phone_list(input: EscapedStr) -> Vec<Phone<'_>> {
+pub fn build_phone_list(input: EscapedStr) -> Vec<Phone> {
     let input = input.inner();
     let mut substring = SubString::new(input);
     let mut phones = Vec::new();

@@ -115,7 +115,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
 
         // applies each rule set in the rules chain to each line of the input
         for input in input.lines() {
-            let line_output = apply_rule_sets(paths, output_data.map_data(), &appliable_rule_sets, input.to_string())
+            let line_output = apply_rule_sets(paths, output_data, &appliable_rule_sets, input.to_string())
                 .unwrap_or_else(|e| {
                     let error = e.to_string()
                         // removes ansi
@@ -131,7 +131,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
         }
     } else {
         // applies each rule set in the chain to the input
-        match apply_changes(paths, output_data.map_data(), &rule_sets, input) {
+        match apply_changes(paths, output_data, &rule_sets, input) {
             Ok(output) => {
                 // records the output
                 full_output += &output;
@@ -157,12 +157,16 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
 }
 
 /// Applies each pre-built rule set to an input
-fn apply_rule_sets(paths: &[String], map_data: Option<&MapData>, rule_sets: &[cscsca::AppliableRules<'_>], input: String) -> Result<String, cscsca::ScaError> {
-    let mut mapping = new_mapping(map_data.map(MapData::map_type), &input);
+fn apply_rule_sets(paths: &[String], output_data: &OutputData, rule_sets: &[cscsca::AppliableRules<'_>], input: String) -> Result<String, cscsca::ScaError> {
+    let mut mapping = new_mapping(output_data.map_data().map(MapData::map_type), &input);
 
     let mut last_output = input;
 
-    let mut runtime = cscsca::LogAndPrintRuntime::default();
+    let mut runtime = if output_data.quiet() {
+        AppRuntime::Quiet(cscsca::LogRuntime::default())
+    } else {
+        AppRuntime::Loud(cscsca::LogAndPrintRuntime::default())
+    };
 
     // applies each rule set
     for (i, rule_set) in rule_sets.iter().enumerate() {
@@ -170,7 +174,7 @@ fn apply_rule_sets(paths: &[String], map_data: Option<&MapData>, rule_sets: &[cs
 
         let set_output = rule_set.apply_fallible(&last_output, &mut runtime)?;
         
-        if let Some(map_data) = map_data {
+        if let Some(map_data) = output_data.map_data() {
             extend_mapping(map_data.map_type(), &set_output, &mut mapping, &mut runtime);
         }
 
@@ -178,16 +182,21 @@ fn apply_rule_sets(paths: &[String], map_data: Option<&MapData>, rule_sets: &[cs
         last_output = set_output;
     }
 
-    Ok(mapped_output(map_data, mapping, last_output))
+    Ok(mapped_output(output_data.map_data(), mapping, last_output))
 }
 
 /// Applies each rule set to an input
-fn apply_changes(paths: &[String], map_data: Option<&MapData>, rule_sets: &[String], input: String) -> Result<String, cscsca::ScaError> {
-    let mut mapping = new_mapping(map_data.map(MapData::map_type), &input);
+fn apply_changes(paths: &[String], output_data: &OutputData, rule_sets: &[String], input: String) -> Result<String, cscsca::ScaError> {
+    let mut mapping = new_mapping(output_data.map_data().map(MapData::map_type), &input);
 
     let mut last_output = input;
 
-    let runtime = cscsca::LogAndPrintRuntime::default();
+    let runtime = if output_data.quiet() {
+        AppRuntime::Quiet(cscsca::LogRuntime::default())
+    } else {
+        AppRuntime::Loud(cscsca::LogAndPrintRuntime::default())
+    };
+
     let getter = cscsca::CliGetter;
     let mut executor = cscsca::LineByLineExecuter::new(runtime, getter);
 
@@ -197,7 +206,7 @@ fn apply_changes(paths: &[String], map_data: Option<&MapData>, rule_sets: &[Stri
 
         let set_output = executor.apply_fallible(&last_output, rule_set)?;
 
-        if let Some(map_data) = map_data {
+        if let Some(map_data) = output_data.map_data() {
             extend_mapping(map_data.map_type(), &set_output, &mut mapping, executor.runtime_mut());
         }
 
@@ -205,7 +214,7 @@ fn apply_changes(paths: &[String], map_data: Option<&MapData>, rule_sets: &[Stri
         last_output = set_output;
     }
 
-    Ok(mapped_output(map_data, mapping, last_output))
+    Ok(mapped_output(output_data.map_data(), mapping, last_output))
 }
 
 /// Creates a mapped output from a mapping `Vec` and the last output
@@ -231,7 +240,7 @@ fn new_mapping(map_type: Option<MapType>, input: &str) -> Vec<String> {
 }
 
 /// Extends the mapping based on logs and rule set output
-fn extend_mapping(map_type: MapType, output: &str, mapping: &mut Vec<String>, runtime: &mut cscsca::LogAndPrintRuntime) {
+fn extend_mapping(map_type: MapType, output: &str, mapping: &mut Vec<String>, runtime: &mut AppRuntime) {
     if matches!(map_type, MapType::Logs | MapType::FinalAndLogs) {
         for (_msg, phones) in runtime.flush_logs() {
             mapping.push(phones);
@@ -260,4 +269,49 @@ fn help() {
 /// returns the template file
 const fn template() -> &'static str {
     include_str!("assets/template.sca")
+}
+
+/// The logging `Runtime` for the cli application
+/// with quiet (does not print PRINT statements)
+/// and loud (prints PRINT statements)
+#[derive(Debug)]
+enum AppRuntime {
+    Quiet(cscsca::LogRuntime),
+    Loud(cscsca::LogAndPrintRuntime),
+}
+
+impl AppRuntime {
+    fn flush_logs(&mut self) -> Vec<(String, String)> {
+        match self {
+            Self::Quiet(logger) => logger.flush_logs(),
+            Self::Loud(logger) => logger.flush_logs(),
+        }
+    }
+}
+
+impl cscsca::Runtime for AppRuntime {
+    fn line_application_limit(&self) -> Option<cscsca::LineApplicationLimit> {
+        Some(cscsca::LineApplicationLimit::default())
+    }
+
+    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            Self::Quiet(logger) => logger.put_io(msg, phones),
+            Self::Loud(logger) => logger.put_io(msg, phones),
+        }
+    }
+
+    fn on_start(&mut self) {
+        match self {
+            Self::Quiet(logger) => logger.on_start(),
+            Self::Loud(logger) => logger.on_start(),
+        }
+    }
+
+    fn on_end(&mut self) {
+        match self {
+            Self::Quiet(logger) => logger.on_end(),
+            Self::Loud(logger) => logger.on_end(),
+        }
+    }
 }

@@ -214,19 +214,19 @@ impl<'r, 's, 'p> MatchEnviroment<'r, 's, 'p> {
 
         let mut content_env = self.with_new_tokens(content);
 
-        if let Some(id) = id {
-            if let Some(choice) = choices.optional.get(id).copied() {
-                if choice {
-                    let content_matches = content_env.tokens_match_phones(choices)?;
-                    if !content_matches {
-                        return Ok(false);
-                    }
-
-                    after_env.phone_index = content_env.phone_index;
+        if let Some(id) = id
+            && let Some(choice) = choices.optional.get(id).copied()
+        {
+            if choice {
+                let content_matches = content_env.tokens_match_phones(choices)?;
+                if !content_matches {
+                    return Ok(false);
                 }
 
-                return after_env.tokens_match_phones(choices);
+                after_env.phone_index = content_env.phone_index;
             }
+
+            return after_env.tokens_match_phones(choices);
         }
 
         let mut new_choices = choices.partial_clone();

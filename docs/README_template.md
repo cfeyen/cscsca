@@ -28,36 +28,38 @@ Bellow this is represended with `cscsca`
 ### cscsca help
 Prints the this file
 
-### cscsca new *path*
-Creates a new file at *path*.sca
+### cscsca new *`path`*
+Creates a new file at *`path`*.sca
 
-If `-t` or `--template` proceeds *path*, the new file has general defintions in it
+If **`-t`** or **`--template`** proceeds *`path`*, the new file has general defintions in it
 
-### cscsca sca *file* *text*
-Applies the rules in *file* to *text* and prints the result
+### cscsca sca *`file`* *`text`*
+Applies the rules in *`file`* to *`text`* and prints the result
 
-After *file*, you may add a series of `--chain` *file* or `-c` *file* commands to chain the output of one file into the input of the next
+After *`file`*, you may add a series of **`--chain`** *`file`* or **`-c`** *`file`* commands to chain the output of one file into the input of the next
 
 Add one of the following map flags:
-- `--map_outputs` or `-o` to write each output with its input and all intermediate steps between files
-- `--map_prints` or `-p` to write each print output
-- `--map_all` or `-m` to write each output with its input and all intermediate steps including prints
+- **`--map_outputs`** or **`-o`** to write each output with its input and all intermediate steps between files
+- **`--map_prints`** or **`-p`** to write each print output
+- **`--map_all`** or **`-m`** to write each output with its input and all intermediate steps including prints
 
-Add `--reduce` or `-x` to remove consecutive dupicates in the output chain
+Add **`--reduce`** or **`-x`** to remove consecutive dupicates in the output chain
 
-Add `--separator` *sep* or `-s` *sep* after any of the map flags or reduce flag to change the default mapping separator from `->` to *sep*
+Add **`--separator`** *`sep`* or **`-s`** *`sep`* after any of the map flags or reduce flag to change the default mapping separator from **`->`** to *`sep`*
 
-Add `--write` *write_file* or `-w` *write_file* before *text* to write the final output to *write_file*
+Add **`--quiet`** or **`-q`** to not print logs
 
-Replace *text* `--read` *read_file* or `-r` *read_file* to read each line of *read_file* as an individual input text
+Add **`--write`** *`write_file`* or **`-w`** *`write_file`* before *`text`* to write the final output to *`write_file`*
 
-### cscsca chars *text*
-`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text* seperating out combining characters
+Replace *`text`* with **`--read`** *`read_file`* or **`-r`** *`read_file`* to read each line of *`read_file`* as an individual input text
+
+### cscsca chars *`text`*
+`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *`text`* prints every character in *`text`* seperating out combining characters
 
 ## Crate Features
-- `ansi`: Adds ANSI color codes to IO. Ideal for CLI enviroments.
-- `async_io`: Allows for IO to be done through asyncronous functions instead of syncronous ones. Cannot be active when compiling CSCSCA to an executable 
-- `docs`: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
+- **`ansi`**: Adds ANSI color codes to IO. Ideal for CLI enviroments.
+- **`async_io`**: Allows for IO to be done through asyncronous functions instead of syncronous ones. Cannot be active when compiling CSCSCA to an executable 
+- **`docs`**: Adds the function `cscsca::docs` that returns everyting under the heading `Writing Sound Change Rules With CSCSCA` in this file
 
 ## Library API
 ### Fallible and Infallible Application

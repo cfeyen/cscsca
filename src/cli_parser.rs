@@ -4,6 +4,7 @@ const USE_TEMPLATE_FLAGS: [&str; 2] = ["-t", "--template"];
 const CHAIN_FLAGS: [&str; 2] = ["-c", "--chain"];
 const READ_FLAGS: [&str; 2] = ["-r", "--read"];
 const WRITE_FLAGS: [&str; 2] = ["-w", "--write"];
+const QUIET_FLAGS: [&str; 2] = ["-q", "--quiet"];
 const MAP_OUTPUT_FLAGS: [&str; 2] = ["-o", "--map_outputs"];
 const MAP_LOGS_FLAGS: [&str; 2] = ["-p", "--map_prints"];
 const MAP_ALL_FLAGS: [&str; 2] = ["-m", "--map_all"];
@@ -43,6 +44,7 @@ pub enum InputType {
 pub struct OutputData {
     write: Option<String>,
     map: Option<MapData>,
+    quiet: bool,
 }
 
 impl OutputData {
@@ -52,6 +54,10 @@ impl OutputData {
 
     pub const fn write_path(&self) -> Option<&String> {
         self.write.as_ref()
+    }
+
+    pub const fn quiet(&self) -> bool {
+        self.quiet
     }
 }
 
@@ -167,6 +173,8 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         None
     };
 
+    let quiet = args.next_if(|s| QUIET_FLAGS.contains(&s.as_str())).is_some();
+
     let write = if args.next_if(|s| WRITE_FLAGS.contains(&s.as_str())).is_some() {
         match args.next() {
             Some(path) => Some(path),
@@ -189,7 +197,7 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         return Err(ArgumentParseError::UnexpectedCommand(cmd));
     }
 
-    Ok(CliCommand::Apply { paths, output_data: OutputData { write, map }, input })
+    Ok(CliCommand::Apply { paths, output_data: OutputData { write, map, quiet }, input })
 }
 
 #[derive(Debug)]
