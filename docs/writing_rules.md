@@ -77,8 +77,7 @@ A condition starts with a **`/`** and comes in two flavors: **pattern** and **eq
 
 A rule executes if any condition matches. To make a rule execute only if two sub-conditions apply, replace the **`/`** at the start of the second with **`&`**
 
-If **`&!`** is used instead of **`&`**, the preceding sub-condition must succeed and all sub-conditions up until the next **`/`** must fail for the overarching condition to succeed
->>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
+If **`&!`** is used instead of **`&`**, the preceding sub-condition must succeed, and all sub-conditions up until the next **`/`** must fail for the overarching condition to succeed
 
 Anti-Conditions (conditions that stop rules from applying) are the same as conditions, but start with **`//`** or **`/!`**, and should be placed after all conditions
 
@@ -125,7 +124,6 @@ DEFINE intervocalic @V _ @V
 ### Special Characters
 - **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
 - **`..`**: a gap of zero or more non-boundary phones. (**Notes**: **`..`** must have a space on both sides and is only allowed in conditions). A gap may be preceded by a label to limit gap length to less than or equal to the length of the first gap with the same label
->>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 - **`#`**: a word boundary
 - **`\`**: escapes the effects of the following character
 
@@ -141,7 +139,6 @@ To print the current phonetic form, type **`PRINT`** at the start of a line, fol
 To get input at runtime, type **`GET`** *`variable_name`* *message* where *message* is what you want to display to prompt input. To access the input later prefix *`variable_name`* with **`%`**
 
 **Note**: here the content of *`variable_name`* will be a list of phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
->>>>>>> 644cdeb (Added the --quiet/-q cli flag, updated documentation, fixed some 1.89.0 clippy warnings)
 
 You may replace **`GET`** with **`GET_AS_CODE`** to interpret the variable contents as code instead of phones
 
