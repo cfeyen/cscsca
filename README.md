@@ -113,7 +113,7 @@ h >> // # _
 {p, t, k} >> {b, d, g} / {i, e, a, u, o} _ {i, e, a, u, o} / {m, n} _
 
 ## stops are voiced intervocalically but only in the `east` dialect
-GET %dialect Enter dialect:
+GET dialect Enter dialect:
 {p, t, k} >> {b, d, g} / {i, e, a, u, o} _ {i, e, a, u, o} & %dialect = e a s t
 ```
 
