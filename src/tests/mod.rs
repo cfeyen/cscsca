@@ -103,3 +103,9 @@ io_test! {
         assert_eq!(await_io! { apply("#", "* >> *") }, await_io! { apply("#", "\\# >> \\#") });
     }
 }
+
+io_test!{
+    fn complex_agreement() {
+        assert_eq!("zbc", await_io! { apply("abc", "a >> z / _ $c{b, * c} // _ $c{b, d}") });
+    }
+}

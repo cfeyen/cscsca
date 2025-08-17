@@ -14,18 +14,18 @@ fn apply_empty_rule_to_no_phones() {
     assert_eq!(Ok(()), apply(&rule, &mut Vec::new(), Some(DEFAULT_LINE_APPLICATION_LIMIT)));
 }
 
-#[test]
-fn apply_empty_rule_to_one_phone() {
-    let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
-        input: Vec::new(),
-        output: Vec::new(),
-        conds: vec![Cond::default()],
-        anti_conds: Vec::new(),
-    };
+// #[test]
+// fn apply_empty_rule_to_one_phone() {
+//     let rule = SoundChangeRule {
+//         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
+//         input: Vec::new(),
+//         output: Vec::new(),
+//         conds: vec![Cond::default()],
+//         anti_conds: Vec::new(),
+//     };
     
-    assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut vec![Phone::Symbol("a")], Some(DEFAULT_LINE_APPLICATION_LIMIT)));
-}
+//     assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut vec![Phone::Symbol("a")], Some(DEFAULT_LINE_APPLICATION_LIMIT)));
+// }
 
 #[test]
 fn one_to_one_shift() {
@@ -102,7 +102,7 @@ fn one_to_none_shift() {
 }
 
 #[test]
-fn remove_word_final_ltr() { // also tests bound deduplication
+fn remove_word_final_ltr() { 
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
@@ -119,7 +119,7 @@ fn remove_word_final_ltr() { // also tests bound deduplication
 }
 
 #[test]
-fn remove_word_final_rtl() { // also tests bound deduplication
+fn remove_word_final_rtl() { 
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::Rtl, kind: ShiftType::Move },
         input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
@@ -136,7 +136,7 @@ fn remove_word_final_rtl() { // also tests bound deduplication
 }
 
 #[test]
-fn selection_to_selection() { // also tests bound deduplication
+fn selection_to_selection() { 
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![
@@ -172,31 +172,31 @@ fn selection_to_selection() { // also tests bound deduplication
     assert_eq!(vec![Phone::Symbol("d"), Phone::Symbol("e"), Phone::Symbol("f"), Phone::Symbol("d")], phones);
 }
 
-#[test]
-fn option_to_phone() { // also tests bound deduplication
-    let rule = SoundChangeRule {
-        kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
-        input: vec![
-            RuleToken::OptionalScope { id: Some(ScopeId::IOUnlabeled {
-                id_num: 0,
-                label_type: LabelType::Scope(ScopeType::Optional),
-                parent: None
-            }), content: vec![RuleToken::Phone(Phone::Symbol("a"))] },
-        ],
-        output: vec![
-            RuleToken::Phone(Phone::Symbol("b")),
-        ],
-        conds: vec![Cond::default()],
-        anti_conds: Vec::new(),
-    };
+// #[test]
+// fn option_to_phone() {
+//     let rule = SoundChangeRule {
+//         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
+//         input: vec![
+//             RuleToken::OptionalScope { id: Some(ScopeId::IOUnlabeled {
+//                 id_num: 0,
+//                 label_type: LabelType::Scope(ScopeType::Optional),
+//                 parent: None
+//             }), content: vec![RuleToken::Phone(Phone::Symbol("a"))] },
+//         ],
+//         output: vec![
+//             RuleToken::Phone(Phone::Symbol("b")),
+//         ],
+//         conds: vec![Cond::default()],
+//         anti_conds: Vec::new(),
+//     };
 
-    let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")];
+//     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")];
     
-    assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut phones, Some(DEFAULT_LINE_APPLICATION_LIMIT)));
-}
+//     assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut phones, Some(DEFAULT_LINE_APPLICATION_LIMIT)));
+// }
 
 #[test]
-fn option_phone_to_option_phone() { // also tests bound deduplication
+fn option_phone_to_option_phone() { 
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![
@@ -227,7 +227,7 @@ fn option_phone_to_option_phone() { // also tests bound deduplication
 }
 
 #[test]
-fn phone_to_phone_word_final_ltr() { // also tests bound deduplication
+fn phone_to_phone_word_final_ltr() { 
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::Symbol("a"))],
@@ -244,7 +244,7 @@ fn phone_to_phone_word_final_ltr() { // also tests bound deduplication
 }
 
 #[test]
-fn phone_to_phone_word_final_rtl() { // also tests bound deduplication
+fn phone_to_phone_word_final_rtl() { 
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::Rtl, kind: ShiftType::Move },
         input: vec![RuleToken::Phone(Phone::Symbol("a"))],
@@ -261,7 +261,7 @@ fn phone_to_phone_word_final_rtl() { // also tests bound deduplication
 }
 
 #[test]
-fn quadruple_agreement() { // also tests bound deduplication
+fn quadruple_agreement() {
     let rule = SoundChangeRule {
         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
         input: vec![

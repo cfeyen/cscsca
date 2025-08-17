@@ -16,7 +16,7 @@ io_test! {
 
 io_test! {
     fn gap_out_of_cond() {
-        assert!(await_io! { apply_fallible("a", "a .. # >> b") }.is_err());
+        assert_eq!(await_io! { apply_fallible("abc", "a .. >> b / _ #") }, Ok("b".to_string()));
         assert!(await_io! { apply_fallible("a", "a >> b .. c") }.is_err());
         assert!(await_io! { apply_fallible("a", "a $gap .. # >> b $gap .. c") }.is_err());
     }

@@ -6,11 +6,12 @@ mod tests;
 /// A representation of a phoneme or word boundary
 /// 
 /// Stores the phoneme's symbol as a reference to the origional text or rules
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Phone<'s> {
     /// A symbol representing a phoneme
     Symbol(&'s str),
     /// A word boundary
+    #[default]
     Bound,
 }
 
@@ -23,6 +24,12 @@ impl<'s> Phone<'s> {
             Self::Symbol(symbol) => symbol,
             Self::Bound => " ",
         }
+    }
+
+    /// Determines if a phone matches a bound
+    #[must_use]
+    pub fn is_bound(&self) -> bool {
+        self.matches(&Self::Bound)
     }
 
     /// Determines if two phones match
@@ -44,6 +51,12 @@ impl std::fmt::Display for Phone<'_> {
     }
 }
 
+impl Default for &Phone<'_> {
+    fn default() -> Self {
+        &Phone::Bound
+    }
+}
+
 /// Builds a list of phones (as string slices with lifetime 's)
 /// from an input (string slice with 's)
 /// where each phone is a character or escaped character
@@ -61,7 +74,7 @@ pub fn build_phone_list(input: EscapedStr) -> Vec<Phone> {
             ESCAPE_CHAR => (),
             '\n' => {
                 substring.move_after();
-                if !phones.last().is_some_and(|p| p == &Phone::Bound) {
+                if !phones.last().is_some_and(Phone::is_bound) {
                     phones.push(Phone::Bound);
                 }
                 phones.push(Phone::Symbol("\n"));
@@ -69,7 +82,7 @@ pub fn build_phone_list(input: EscapedStr) -> Vec<Phone> {
             },
             _ if c.is_whitespace() => {
                 substring.move_after();
-                if !phones.last().is_some_and(|p| p == &Phone::Bound) {
+                if !phones.last().is_some_and(Phone::is_bound) {
                     phones.push(Phone::Bound);
                 }
             },
