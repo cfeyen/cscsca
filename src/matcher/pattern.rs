@@ -217,9 +217,17 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Gap<'s> {
 
         let mut new_choices = choices.partial_clone();
 
-        if let Some(id) = self.id && !choices.gap.contains_key(id) {
-            // sets the choice if it is the first gap with the id
-            new_choices.gap.to_mut().insert(id, self.len);
+        if let Some(id) = self.id {
+            if let Some(max_len) = choices.gap.get(id).copied() {
+                if self.len > max_len {
+                    // if the max len is exceeded the match fails and the gap should exaust
+                    self.exaust_on_next_match = true;
+                    return None;
+                }
+            } else {
+                // sets the choice if it is the first gap with the id
+                new_choices.gap.to_mut().insert(id, self.len);
+            }
         }
 
         Some(new_choices.owned_choices())
