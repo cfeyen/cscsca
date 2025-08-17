@@ -20,7 +20,7 @@ A shift tells CSCSCA how changes are to be applied and separates inputs from out
 ### Rules
 A sound change
 
-Structured *input* *shift* *output* where *input* and *output* are phones and *shift* is a shift token
+Structured *`input`* *`shift`* *`output`* where *`input`* and *`output`* are phones and *`shift`* is a shift token
 
 Examples:
 ```cscsca
