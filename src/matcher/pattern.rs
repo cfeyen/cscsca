@@ -1,5 +1,6 @@
 use crate::{matcher::{choices::{Choices, OwnedChoices}, match_state::{AdvanceResult, MatchState, PhoneInput}, Phones}, phones::Phone, rules::tokens::{RuleToken, ScopeId}, tokens::Direction};
 
+/// A state machine that can be matched to phones of a specific pattern
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Pattern<'r, 's> {
     Phone(Phone<'s>),
@@ -243,7 +244,7 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Gap<'s> {
     }
 }
 
-
+/// A list of matchable `Pattern`s
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PatternList<'r, 's> {
     patterns: Vec<Pattern<'r, 's>>,
