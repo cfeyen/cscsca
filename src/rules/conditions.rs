@@ -78,7 +78,7 @@ impl<'s> Cond<'s> {
         &self.after
     }
 
-    /// gets the right side of the condition
+    /// gets the clause condition
     #[inline]
     pub fn and(&self) -> Option<(AndType, &Self)> {
         self.and.as_ref()
