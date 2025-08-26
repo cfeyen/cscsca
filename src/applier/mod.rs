@@ -1,7 +1,13 @@
 use std::time::Instant;
 
 use crate::{
-    executor::runtime::LineApplicationLimit, ir::tokens::IrToken, keywords::GAP_STR, matcher::{choices::Choices, pattern::Pattern, rule_pattern::RulePattern, Phones}, phones::Phone, rules::{conditions::Cond, sound_change_rule::SoundChangeRule, tokens::RuleToken}, tokens::{Direction, ShiftType}
+    executor::runtime::LineApplicationLimit,
+    ir::tokens::IrToken,
+    keywords::GAP_STR,
+    matcher::{choices::Choices, pattern::Pattern, rule_pattern::RulePattern, Phones},
+    phones::Phone,
+    rules::{sound_change_rule::SoundChangeRule, tokens::RuleToken},
+    tokens::{Direction, ShiftType}
 };
 
 #[cfg(test)]
@@ -107,11 +113,7 @@ fn apply_at<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, 
 
     let input_len = rule_pattern.len();
 
-    if input_len > 0 || !(conds == &[Cond::default()] && anti_conds.is_empty()) {
-        replace_input(phones, phone_index, input_len, output, &choices, kind.dir)
-    } else {
-        Err(ApplicationError::ZeroSizedInput)
-    }
+    replace_input(phones, phone_index, input_len, output, &choices, kind.dir)
 }
 
 /// Replaces the slice `phones[index..input_len]` with the output as phones
@@ -236,7 +238,6 @@ pub enum ApplicationError<'r, 's> {
     InvalidSelectionAccess(&'r RuleToken<'s>, usize),
     ExceededLimit(LimitCondition),
     GapOutOfCond,
-    ZeroSizedInput,
     PatternCannotBeConvertedToPhones(Pattern<'r, 's>),
 }
 
@@ -256,7 +257,6 @@ impl std::fmt::Display for ApplicationError<'_, '_> {
                 LimitCondition::Count { attempts: _, max: _ } => "Could not apply changes with the allotted application attempts",
             }.to_string(),
             Self::GapOutOfCond => format!("Gaps ('{GAP_STR}') are not allowed outside of conditions and anti-conditions"),
-            Self::ZeroSizedInput => "An input must either contain a phone or be limited by conditions".to_string(),
             Self::PatternCannotBeConvertedToPhones(pattern) => format!("'{pattern}' cannot be converted to a phone or list of phones"),
         };
 

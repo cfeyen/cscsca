@@ -244,6 +244,7 @@ fn and_not_cond() {
     assert!(rule_pattern.next_match(match_phones).expect("next match should not error").is_none());
 }
 
-// todo: more tests
+// todo: more tests, rtl
 // todo: conds, anti-conds, &, &!, with gaps, non phone conds
 // todo: test equality conds causing errors, succeeding, and failing
+// todo: zero-input tests
