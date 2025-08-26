@@ -1,15 +1,4 @@
-use crate::{matcher::{choices::{Choices, OwnedChoices}, match_state::{AdvanceResult, MatchState, PhoneInput}, pattern::PatternList, Phones}, phones::Phone, rules::{conditions::{AndType, Cond, CondType}, tokens::RuleToken}, tokens::Direction};
-
-/// A part of a rule
-/// 
-/// Used to optimize `RulePattern` advancement
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
-enum MatchSection {
-    Input,
-    Cond,
-    #[default]
-    AntiCond,
-}
+use crate::{applier::ApplicationError, matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, pattern::PatternList, Phones}, rules::{conditions::{AndType, Cond, CondType}, tokens::RuleToken}, tokens::Direction};
 
 /// A matchable pattern for a rule
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,124 +6,92 @@ pub struct RulePattern<'r, 's> {
     input: PatternList<'r, 's>,
     conds: Vec<CondPattern<'r, 's>>,
     anti_conds: Vec<CondPattern<'r, 's>>,
-    /// used to optimize advances,
-    last_match_failure: MatchSection,
+}
+
+fn contains_gap(tokens: &[RuleToken]) -> bool {
+    for token in tokens {
+        match token {
+            RuleToken::Gap { .. } => return true,
+            RuleToken::OptionalScope { content, .. } if contains_gap(content) => return true,
+            RuleToken::SelectionScope { options, .. } if options.iter().any(|tokens| contains_gap(tokens)) => return true,
+            _ => (),
+        }
+    }
+
+    false
 }
 
 impl<'r, 's: 'r> RulePattern<'r, 's> {
-    pub fn new(input: &'r [RuleToken<'s>], conds: &'r [Cond<'s>], anti_conds: &'r [Cond<'s>]) -> Self {
-        Self {
+    pub fn new(input: &'r [RuleToken<'s>], conds: &'r [Cond<'s>], anti_conds: &'r [Cond<'s>]) -> Result<Self, ApplicationError<'r, 's>> {
+        if contains_gap(input) {
+            return Err(ApplicationError::GapOutOfCond);
+        }
+
+        Ok(Self {
             input: input.into(),
             conds: conds.iter().map(CondPattern::from).collect(),
             anti_conds: anti_conds.iter().map(CondPattern::from).collect(),
-            last_match_failure: MatchSection::AntiCond,
-        }
+        })
     }
-}
+    
+    pub fn next_match(&mut self, phones: Phones<'_, 's>) -> Result<Option<OwnedChoices<'r, 's>>, ApplicationError<'r, 's>> {
+        let mut new_choices = Choices::default();
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for RulePattern<'r, 's> {
-    type PhoneInput = Phones<'p, 's>;
+        loop {
+            // checks the input
+            let Some(input_choices) = self.input.next_match(&phones, &new_choices) else {
+                return Ok(None);
+            };
+            self.conds.iter_mut().for_each(CondPattern::reset);
+            self.anti_conds.iter_mut().for_each(CondPattern::reset);
 
-    fn advance(&mut self, choices: &Choices<'_, 'r, 's>, direction: Direction) -> AdvanceResult {
-        if self.last_match_failure == MatchSection::Input {
-            // if the input did not match in the last match,
-            // resets all condition/anti-conditions and advance the input
-            self.conds.iter_mut().for_each(MatchState::reset);
-            self.anti_conds.iter_mut().for_each(MatchState::reset);
-            return self.input.advance(choices, direction);
-        }
-        
-        if self.last_match_failure == MatchSection::AntiCond {
-            // advances the last anti-condition,
-            // if it is exausted, resets it and advances the next,
-            // and so forth, so on
-            for anti_cond in &mut self.anti_conds {
-                match anti_cond.advance(choices, direction) {
-                    AdvanceResult::Advanced => return AdvanceResult::Advanced,
-                    AdvanceResult::Exausted => anti_cond.reset(),
-                }
-            }
-        } else {
-            self.anti_conds.iter_mut().for_each(MatchState::reset);
-        }
+            new_choices.take_owned(input_choices);
 
-        // if all anti-conditions were exausted or conds where where the last match faild
-        // advances the last condition,
-        // if it is exausted, resets it and advances the next,
-        // and so forth, so on
-        for cond in &mut self.conds {
-            match cond.advance(choices, direction) {
-                AdvanceResult::Advanced => return AdvanceResult::Advanced,
-                AdvanceResult::Exausted => cond.reset(),
-            }
-        }
+            // prepares to create condition phones
+            let mut after_input_phones = phones.clone();
+            (0..self.input.len()).for_each(|_| _ = after_input_phones.next());
 
-        // if all anti-conditions were exausted
-        // advances the input,
-        self.input.advance(choices, direction)
+            // creates the phone iterators for the conditions
+            let cond_phones = match phones.direction {
+                Direction::Ltr => CondPhoneInput {
+                    left: phones.rtl_from_left(),
+                    right: after_input_phones,
+                },
+                Direction::Rtl => CondPhoneInput {
+                    left: after_input_phones,
+                    right: phones.ltr_from_right(),
+                },
+            };
 
-    }
+            // checks each condition agains each anti-condition
+            for cond in &mut self.conds {
+                // checks each match of each condition agains each anti-condition
+                'cond_loop: while let Some(cond_choices) = cond.next_match(&mut cond_phones.clone(), &new_choices)? {
+                    let mut post_cond_choices = new_choices.partial_clone();
+                    post_cond_choices.take_owned(cond_choices.clone());
 
-    fn matches(&mut self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
-        let initial_phones = phones.clone();
-        let mut new_choices = choices.partial_clone();
+                    // checks agains each anti-condition
+                    for anti_cond in &mut self.anti_conds {
+                        // if an anti-condition matches, checks the next match of the condition
+                        if anti_cond.next_match(&mut cond_phones.clone(), &post_cond_choices)?.is_some() {
+                            anti_cond.reset();
+                            continue 'cond_loop;
+                        }
 
-        // checks if the input matches
-        let Some(input_choices) = self.input.matches(phones, &new_choices) else {
-            self.last_match_failure = MatchSection::Input;
-            return None;
-        };
-        new_choices.take_owned(input_choices);
-
-        // creates the phone iterators for the conditions
-        let cond_phones = match phones.direction {
-            Direction::Ltr => CondPhoneInput {
-                left: initial_phones.rtl_from_left(),
-                right: phones.clone(),
-            },
-            Direction::Rtl => CondPhoneInput {
-                left: phones.clone(),
-                right: initial_phones.ltr_from_right(),
-            },
-        };
-
-        self.last_match_failure = MatchSection::Cond;
-
-        // checks each condition against each anti-condition
-        // if one passes, its choices are returned
-        'cond_loop: for cond in &mut self.conds {
-            if let Some(cond_internal_choices) = cond.matches(&mut cond_phones.clone(), &new_choices) {
-                let mut cond_choices = new_choices.partial_clone();
-                cond_choices.take_owned(cond_internal_choices);
-
-                for anti_cond in &mut self.anti_conds {
-                    // if an anti-condition matches the cond fails
-                    // and the next is checked
-                    if anti_cond.next_match(&cond_phones, &cond_choices).is_some() {
-                        self.last_match_failure = MatchSection::Cond;
-                        continue 'cond_loop;
+                        anti_cond.reset();
                     }
+                    new_choices.take_owned(cond_choices);
+                    cond.reset();
+                    return Ok(Some(new_choices.owned_choices()));
                 }
 
-                // if no anti-conditions match return the successful choices
-                new_choices.take_owned(cond_choices.owned_choices());
-                return Some(new_choices.owned_choices());
+                cond.reset();
             }
         }
-
-        // if no conditions pass, the match fails
-        None
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.input.len()
-    }
-
-    fn reset(&mut self) {
-        self.input.reset();
-        self.conds.iter_mut().for_each(MatchState::reset);
-        self.anti_conds.iter_mut().for_each(MatchState::reset);
-        self.last_match_failure = MatchSection::default();
     }
 }
 
@@ -145,23 +102,14 @@ pub struct CondPhoneInput<'p, 's> {
     right: Phones<'p, 's>,
 }
 
-impl<'p, 's: 'p> PhoneInput<'p, 's> for CondPhoneInput<'p, 's> {
-    fn next(&mut self) -> &'p Phone<'s> {
-        <&Phone>::default()
-    }
-
-    fn direction(&self) -> Direction {
-        Direction::Ltr
-    }
-}
-
 /// A matchable pattern for a condition or anti-condition
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CondPattern<'r, 's> {
     left: PatternList<'r, 's>,
     right: PatternList<'r, 's>,
     cond_type: CondType,
-    and: Option<(AndType, Box<Self>)>
+    and: Option<(AndType, Box<Self>)>,
+    checked_once: bool,
 }
 
 impl<'r, 's> From<&'r Cond<'s>> for CondPattern<'r, 's> {
@@ -171,99 +119,87 @@ impl<'r, 's> From<&'r Cond<'s>> for CondPattern<'r, 's> {
             right: cond.right().into(),
             cond_type: cond.kind(),
             and: cond.and().map(|(and_type, and_cond)| (and_type, Box::new(and_cond.into()))),
+            checked_once: false,
         }
     }
 }
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for CondPattern<'r, 's> {
-    type PhoneInput = CondPhoneInput<'p, 's>;
-
-    fn advance(&mut self, choices: &Choices<'_, 'r, 's>, _: Direction) -> AdvanceResult {
-        // Advances the last and condition
-        if let Some((_, and_cond)) = &mut self.and {
-            let and_cond = and_cond.as_mut();
-
-            match and_cond.advance(choices, Direction::Ltr) {
-                AdvanceResult::Advanced => return AdvanceResult::Advanced,
-                // resets the and condition before advanceing the proceeding
-                AdvanceResult::Exausted => and_cond.reset(),
-            }
-        }
-
-        // if there are no and conditions or they are exauseted,
-        // advances the right
-        match self.right.advance(choices, Direction::Ltr) {
-            AdvanceResult::Advanced => return AdvanceResult::Advanced,
-            // resets the right before advancing the left
-            AdvanceResult::Exausted => self.right.reset(),
-        }
-
-        // if the right cannot be advanced, the left is advanced
-        // unless it is a match condition, then advancement isn't needed
-        if self.cond_type == CondType::Pattern {
-            match self.left.advance(choices, Direction::Ltr) {
-                AdvanceResult::Advanced => return AdvanceResult::Advanced,
-                AdvanceResult::Exausted => self.left.reset(),
-            }
-        }
-
-        // if nothing advances, the condition is exaused
-        AdvanceResult::Exausted
-    }
-
-    fn matches(&mut self, phones: &mut CondPhoneInput<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
-        let CondPhoneInput {
-            left: mut left_phones,
-            right: mut right_phones,
-        } = phones.clone();
-
+impl<'r, 's> CondPattern<'r, 's> {
+    fn next_match(&mut self, phones: &CondPhoneInput<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Result<Option<OwnedChoices<'r, 's>>, ApplicationError<'r, 's>> {
         let mut new_choices = choices.partial_clone();
 
-        match self.cond_type {
-            // ensures patterns match enviroment
-            CondType::Pattern => {
-                let right_choices = self.right.matches(&mut right_phones, &new_choices)?;
-                new_choices.take_owned(right_choices);
-
-                let left_choices = self.left.matches(&mut left_phones, &new_choices)?;
-                new_choices.take_owned(left_choices);
-            },
-            // ensures both sides match
-            CondType::Match => {
-                // creates phones from the left
-                let left_phones = self.left.as_phones(&new_choices)?;
-                let mut left_phones = Phones::new(&left_phones, 0, Direction::Ltr);
-
-                // checks if the right matches the left
-                let right_choices = self.right.matches(&mut left_phones, &new_choices)?;
-                new_choices.take_owned(right_choices);
-            },
+        // if all sides are empty and the condition has already been checked,
+        // the condition is exausted
+        if self.checked_once && self.left.is_empty() && self.right.is_empty() {
+            return Ok(None);
         }
+        
+        'left_check: loop {
+            if self.cond_type == CondType::Pattern {
+                let Some(left_choices) = self.left.next_match(&mut phones.left.clone(), choices) else {
+                    return Ok(None);
+                };
+                new_choices.take_owned(left_choices);
+            }
 
-        if let Some((and_type, and_cond)) = &mut self.and {
-            let and_cond = and_cond.as_mut();
+            'right_check: loop {
 
-            // checks the and condition
-            let and_match = and_cond.matches(phones, choices);
+                match self.cond_type {
+                    CondType::Pattern => {
+                        let Some(right_choices) = self.right.next_match(&mut phones.right.clone(), choices) else {
+                            // if the right cannot match, resets and looks for another match on the left
+                            self.right.reset();
+                            if self.left.is_empty() {
+                                return Ok(None);
+                            }
+                            continue 'left_check;
+                        };
+                        new_choices.take_owned(right_choices);
+                    },
+                    CondType::Match => {
+                        // creates phones from the left
+                        let left_phones = self.left.as_phones(&new_choices)?;
+                        let left_phones = Phones::new(&left_phones, 0, Direction::Ltr);
 
-            // ensures the and condition match is correct
-            match (and_type, and_match) {
-                (AndType::And, Some(and_choices)) => new_choices.take_owned(and_choices),
-                (AndType::AndNot, None) => (),
-                _ => return None,
+                        // checks if the right matches the left
+                        let Some(right_choices) = self.right.next_match(&left_phones, &new_choices) else {
+                            return Ok(None);
+                        };
+                        new_choices.take_owned(right_choices);
+                    }
+                }
+
+                if let Some((and_type, and_cond)) = &mut self.and {
+                    let and_type = *and_type;
+                    let and_cond = and_cond.as_mut();
+
+                    // checks the and condition
+                    let and_match = and_cond.next_match(phones, choices)?;
+
+                    // ensures the and condition match is correct
+                    match (and_type, and_match) {
+                        (AndType::And, Some(and_choices)) => new_choices.take_owned(and_choices),
+                        (AndType::AndNot, None) => (),
+                        _ => {
+                            and_cond.reset();
+                            if self.right.is_empty() {
+                                return Ok(None);
+                            }
+                            continue 'right_check;
+                        },
+                    }
+                }
+
+                self.checked_once = true;
+                return Ok(Some(new_choices.owned_choices()));
             }
         }
-
-        Some(new_choices.owned_choices())
-    }
-
-    fn len(&self) -> usize {
-        0
     }
 
     fn reset(&mut self) {
         self.left.reset();
         self.right.reset();
+        self.checked_once = false;
 
         if let Some((_, and_cond)) = &mut self.and {
             and_cond.as_mut().reset();

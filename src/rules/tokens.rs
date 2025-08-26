@@ -24,16 +24,12 @@ pub enum RuleToken<'s> {
 
 impl Display for RuleToken<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::Any { id: None } => {
-                format!("{}", IrToken::Any)
-            },
-            Self::Any { id: Some(id) } => {
-                format!("{id}{}", IrToken::Any)
-            },
-            Self::Gap { id: None } => format!("{}", IrToken::Gap),
-            Self::Gap { id: Some(name) } => format!("{} {}", IrToken::Label(name), IrToken::Gap),
-            Self::Phone(phone) => phone.to_string(),
+        match self {
+            Self::Any { id: None } => write!(f, "{}", IrToken::Any),
+            Self::Any { id: Some(id) } => write!(f, "{id}{}", IrToken::Any),
+            Self::Gap { id: None } => write!(f, "{}", IrToken::Gap),
+            Self::Gap { id: Some(name) } => write!(f, "{} {}", IrToken::Label(name), IrToken::Gap),
+            Self::Phone(phone) => write!(f, "{phone}"),
             Self::OptionalScope { id: None, content } => {
                 let s = content
                     .iter()
@@ -41,10 +37,10 @@ impl Display for RuleToken<'_> {
                     .collect::<Vec<_>>()
                     .join(" ");
 
-                format!("{} {s} {}", ScopeType::Optional.fmt_start(), ScopeType::Optional.fmt_end())
+                write!(f, "{} {s} {}", ScopeType::Optional.fmt_start(), ScopeType::Optional.fmt_end())
             }
             Self::OptionalScope { id: Some(id), content } => {
-                format!("{}{}", id, Self::OptionalScope { id: None, content: content.clone() })
+                write!(f, "{}{}", id, Self::OptionalScope { id: None, content: content.clone() })
             }
             Self::SelectionScope { id: None, options } => {
                 let s = options
@@ -59,14 +55,12 @@ impl Display for RuleToken<'_> {
                     .collect::<Vec<_>>()
                     .join(&format!("{} ", IrToken::ArgSep));
 
-                format!("{} {s} {}", ScopeType::Selection.fmt_start(), ScopeType::Selection.fmt_end())
+                write!(f, "{} {s} {}", ScopeType::Selection.fmt_start(), ScopeType::Selection.fmt_end())
             }
             Self::SelectionScope { id: Some(id), options } => {
-                format!("{}{}", id, Self::SelectionScope { id: None, options: options.clone() })
+                write!(f, "{}{}", id, Self::SelectionScope { id: None, options: options.clone() })
             }
-        };
-
-        write!(f, "{s}")
+        }
     }
 }
 
@@ -87,14 +81,10 @@ pub enum ScopeId<'s> {
 
 impl Display for ScopeId<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::IOUnlabeled { id_num: _, label_type: _, parent: _ } => {
-                String::new()
-            },
-            Self::Name(name) => { format!("{}", IrToken::Label(name)) }
-        };
-
-        write!(f, "{s}")
+        match self {
+            Self::IOUnlabeled { id_num: _, label_type: _, parent: _ } => Ok(()),
+            Self::Name(name) => write!(f, "{}", IrToken::Label(name)),
+        }
     }
 }
 
@@ -106,11 +96,9 @@ pub enum LabelType {
 
 impl Display for LabelType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::Scope(kind) => format!("{kind}"),
-            Self::Any => format!("{}", RuleToken::Any { id: None }),
-        };
-
-        write!(f, "{s}")
+        match self {
+            Self::Scope(kind) => write!(f, "{kind}"),
+            Self::Any => write!(f, "{}", RuleToken::Any { id: None }),
+        }
     }
 }

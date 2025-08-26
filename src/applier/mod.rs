@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::{
-    executor::runtime::LineApplicationLimit, ir::tokens::IrToken, matcher::{choices::Choices, match_state::MatchState, rule_pattern::RulePattern, Phones}, phones::Phone, rules::{sound_change_rule::SoundChangeRule, tokens::RuleToken}, tokens::{Direction, ShiftType}
+    executor::runtime::LineApplicationLimit, ir::tokens::IrToken, keywords::GAP_STR, matcher::{choices::Choices, pattern::Pattern, rule_pattern::RulePattern, Phones}, phones::Phone, rules::{conditions::Cond, sound_change_rule::SoundChangeRule, tokens::RuleToken}, tokens::{Direction, ShiftType}
 };
 
 #[cfg(test)]
@@ -93,19 +93,25 @@ fn apply_at<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, 
         anti_conds,
     } = rule;
 
-    let mut rule_pattern = RulePattern::new(input, conds, anti_conds);
-
-    let mut choices = Choices::default();
+    let mut rule_pattern = RulePattern::new(input, conds, anti_conds)?;
 
     let match_phones = Phones::new(phones, phone_index, kind.dir);
 
-    if let Some(new_choices) = rule_pattern.next_match(&match_phones, &choices) {
+    let mut choices = Choices::default();
+
+    if let Some(new_choices) = rule_pattern.next_match(match_phones)? {
         choices.take_owned(new_choices);
     } else {
         return Ok(None);
     }
 
-    replace_input(phones, phone_index, rule_pattern.len(), output, &choices, kind.dir)
+    let input_len = rule_pattern.len();
+
+    if input_len > 0 || !(conds == &[Cond::default()] && anti_conds.is_empty()) {
+        replace_input(phones, phone_index, input_len, output, &choices, kind.dir)
+    } else {
+        Err(ApplicationError::ZeroSizedInput)
+    }
 }
 
 /// Replaces the slice `phones[index..input_len]` with the output as phones
@@ -214,7 +220,7 @@ fn tokens_to_phones<'r, 's>(tokens: &'r [RuleToken<'s>], choices: &Choices<'_, '
                     return Err(ApplicationError::UnmatchedTokenInOutput(token));
                 }
             },
-            RuleToken::Gap { .. } => return Err(ApplicationError::GapUnmatchedTokenInOutput),
+            RuleToken::Gap { .. } => return Err(ApplicationError::GapOutOfCond),
             _ => return Err(ApplicationError::UnmatchedTokenInOutput(token))
         }
     }
@@ -229,7 +235,9 @@ pub enum ApplicationError<'r, 's> {
     UnmatchedTokenInOutput(&'r RuleToken<'s>),
     InvalidSelectionAccess(&'r RuleToken<'s>, usize),
     ExceededLimit(LimitCondition),
-    GapUnmatchedTokenInOutput,
+    GapOutOfCond,
+    ZeroSizedInput,
+    PatternCannotBeConvertedToPhones(Pattern<'r, 's>),
 }
 
 impl std::error::Error for ApplicationError<'_, '_> {}
@@ -247,7 +255,9 @@ impl std::fmt::Display for ApplicationError<'_, '_> {
                 LimitCondition::Time(_) => "Could not apply changes in allotted time",
                 LimitCondition::Count { attempts: _, max: _ } => "Could not apply changes with the allotted application attempts",
             }.to_string(),
-            Self::GapUnmatchedTokenInOutput => "Gaps ('..') are not allowed in outputs".to_string()
+            Self::GapOutOfCond => format!("Gaps ('{GAP_STR}') are not allowed outside of conditions and anti-conditions"),
+            Self::ZeroSizedInput => "An input must either contain a phone or be limited by conditions".to_string(),
+            Self::PatternCannotBeConvertedToPhones(pattern) => format!("'{pattern}' cannot be converted to a phone or list of phones"),
         };
 
         write!(f, "{s}")

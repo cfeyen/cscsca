@@ -1,10 +1,12 @@
-use crate::{matcher::{choices::{Choices, OwnedChoices}, match_state::{AdvanceResult, MatchState, PhoneInput}, Phones}, phones::Phone, rules::tokens::{RuleToken, ScopeId}, tokens::Direction};
+use std::{fmt::{Debug, Display}, marker::PhantomData};
+
+use crate::{applier::ApplicationError, keywords::{ANY_CHAR, ARG_SEP_CHAR, GAP_STR}, matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, Phones}, phones::Phone, rules::tokens::{RuleToken, ScopeId}, tokens::{Direction, ScopeType}};
 
 /// A state machine that can be matched to phones of a specific pattern
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Pattern<'r, 's> {
-    Phone(Phone<'s>),
-    NonBound(NonBound<'r, 's>),
+    Phone(CheckBox<'r, 's, Phone<'s>>),
+    NonBound(CheckBox<'r, 's, NonBound<'r, 's>>),
     Gap(Gap<'s>),
     Optional(Optional<'r, 's>),
     Selection(Selection<'r, 's>),
@@ -13,7 +15,7 @@ pub enum Pattern<'r, 's> {
 impl<'r, 's> From<&'r RuleToken<'s>> for Pattern<'r, 's> {
     fn from(token: &'r RuleToken<'s>) -> Self {
         match token {
-            RuleToken::Phone(phone) => Self::Phone(*phone),
+            RuleToken::Phone(phone) => Self::new_phone(*phone),
             RuleToken::Any { id } => Self::new_any(id.as_ref()),
             RuleToken::Gap { id } => Self::new_gap(*id),
             RuleToken::OptionalScope { id, content } => Self::new_optional(
@@ -29,30 +31,34 @@ impl<'r, 's> From<&'r RuleToken<'s>> for Pattern<'r, 's> {
 }
 
 impl<'r, 's> Pattern<'r, 's> {
+    pub const fn new_phone(phone: Phone<'s>) -> Self {
+        Self::Phone(CheckBox::new(phone))
+    }
+
     pub const fn new_any(id: Option<&'r ScopeId<'s>>) -> Self {
-        Self::NonBound(NonBound { id })
+        Self::NonBound(CheckBox::new(NonBound { id }))
     }
 
     pub const fn new_gap(id: Option<&'s str>) -> Self {
-        Self::Gap(Gap { len: 0, exaust_on_next_match: false, id })
+        Self::Gap(Gap { len: 0, checked_at_zero: false, id })
     }
 
     pub const fn new_optional(content: Vec<Pattern<'r, 's>>, id: Option<&'r ScopeId<'s>>) -> Self {
         Self::Optional(Optional {
             selected: true,
-            option: PatternList { patterns: content },
+            option: PatternList::new(content),
             id
         })
     }
 
     pub fn new_selection(options: Vec<Vec<Pattern<'r, 's>>>, id: Option<&'r ScopeId<'s>>) -> Self {
         let options = options.into_iter()
-            .map(|patterns| PatternList { patterns })
+            .map(PatternList::new)
             .collect::<Vec<_>>();
 
         Self::Selection(Selection {
             options: if options.is_empty() {
-                vec![PatternList { patterns: Vec::new() }]
+                vec![PatternList::default()]
             } else {
                 options
             },
@@ -62,26 +68,24 @@ impl<'r, 's> Pattern<'r, 's> {
     }
 }
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Pattern<'r, 's> {
-    type PhoneInput = Phones<'p, 's>;
-
-    fn advance(&mut self, choices: &Choices<'_, 'r, 's>, direction: Direction) -> AdvanceResult {
-        match self {
-            Self::Phone(phone) => phone.advance(choices, direction),
-            Self::NonBound(any) => any.advance(choices, direction),
-            Self::Gap(gap) => gap.advance(choices, direction),
-            Self::Optional(option) => option.advance(choices, direction),
-            Self::Selection(selection) => selection.advance(choices, direction),
-        }
-    }
-
-    fn matches(&mut self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'r, 's: 'r> MatchState<'r, 's> for Pattern<'r, 's> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
         match self {
             Self::Phone(phone) => MatchState::matches(phone, phones, choices),
             Self::NonBound(any) => any.matches(phones, choices),
             Self::Gap(gap) => gap.matches(phones, choices),
             Self::Optional(option) => option.matches(phones, choices),
             Self::Selection(selection) => selection.matches(phones, choices),
+        }
+    }
+
+    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        match self {
+            Self::Phone(phone) => phone.next_match(phones, choices),
+            Self::NonBound(any) => any.next_match(phones, choices),
+            Self::Gap(gap) => gap.next_match(phones, choices),
+            Self::Optional(option) => option.next_match(phones, choices),
+            Self::Selection(selection) => selection.next_match(phones, choices),
         }
     }
 
@@ -106,21 +110,74 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Pattern<'r, 's> {
     }
 }
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Phone<'s> {
-    type PhoneInput = Phones<'p, 's>;
+impl Display for Pattern<'_, '_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Phone(phone) => write!(f, "{}", phone.match_state.as_symbol()),
+            Self::NonBound(any) => write!(f, "{}", any.match_state),
+            Self::Gap(gap) => write!(f, "{gap}"),
+            Self::Optional(option) => write!(f, "{option}"),
+            Self::Selection(selection) => write!(f, "{selection}"),
+        }
+    }
+}
 
-    fn advance(&mut self, _: &Choices<'_, '_, 's>, _: Direction) -> AdvanceResult {
-        AdvanceResult::Exausted
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct CheckBox<'r, 's: 'r, T: MatchState<'r, 's>> {
+    checked: bool,
+    match_state: T,
+    _phantom_lifetime_r: PhantomData<&'r ()>,
+    _phantom_lifetime_s: PhantomData<&'s ()>,
+}
+
+impl<'r, 's: 'r, T: MatchState<'r, 's>> CheckBox<'r, 's, T> {
+    const fn new(match_state: T) -> Self {
+        Self {
+            checked: false,
+            match_state,
+            _phantom_lifetime_r: PhantomData,
+            _phantom_lifetime_s: PhantomData,
+        }
+    }
+}
+
+impl<'r, 's: 'r, T: MatchState<'r, 's>> MatchState<'r, 's> for CheckBox<'r, 's, T> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        self.match_state.matches(phones, choices)
     }
 
-    fn matches(&mut self, phones: &mut Phones<'_, 's>, _: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
-        let matches = Phone::matches(self, PhoneInput::next(phones));
+    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        if self.checked {
+            None
+        } else {
+            self.checked = true;
+            self.match_state.next_match(phones, choices)
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.match_state.len()
+    }
+
+    fn reset(&mut self) {
+        self.checked = false;
+        self.match_state.reset();
+    }
+}
+
+impl<'r, 's: 'r> MatchState<'r, 's> for Phone<'s> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, _: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        let matches = Phone::matches(self, phones.next());
 
         if matches {
             Some(OwnedChoices::default())
         } else {
             None
         }
+    }
+
+    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        MatchState::matches(self, &mut phones.clone(), choices)
     }
 
     fn reset(&mut self) {}
@@ -133,20 +190,14 @@ pub struct NonBound<'r, 's> {
     id: Option<&'r ScopeId<'s>>,
 }
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for NonBound<'r, 's> {
-    type PhoneInput = Phones<'p, 's>;
-
-    fn advance(&mut self, _: &Choices<'_, 'r, 's>, _: Direction) -> AdvanceResult {
-        AdvanceResult::Exausted
-    }
-
-    fn matches(&mut self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
-        let phone = PhoneInput::next(phones);
+impl<'r, 's: 'r> MatchState<'r, 's> for NonBound<'r, 's> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        let phone = phones.next();
         let mut new_choices = choices.partial_clone();
 
         if let Some(id) = self.id {
             if let Some(choice) = new_choices.any.get(id) {
-                // if the phone matcehs the choice the pattern matches,
+                // if the phone matches the choice the pattern matches,
                 // otherwise it doesn't
                 if phone.matches(choice) {
                     Some(new_choices.owned_choices())
@@ -168,53 +219,40 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for NonBound<'r, 's> {
         }
     }
 
+    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        self.matches(&mut phones.clone(), choices)
+    }
+
     fn reset(&mut self) {}
 
     fn len(&self) -> usize { 1 }
 }
 
+impl Display for NonBound<'_, '_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(id) = self.id {
+            write!(f, "{id}")?;
+        }
+
+        write!(f, "{ANY_CHAR}")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Gap<'s> {
     len: usize,
-    exaust_on_next_match: bool,
+    checked_at_zero: bool,
     id: Option<&'s str>,
 }
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Gap<'s> {
-    type PhoneInput = Phones<'p, 's>;
-
-    fn advance(&mut self, choices: &Choices<'_, 'r, 's>, _: Direction) -> AdvanceResult {
-        if self.exaust_on_next_match {
-            // if a bound is crossed, the gap is exausted
-            AdvanceResult::Exausted
-        } else if let Some(id) = self.id 
-            && let Some(max_len) = choices.gap.get(id)
-            && self.len >= *max_len
-        {
-            // if the maximum chosen length is to be exceeded,
-            // the gap is exausted
-            AdvanceResult::Exausted
-        } else {
-            // otherwise the gap advances
-            self.len += 1;
-            // assumes that, unless checked in the next match, the gap is exausted
-            self.exaust_on_next_match = true;
-            AdvanceResult::Advanced
-        }
-    }
-
-    fn matches(&mut self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'r, 's: 'r> MatchState<'r, 's> for Gap<'s> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
         for _ in 0..self.len() {
-            if PhoneInput::next(phones).is_bound() {
-                // marks if any bound is crossed
-                // then returns `None`
-                self.exaust_on_next_match = true;
+            if phones.next().is_bound() {
+                // returns `None` if a bound is crossed
                 return None;
             }
         }
-
-        // marks if no bounds are crossed
-        self.exaust_on_next_match = false;
 
         let mut new_choices = choices.partial_clone();
 
@@ -222,7 +260,6 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Gap<'s> {
             if let Some(max_len) = choices.gap.get(id).copied() {
                 if self.len > max_len {
                     // if the max len is exceeded the match fails and the gap should exaust
-                    self.exaust_on_next_match = true;
                     return None;
                 }
             } else {
@@ -234,19 +271,40 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Gap<'s> {
         Some(new_choices.owned_choices())
     }
 
+    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        if self.checked_at_zero {
+            self.len += 1;
+        } else {
+            self.checked_at_zero = true;
+        }
+        
+        self.matches(&mut phones.clone(), choices)
+    }
+
     fn len(&self) -> usize {
         self.len
     }
 
     fn reset(&mut self) {
         self.len = 0;
-        self.exaust_on_next_match = false;
+        self.checked_at_zero = false;
+    }
+}
+
+impl Display for Gap<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(id) = self.id {
+            write!(f, "{id}")?;
+        }
+
+        write!(f, " {GAP_STR} ")
     }
 }
 
 /// A list of matchable `Pattern`s
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PatternList<'r, 's> {
+    checked_at_initial: bool,
     patterns: Vec<Pattern<'r, 's>>,
 }
 
@@ -256,34 +314,40 @@ impl<'r, 's> From<&'r [RuleToken<'s>]> for PatternList<'r, 's> {
             .map(Pattern::from)
             .collect();
 
-        Self { patterns }
+        Self { patterns, checked_at_initial: false }
     }
 }
 
 impl<'r, 's> PatternList<'r, 's> {
-    #[cfg(test)]
-    pub fn new(patterns: Vec<Pattern<'r, 's>>) -> Self {
-        Self { patterns }
+    /// Creates a new `PatternList`
+    pub const fn new(patterns: Vec<Pattern<'r, 's>>) -> Self {
+        Self { patterns, checked_at_initial: false }
     }
 
-    pub fn as_phones(&self, choices: &Choices<'_, 'r, 's>) -> Option<Vec<Phone<'s>>> {
+    /// Determines if there are no patterns in the list
+    pub const fn is_empty(&self) -> bool {
+        self.patterns.is_empty()
+    }
+
+    /// Converts a list of patterns to phones
+    pub fn as_phones(&self, choices: &Choices<'_, 'r, 's>) -> Result<Vec<Phone<'s>>, ApplicationError<'r, 's>> {
         let mut phones = Vec::new();
 
         for pattern in &self.patterns {
             match pattern {
-                Pattern::Phone(phone) => phones.push(*phone),
+                Pattern::Phone(CheckBox { match_state: phone, .. }) => phones.push(*phone),
 
-                Pattern::NonBound(NonBound { id: Some(id) }) =>
+                Pattern::NonBound(CheckBox { match_state: NonBound { id: Some(id) }, ..}) =>
                 if let Some(phone) = choices.any.get(id) {
                     phones.push(*phone);
                 } else {
-                    return None;
+                    return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
                 },
 
                 Pattern::Gap(Gap { id: Some(id), .. }) =>
                 match choices.gap.get(id) {
                     Some(0) => (),
-                    _ => return None,
+                    _ => return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone())),
                 }
                 
                 Pattern::Optional(Optional { id: Some(id), option, .. }) =>
@@ -292,7 +356,7 @@ impl<'r, 's> PatternList<'r, 's> {
                         phones.append(&mut option.as_phones(choices)?);
                     }
                 } else {
-                    return None;
+                    return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
                 },
 
                 Pattern::Selection(Selection { id: Some(id), options, .. }) => 
@@ -300,59 +364,82 @@ impl<'r, 's> PatternList<'r, 's> {
                 && let Some(option) = options.get(choice) {
                     phones.append(&mut option.as_phones(choices)?);
                 } else {
-                    return None
+                    return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
                 },
 
-                _ => return None,
+                _ => return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone())),
             }
         }
 
-        Some(phones)
+        Ok(phones)
+    }
+
+    fn next_sub_match(&mut self, index: usize, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        let real_index = match phones.direction {
+            _ if index >= self.patterns.len() => return Some(OwnedChoices::default()),
+            Direction::Ltr => Some(index),
+            Direction::Rtl => Some(self.patterns.len() - 1 - index),
+        }?;
+
+        loop {
+
+            let mut new_choices = choices.partial_clone();
+            let pat = &mut self.patterns[real_index];
+
+            // finds the pattern's next match
+            let pat_choices = pat.next_match(phones, &new_choices)?;
+            new_choices.take_owned(pat_choices);
+
+            // creates the phones for the remaining patterns
+            let mut next_phones = phones.clone();
+            (0..pat.len()).for_each(|_| _ = next_phones.next());
+
+            if let Some(next_choices) = self.next_sub_match(index + 1, &mut next_phones, &new_choices) {
+                // if the remaining patterns match there is another match
+                new_choices.take_owned(next_choices);
+            } else {
+                match phones.direction {
+                    Direction::Ltr => self.patterns.get_mut(real_index + 1..).unwrap_or_default(),
+                    Direction::Rtl => &mut self.patterns[..real_index]
+                }.iter_mut().for_each(MatchState::reset);
+
+                continue;
+            }
+
+            return Some(new_choices.owned_choices())
+        }
     }
 }
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for PatternList<'r, 's> {
-    type PhoneInput = Phones<'p, 's>;
-
-    fn advance(&mut self, choices: &Choices<'_, 'r, 's>, direction: Direction) -> AdvanceResult {
-        // advances from the end toward the start
-        // if an advancement is made the next state is acheived and `Advanced` is returned
-        // otherwise the pattern is reset and the next is advanced
-        match direction {
-            Direction::Ltr => for pat in self.patterns.iter_mut().rev() {
-                match pat.advance(choices, direction) {
-                    AdvanceResult::Advanced => return AdvanceResult::Advanced,
-                    AdvanceResult::Exausted => pat.reset(),
-                }
-            },
-            Direction::Rtl => for pat in &mut self.patterns {
-                match pat.advance(choices, direction) {
-                    AdvanceResult::Advanced => return AdvanceResult::Advanced,
-                    AdvanceResult::Exausted => pat.reset(),
-                }
-            },
-        }
-
-        AdvanceResult::Exausted
-    }
-
-    fn matches(&mut self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'r, 's: 'r> MatchState<'r, 's> for PatternList<'r, 's> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
         let mut new_choices = choices.partial_clone();
 
         // matches each pattern and saves the choices
         // if a pattern fails to match, the list fails to match
         match phones.direction() {
-            Direction::Ltr => for pat in &mut self.patterns {
+            Direction::Ltr => for pat in &self.patterns {
                 let pattern_choices = pat.matches(phones, &new_choices)?;
                 new_choices.take_owned(pattern_choices);
             },
-            Direction::Rtl => for pat in self.patterns.iter_mut().rev() {
+            Direction::Rtl => for pat in self.patterns.iter().rev() {
                 let pattern_choices = pat.matches(phones, &new_choices)?;
                 new_choices.take_owned(pattern_choices);
             },
-    }
+        }
 
         Some(new_choices.owned_choices())
+    }
+
+    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        if !self.checked_at_initial {
+            self.checked_at_initial = true;
+            if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
+                return Some(new_choices);
+            }
+        }
+
+        self.next_sub_match(0, phones, choices)
     }
 
     fn len(&self) -> usize {
@@ -371,90 +458,72 @@ pub struct Optional<'r, 's> {
     id: Option<&'r ScopeId<'s>>,
 }
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Optional<'r, 's> {
-    type PhoneInput = Phones<'p, 's>;
-
-    fn advance(&mut self, choices: &Choices<'_, 'r, 's>, direction: Direction) -> AdvanceResult {
-        if let Some(id) = self.id && let Some(choice) = choices.optional.get(id).copied() {
-            // if the selection and choice are both deselected pattern is exausted,
-            // if the choice is selected, then, if the option can be advanced, the pattern is advanced
-            // otherwise the pattern is exausted
-            if !self.selected && !choice {
-                AdvanceResult::Exausted
-            } else if choice {
-                self.selected = true;
-
-                if let AdvanceResult::Exausted = self.option.advance(choices, direction) {
-                    return AdvanceResult::Exausted;
-                }
-
-                AdvanceResult::Advanced
-            } else {
-                AdvanceResult::Exausted
-            }
-        } else {
-            // if the option is exaused, it is deselected 
-            // if the option is deselected, the pattern is exausted
-            // otherwise, the option is advanced
-            if self.selected {
-                if let AdvanceResult::Exausted = self.option.advance(choices, direction) {
-                    self.selected = false;
-                } else {
-                    self.selected = true;
-                }
-
-                AdvanceResult::Advanced
-            } else {
-                AdvanceResult::Exausted
-            }
-        }
-    }
-
-    fn matches(&mut self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'r, 's: 'r> MatchState<'r, 's> for Optional<'r, 's> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
         if let Some(id) = self.id {
-            let mut new_choices = choices.partial_clone();
-
             if let Some(choice) = choices.optional.get(id).copied() {
-                if !self.selected && choice {
-                    // Optionals may not be reselected
+                // if choice and selection do not align, the match fails
+                if self.selected != choice {
                     return None;
                 }
-                self.selected = choice;
 
-                // if the content doesn't match when selected, returns `None`
-                // otherwise updates `new_choices`
+                // checks the match if the choice aligns with the selection
                 if choice {
-                    let internal_choices = self.option.matches(phones, &new_choices)?;
-                    new_choices.take_owned(internal_choices);
-                }
-
-                // returns the made chocies
-                Some(new_choices.owned_choices())
-            } else {
-                // sets the scope's selection
-                // if the content doesn't match when selected, returns `None`
-                if self.selected {
-                    new_choices.optional.to_mut().insert(id, true);
-                    let internal_choices = self.option.matches(phones, &new_choices)?;
-                    new_choices.take_owned(internal_choices);
+                    // checks if the option matches
+                    self.option.matches(phones, choices)
                 } else {
-                    new_choices.optional.to_mut().insert(id, false);
+                    // if the option is not inserted the pattern matches
+                    Some(OwnedChoices::default())
                 }
+            } else {
+                // chooses the selection and checks it
+                let mut new_choices = choices.partial_clone();
+                new_choices.optional.to_mut().insert(id, self.selected);
 
-                // returns the made chocies
+                // checks if the option matches with the new selection
+                if self.selected {
+                    let internal_choices = self.option.matches(phones, &new_choices)?;
+                    new_choices.take_owned(internal_choices);
+                };
+
                 Some(new_choices.owned_choices())
             }
         } else if self.selected {
+            // checks if the option matches
             self.option.matches(phones, choices)
         } else {
+            // if the option is not inserted the pattern matches
             Some(OwnedChoices::default())
         }
+    }
+
+    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        if self.selected {
+            loop {
+                if self.option.next_match(phones, choices).is_some() {
+                    if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
+                        return Some(new_choices);
+                    } else{
+                        continue;
+                    }
+                }
+
+                break;
+            }
+
+            self.selected = false;
+            self.option.reset();
+        } else {
+            return None
+        }
+            
+        self.matches(&mut phones.clone(), choices)
     }
 
     fn len(&self) -> usize {
         if self.selected {
             self.option.len()
-        } else {
+        } else{
             0
         }
     }
@@ -462,6 +531,21 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's> for Optional<'r, 's> {
     fn reset(&mut self) {
         self.selected = true;
         self.option.reset();
+    }
+}
+
+impl Display for Optional<'_, '_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(id) = self.id {
+            write!(f, "{id}")?;
+        }
+
+        let s = self.option.patterns.iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(&format!(" "));
+
+        write!(f, "{} {s} {}", ScopeType::Optional.fmt_start(), ScopeType::Optional.fmt_end())
     }
 }
 
@@ -473,63 +557,25 @@ pub struct Selection<'r, 's> {
     id: Option<&'r ScopeId<'s>>,
 }
 
-impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's>  for Selection<'r, 's> {
-    type PhoneInput = Phones<'p, 's>;
-
-    fn advance(&mut self, choices: &Choices<'_, 'r, 's>, direction: Direction) -> AdvanceResult {
-        let choice_made = if let Some(id) = self.id && let Some(choice) = choices.selection.get(id).copied() {
-            if choice > self.selected_index {
-                return AdvanceResult::Exausted;
-            }
-            self.selected_index = choice;
-            true
-        } else {
-            false
-        };
-        
-        if let Some(option) = self.options.get_mut(self.selected_index) {
-            match option.advance(choices, direction) {
-                AdvanceResult::Advanced => AdvanceResult::Advanced,
-                AdvanceResult::Exausted => {
-                    // if the selection is enforced it cannot be advanced
-                    if choice_made {
-                        return AdvanceResult::Exausted;
-                    }
-
-                    // moves to the next selection
-                    self.selected_index += 1;
-
-                    if self.selected_index >= self.options.len() {
-                        // if the next selection is not valid the pattern is exausted
-                        AdvanceResult::Exausted
-                    } else {
-                        AdvanceResult::Advanced
-                    }
-                }
-            }
-        } else {
-            // if the selection is not valid the pattern is exausted
-            AdvanceResult::Exausted
-        }
-    }
-
-    fn matches(&mut self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'r, 's: 'r> MatchState<'r, 's>  for Selection<'r, 's> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
         let mut new_choices = choices.partial_clone();
 
         if let Some(id) = self.id {
             if let Some(choice) = choices.selection.get(id).copied() {
-                if self.selected_index > choice {
-                    // selections cannot be moved backward
+                if self.selected_index != choice {
+                    // selections cannot be changed
                     return None;
                 }
-                self.selected_index = choice;
 
-                let option = self.options.get_mut(choice)?;
+                // checks if the choice matches
+                let option = self.options.get(choice)?;
                 let internal_choices = option.matches(phones, &new_choices)?;
 
                 new_choices.take_owned(internal_choices);
             } else {
-                let option = self.options.get_mut(self.selected_index)?;
+                // chooses the current index
+                let option = self.options.get(self.selected_index)?;
 
                 new_choices.selection.to_mut().insert(id, self.selected_index);
 
@@ -538,13 +584,36 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's>  for Selection<'r, 's> {
                 new_choices.take_owned(internal_choices);
             }
         } else {
-            let option = self.options.get_mut(self.selected_index)?;
+            // checks if the selection matches
+            let option = self.options.get(self.selected_index)?;
             let internal_choices = option.matches(phones, &new_choices)?;
 
             new_choices.take_owned(internal_choices);
         }
 
         Some(new_choices.owned_choices())
+    }
+
+    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        loop {
+            // checks if the option has a next match form
+            if self.options.get_mut(self.selected_index)?.next_match(phones, choices).is_some() {
+                // checks if the pattern matches
+                if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
+                    return Some(new_choices);
+                } else {
+                    continue;
+                }
+            }
+            
+            // if there is not another match, moves to the next option
+            self.selected_index += 1;
+
+            // if the next match is invalid, the match fails
+            if self.selected_index >= self.options.len() {
+                return None;
+            }
+        }
     }
 
     fn len(&self) -> usize {
@@ -554,5 +623,25 @@ impl<'p, 'r, 's: 'r + 'p> MatchState<'p, 'r, 's>  for Selection<'r, 's> {
     fn reset(&mut self) {
         self.selected_index = 0;
         self.options.iter_mut().for_each(MatchState::reset);
+    }
+}
+
+impl Display for Selection<'_, '_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(id) = self.id {
+            write!(f, "{id}")?;
+        }
+
+        let s = self.options.iter()
+            .map(|option|
+                option.patterns.iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            )
+            .collect::<Vec<_>>()
+            .join(&format!("{ARG_SEP_CHAR} "));
+
+        write!(f, "{} {s} {}", ScopeType::Selection.fmt_start(), ScopeType::Selection.fmt_end())
     }
 }

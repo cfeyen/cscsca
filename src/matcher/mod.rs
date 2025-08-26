@@ -1,4 +1,4 @@
-use crate::{matcher::match_state::PhoneInput, phones::Phone, tokens::Direction};
+use crate::{phones::Phone, tokens::Direction};
 
 #[cfg(test)]
 mod tests;
@@ -25,7 +25,7 @@ pub struct Phones<'p, 's> {
 
 impl<'p, 's> Phones<'p, 's> {
     /// Creates a new phone iterator where `index` is the index of the first phone to be returned
-    pub const fn new(phones: &'p [Phone<'s>],  index: usize, direction: Direction) -> Self {
+    pub const fn new(phones: &'p [Phone<'s>], index: usize, direction: Direction) -> Self {
         Self {
             phone_list: phones,
             index: if index <= phones.len() {
@@ -38,6 +38,34 @@ impl<'p, 's> Phones<'p, 's> {
             },
             direction,
         }
+    }
+
+    /// Gets the next phone
+    pub fn next(&mut self) -> &'p Phone<'s> {
+        if let Some(i) = self.index {
+            match self.direction {
+                Direction::Ltr => {
+                    let phone = self.phone_list.get(i);
+                    self.index = i.checked_add(1);
+                    phone
+                },
+                Direction::Rtl => {
+                    if let Some(i) = i.checked_sub(1) {
+                        self.index = Some(i);
+                        self.phone_list.get(i)
+                    } else {
+                        None
+                    }
+                }
+            }
+        } else {
+            None
+        }.unwrap_or_default()
+    }
+
+    /// Gets the direction
+    pub const fn direction(&self) -> Direction {
+        self.direction
     }
 
     /// Gets the phones to the left of the index
@@ -77,42 +105,6 @@ impl<'p, 's> Phones<'p, 's> {
             phone_list: phones,
             index: Some(0),
             direction: Direction::Ltr,
-        }
-    }
-}
-
-impl<'p, 's: 'p> PhoneInput<'p, 's> for Phones<'p, 's> {
-    fn next(&mut self) -> &'p Phone<'s> {
-        Iterator::next(self).unwrap_or_default()
-    }
-
-    fn direction(&self) -> Direction {
-        self.direction
-    }
-}
-
-impl<'p, 's> Iterator for Phones<'p, 's> {
-    type Item = &'p Phone<'s>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if let Some(i) = self.index {
-            match self.direction {
-                Direction::Ltr => {
-                    let phone = self.phone_list.get(i);
-                    self.index = i.checked_add(1);
-                    phone
-                },
-                Direction::Rtl => {
-                    if let Some(i) = i.checked_sub(1) {
-                        self.index = Some(i);
-                        self.phone_list.get(i)
-                    } else {
-                        None
-                    }
-                }
-            }
-        } else {
-            None
         }
     }
 }

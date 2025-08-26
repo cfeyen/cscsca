@@ -1,4 +1,4 @@
-use crate::{escaped_strings::EscapedStr, keywords::ESCAPE_CHAR, sub_string::SubString};
+use crate::{escaped_strings::EscapedStr, keywords::{BOUND_CHAR, ESCAPE_CHAR}, sub_string::SubString};
 
 #[cfg(test)]
 mod tests;
@@ -19,10 +19,26 @@ impl<'s> Phone<'s> {
     /// Returns the phone's symbol.
     /// If the phone is a boundary, `" "` (space) is returned
     #[must_use]
-    pub fn as_str(&self) -> &'s str {
+    pub const fn as_str(&self) -> &'s str {
         match self {
             Self::Symbol(symbol) => symbol,
             Self::Bound => " ",
+        }
+    }
+
+    
+    /// Returns the phone's symbol.
+    /// If the phone is a boundary, `BOUND_CHAR` is returned as a string
+    #[must_use]
+    pub const fn as_symbol(&self) -> &'s str {
+        match self {
+            Phone::Symbol(symbol) => symbol,
+            Phone::Bound => const {
+                let utf8 = std::ptr::from_ref(&BOUND_CHAR)
+                    .cast::<[u8; BOUND_CHAR.len_utf8()]>();
+
+                unsafe { str::from_utf8_unchecked(&*utf8) }
+            },
         }
     }
 

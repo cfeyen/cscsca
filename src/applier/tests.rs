@@ -172,29 +172,6 @@ fn selection_to_selection() {
     assert_eq!(vec![Phone::Symbol("d"), Phone::Symbol("e"), Phone::Symbol("f"), Phone::Symbol("d")], phones);
 }
 
-// #[test]
-// fn option_to_phone() {
-//     let rule = SoundChangeRule {
-//         kind: Shift { dir: Direction::Ltr, kind: ShiftType::Move },
-//         input: vec![
-//             RuleToken::OptionalScope { id: Some(ScopeId::IOUnlabeled {
-//                 id_num: 0,
-//                 label_type: LabelType::Scope(ScopeType::Optional),
-//                 parent: None
-//             }), content: vec![RuleToken::Phone(Phone::Symbol("a"))] },
-//         ],
-//         output: vec![
-//             RuleToken::Phone(Phone::Symbol("b")),
-//         ],
-//         conds: vec![Cond::default()],
-//         anti_conds: Vec::new(),
-//     };
-
-//     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")];
-    
-//     assert_eq!(Err(ApplicationError::MatchError(MatchError::EmptyInput)), apply(&rule, &mut phones, Some(DEFAULT_LINE_APPLICATION_LIMIT)));
-// }
-
 #[test]
 fn option_phone_to_option_phone() { 
     let rule = SoundChangeRule {

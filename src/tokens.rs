@@ -87,14 +87,14 @@ pub enum ScopeType {
 }
 
 impl ScopeType {
-    pub fn fmt_start(self) -> char {
+    pub const fn fmt_start(self) -> char {
         match self {
             ScopeType::Optional => OPTIONAL_START_CHAR,
             ScopeType::Selection => SELECTION_START_CHAR,
         }
     }
 
-    pub fn fmt_end(self) -> char {
+    pub const fn fmt_end(self) -> char {
         match self {
             ScopeType::Optional => OPTIONAL_END_CHAR,
             ScopeType::Selection => SELECTION_END_CHAR,
