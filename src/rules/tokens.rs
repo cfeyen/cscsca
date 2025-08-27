@@ -1,6 +1,11 @@
 use std::{fmt::Display, rc::Rc};
 
-use crate::{tokens::ScopeType, phones::Phone, ir::tokens::IrToken};
+use crate::{
+    ir::tokens::IrToken,
+    keywords::ARG_SEP_CHAR,
+    phones::Phone,
+    tokens::ScopeType
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RuleToken<'s> {
@@ -33,7 +38,7 @@ impl Display for RuleToken<'_> {
             Self::OptionalScope { id: None, content } => {
                 let s = content
                     .iter()
-                    .map(|t| format!("{t}"))
+                    .map(ToString::to_string)
                     .collect::<Vec<_>>()
                     .join(" ");
 
@@ -48,12 +53,12 @@ impl Display for RuleToken<'_> {
                     .map(|list| {
                         list
                             .iter()
-                            .map(|t| format!("{t}"))
+                            .map(ToString::to_string)
                             .collect::<Vec<_>>()
                             .join(" ")
                     })
                     .collect::<Vec<_>>()
-                    .join(&format!("{} ", IrToken::ArgSep));
+                    .join(&format!("{ARG_SEP_CHAR} "));
 
                 write!(f, "{} {s} {}", ScopeType::Selection.fmt_start(), ScopeType::Selection.fmt_end())
             }

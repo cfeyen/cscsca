@@ -15,7 +15,7 @@ io_test! {
 io_test! {
     fn demo_stop_voicing_and_vowel_lost() {
         assert_eq!(
-            "p ab ed dl htl ant".to_string(),
+            "p ab ed dl htl ant",
             await_io! { apply("pe apa eti tl htl ante", DEMO) }
         );
     }
@@ -24,7 +24,7 @@ io_test! {
 io_test! {
     fn demo_stop_assimilation() {
         assert_eq!(
-            "pat taga".to_string(),
+            "pat taga",
             await_io! { apply("pata takan", DEMO) }
         );
     }
@@ -33,7 +33,7 @@ io_test! {
 io_test! {
     fn demo_h_loss() {
         assert_eq!(
-            "h_ _".to_string(),
+            "h_ _",
             await_io! { apply("h_ _h", DEMO) }
         );
     }
@@ -42,7 +42,7 @@ io_test! {
 io_test! {
     fn demo_palatalization() {
         assert_eq!(
-            "taɲtʃil aɲi".to_string(),
+            "taɲtʃil aɲi",
             await_io! { apply("tantil anim", DEMO) }
         );
     }
@@ -51,7 +51,7 @@ io_test! {
 io_test! {
     fn demo_harmony() {
         assert_eq!(
-            "iny iwu iwiny".to_string(),
+            "iny iwu iwiny",
             await_io! { apply("inuh iwuh iwinuh", DEMO) }
         );
     }

@@ -245,21 +245,19 @@ impl std::error::Error for ApplicationError<'_, '_> {}
 
 impl std::fmt::Display for ApplicationError<'_, '_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
+        match self {
             Self::InvalidSelectionAccess(scope, elem) => {
-                format!("Cannot access element {} in scope: {scope}", elem + 1)
+                write!(f, "Cannot access element {} in scope: {scope}", elem + 1)
             },
             Self::UnmatchedTokenInOutput(token) => {
-                format!("Cannot match the following token in the output to a token in the input: {token}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
+                write!(f, "Cannot match the following token in the output to a token in the input: {token}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
             },
-            Self::ExceededLimit(limit) => match limit {
+            Self::ExceededLimit(limit) => write!(f, "{}", match limit {
                 LimitCondition::Time(_) => "Could not apply changes in allotted time",
                 LimitCondition::Count { attempts: _, max: _ } => "Could not apply changes with the allotted application attempts",
-            }.to_string(),
-            Self::GapOutOfCond => format!("Gaps ('{GAP_STR}') are not allowed outside of conditions and anti-conditions"),
-            Self::PatternCannotBeConvertedToPhones(pattern) => format!("'{pattern}' cannot be converted to a phone or list of phones"),
-        };
-
-        write!(f, "{s}")
+            }),
+            Self::GapOutOfCond => write!(f, "Gaps ('{GAP_STR}') are not allowed outside of conditions and anti-conditions"),
+            Self::PatternCannotBeConvertedToPhones(pattern) => write!(f, "'{pattern}' cannot be converted to a phone or list of phones"),
+        }
     }
 }

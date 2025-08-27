@@ -103,3 +103,12 @@ pub const PRINT_LINE_START: &str = "PRINT";
 pub const GET_LINE_START: &str = "GET";
 pub const GET_AS_CODE_LINE_START: &str = "GET_AS_CODE";
 pub const COMMENT_LINE_START: &str = "##";
+
+/// Converts a `&char` to `&str`
+pub const fn char_to_str(c: &char) -> &str {
+    let ptr = std::ptr::from_ref(c).cast::<u8>();
+    let utf8 = std::ptr::slice_from_raw_parts(ptr, c.len_utf8());
+
+    // Safety: `utf8` is a valid pointer to vaild utf8
+    unsafe { str::from_utf8_unchecked(&*utf8) }
+}

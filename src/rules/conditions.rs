@@ -90,13 +90,13 @@ impl Display for Cond<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let before = self.before
             .iter()
-            .map(|t| format!("{t}"))
+            .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join(" ");
 
         let after = self.after
             .iter()
-            .map(|t| format!("{t}"))
+            .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join(" ");
 

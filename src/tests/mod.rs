@@ -67,7 +67,7 @@ io_test! {
 io_test! {
     fn matches_with_option_that_can_insert_but_should_not() {
         assert_eq!(
-            "paa".to_string(),
+            "paa",
             await_io! { apply("pea", "{i, e} >> {e, $env{e, a}} / _ (*) $env{e, a}") }
         );
     }
@@ -76,7 +76,7 @@ io_test! {
 io_test! {
     fn matches_with_selection_that_can_insert_first_but_should_insert_second() {
         assert_eq!(
-            "cdeg".to_string(),
+            "cdeg",
             await_io! { apply("adeg", "a >> $env{b, c} / _ $env{d e, d} $env{f, e g}") }
         );
     }

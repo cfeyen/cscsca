@@ -1,4 +1,4 @@
-use crate::{escaped_strings::EscapedStr, keywords::{BOUND_CHAR, ESCAPE_CHAR}, sub_string::SubString};
+use crate::{escaped_strings::EscapedStr, keywords::{char_to_str, BOUND_CHAR, ESCAPE_CHAR}, sub_string::SubString};
 
 #[cfg(test)]
 mod tests;
@@ -33,13 +33,7 @@ impl<'s> Phone<'s> {
     pub const fn as_symbol(&self) -> &'s str {
         match self {
             Phone::Symbol(symbol) => symbol,
-            Phone::Bound => const {
-                let utf8 = std::ptr::from_ref(&BOUND_CHAR)
-                    .cast::<[u8; BOUND_CHAR.len_utf8()]>();
-
-                // Saftey: `utf8` is a valid pointer to valid unicode
-                unsafe { str::from_utf8_unchecked(&*utf8) }
-            },
+            Phone::Bound => const { char_to_str(&BOUND_CHAR) },
         }
     }
 

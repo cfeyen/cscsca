@@ -122,6 +122,7 @@ impl Display for Pattern<'_, '_> {
     }
 }
 
+/// A `MatchState` wrapper that lets `next_match` only be called once before exausting
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct CheckBox<'r, 's: 'r, T: MatchState<'r, 's>> {
     checked: bool,
@@ -131,6 +132,7 @@ pub struct CheckBox<'r, 's: 'r, T: MatchState<'r, 's>> {
 }
 
 impl<'r, 's: 'r, T: MatchState<'r, 's>> CheckBox<'r, 's, T> {
+    /// Creates a new `CheckBox` wrapper
     const fn new(match_state: T) -> Self {
         Self {
             checked: false,
@@ -374,6 +376,7 @@ impl<'r, 's> PatternList<'r, 's> {
         Ok(phones)
     }
 
+    // Recursively determines the next match of a sublist of the `PatternList` 
     fn next_sub_match(&mut self, index: usize, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
         let real_index = match phones.direction {
             _ if index >= self.patterns.len() => return Some(OwnedChoices::default()),
@@ -382,7 +385,6 @@ impl<'r, 's> PatternList<'r, 's> {
         }?;
 
         loop {
-
             let mut new_choices = choices.partial_clone();
             let pat = &mut self.patterns[real_index];
 

@@ -14,12 +14,10 @@ pub struct Shift {
 
 impl Display for Shift {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self { dir, kind: ShiftType::Stay } => format!("{dir}"),
-            Self { dir, kind: ShiftType::Move } => format!("{dir}{dir}"),
-        };
-
-        write!(f, "{s}")
+        match self {
+            Self { dir, kind: ShiftType::Stay } => write!(f, "{dir}"),
+            Self { dir, kind: ShiftType::Move } => write!(f, "{dir}{dir}"),
+        }
     }
 }
 

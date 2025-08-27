@@ -341,27 +341,25 @@ impl std::error::Error for RuleStructureError<'_> {}
 
 impl std::fmt::Display for RuleStructureError<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
+        match self {
             Self::ArgSepOutOfSelection
-                => format!("Found '{}' outside of a selection scope ('{}')", IrToken::ArgSep, ScopeType::Selection),
+                => write!(f, "Found '{}' outside of a selection scope ('{}')", IrToken::ArgSep, ScopeType::Selection),
             Self::BreakWithoutShift(r#break)
-                => format!("Found '{break}' without a proceeding shift token"),
+                => write!(f, "Found '{break}' without a proceeding shift token"),
             Self::LabelNotFollowedByScope(name)
-                => format!("Label '{}' is not followed by a scope", IrToken::Label(name)),
-            Self::NoShift => "Rule does not contains a shift token".to_string(),
-            Self::UnopendScope(kind) => format!("Found unopened '{}'", kind.fmt_end()),
-            Self::UnclosedScope(kind) => format!("Found unclosed '{}'", kind.fmt_start()),
+                => write!(f, "Label '{}' is not followed by a scope", IrToken::Label(name)),
+            Self::NoShift => write!(f, "Rule does not contains a shift token"),
+            Self::UnopendScope(kind) => write!(f, "Found unopened '{}'", kind.fmt_end()),
+            Self::UnclosedScope(kind) => write!(f, "Found unclosed '{}'", kind.fmt_start()),
             Self::MismatchedScopeBounds(start, end)
-                => format!("Found mismatched scope bounds '{}'..'{}'", start.fmt_start(), end.fmt_end()),
-            Self::UnexpectedToken(ir_token) => format!("Found unexpected token '{ir_token}'"),
-            Self::NoConditionFocus => format!("Found condition without an input patern ('{}') or equality ('{}')", CondType::Pattern, CondType::Match),
-            Self::AndDoesNotFollowCond => format!("Found '{AND_CHAR}' outside of a condition"),
+                => write!(f, "Found mismatched scope bounds '{}'..'{}'", start.fmt_start(), end.fmt_end()),
+            Self::UnexpectedToken(ir_token) => write!(f, "Found unexpected token '{ir_token}'"),
+            Self::NoConditionFocus => write!(f, "Found condition without an input patern ('{}') or equality ('{}')", CondType::Pattern, CondType::Match),
+            Self::AndDoesNotFollowCond => write!(f, "Found '{AND_CHAR}' outside of a condition"),
             Self::SecondShift(shift)
-                => format!("Found a second shift token '{shift}' after the first"),
+                => write!(f, "Found a second shift token '{shift}' after the first"),
             Self::UnexpectedCondType(r#type)
-                => format!("Found '{type}' either outside of a condition or after '{}' or '{}'", CondType::Pattern, CondType::Match),
-        };
-
-        write!(f, "{s}")
+                => write!(f, "Found '{type}' either outside of a condition or after '{}' or '{}'", CondType::Pattern, CondType::Match),
+        }
     }
 }
