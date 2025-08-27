@@ -63,6 +63,16 @@ impl<'p, 's> Phones<'p, 's> {
         }.unwrap_or_default()
     }
 
+    pub fn skip(&mut self, n: usize) {
+        if let Some(i) = self.index {
+            self.index = match self.direction {
+                Direction::Ltr => i.checked_add(n)
+                    .and_then(|i| if i >= self.phone_list.len() { None } else { Some(i) }),
+                Direction::Rtl => i.checked_sub(n),
+            }
+        }
+    }
+
     /// Gets the direction
     pub const fn direction(&self) -> Direction {
         self.direction

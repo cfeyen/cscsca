@@ -392,9 +392,9 @@ impl<'r, 's> PatternList<'r, 's> {
 
             // creates the phones for the remaining patterns
             let mut next_phones = phones.clone();
-            (0..pat.len()).for_each(|_| _ = next_phones.next());
+            next_phones.skip(pat.len());
 
-            if let Some(next_choices) = self.next_sub_match(index + 1, &mut next_phones, &new_choices) {
+            if let Some(next_choices) = self.next_sub_match(index + 1, &next_phones, &new_choices) {
                 // if the remaining patterns match there is another match
                 new_choices.take_owned(next_choices);
             } else {
@@ -484,7 +484,7 @@ impl<'r, 's: 'r> MatchState<'r, 's> for Optional<'r, 's> {
                 if self.selected {
                     let internal_choices = self.option.matches(phones, &new_choices)?;
                     new_choices.take_owned(internal_choices);
-                };
+                }
 
                 Some(new_choices.owned_choices())
             }
@@ -503,9 +503,9 @@ impl<'r, 's: 'r> MatchState<'r, 's> for Optional<'r, 's> {
                 if self.option.next_match(phones, choices).is_some() {
                     if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
                         return Some(new_choices);
-                    } else{
-                        continue;
                     }
+
+                    continue;
                 }
 
                 break;
@@ -543,7 +543,7 @@ impl Display for Optional<'_, '_> {
         let s = self.option.patterns.iter()
             .map(ToString::to_string)
             .collect::<Vec<_>>()
-            .join(&format!(" "));
+            .join(" ");
 
         write!(f, "{} {s} {}", ScopeType::Optional.fmt_start(), ScopeType::Optional.fmt_end())
     }
@@ -601,9 +601,9 @@ impl<'r, 's: 'r> MatchState<'r, 's>  for Selection<'r, 's> {
                 // checks if the pattern matches
                 if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
                     return Some(new_choices);
-                } else {
-                    continue;
                 }
+                
+                continue;
             }
             
             // if there is not another match, moves to the next option

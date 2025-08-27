@@ -105,7 +105,7 @@ fn apply_at<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, 
 
     let mut choices = Choices::default();
 
-    if let Some(new_choices) = rule_pattern.next_match(match_phones)? {
+    if let Some(new_choices) = rule_pattern.next_match(&match_phones)? {
         choices.take_owned(new_choices);
     } else {
         return Ok(None);

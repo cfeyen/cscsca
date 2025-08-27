@@ -34,12 +34,12 @@ impl<'r, 's: 'r> RulePattern<'r, 's> {
         })
     }
     
-    pub fn next_match(&mut self, phones: Phones<'_, 's>) -> Result<Option<OwnedChoices<'r, 's>>, ApplicationError<'r, 's>> {
+    pub fn next_match(&mut self, phones: &Phones<'_, 's>) -> Result<Option<OwnedChoices<'r, 's>>, ApplicationError<'r, 's>> {
         let mut new_choices = Choices::default();
 
         loop {
             // checks the input
-            let Some(input_choices) = self.input.next_match(&phones, &new_choices) else {
+            let Some(input_choices) = self.input.next_match(phones, &new_choices) else {
                 return Ok(None);
             };
             self.conds.iter_mut().for_each(CondPattern::reset);
@@ -49,7 +49,7 @@ impl<'r, 's: 'r> RulePattern<'r, 's> {
 
             // prepares to create condition phones
             let mut after_input_phones = phones.clone();
-            (0..self.input.len()).for_each(|_| _ = after_input_phones.next());
+            after_input_phones.skip(self.input.len());
 
             // creates the phone iterators for the conditions
             let cond_phones = match phones.direction {
@@ -66,21 +66,21 @@ impl<'r, 's: 'r> RulePattern<'r, 's> {
             // checks each condition agains each anti-condition
             for cond in &mut self.conds {
                 // checks each match of each condition agains each anti-condition
-                'cond_loop: while let Some(cond_choices) = cond.next_match(&mut cond_phones.clone(), &new_choices)? {
+                'cond_loop: while let Some(cond_choices) = cond.next_match(&cond_phones, &new_choices)? {
                     let mut post_cond_choices = new_choices.partial_clone();
                     post_cond_choices.take_owned(cond_choices.clone());
 
                     // checks agains each anti-condition
                     for anti_cond in &mut self.anti_conds {
                         // if an anti-condition matches, checks the next match of the condition
-                        if anti_cond.next_match(&mut cond_phones.clone(), &post_cond_choices)?.is_some() {
+                        if anti_cond.next_match(&cond_phones, &post_cond_choices)?.is_some() {
                             anti_cond.reset();
                             continue 'cond_loop;
                         }
 
                         anti_cond.reset();
                     }
-                    new_choices.take_owned(cond_choices);
+                    new_choices.take_owned(post_cond_choices.owned_choices());
                     cond.reset();
                     return Ok(Some(new_choices.owned_choices()));
                 }
@@ -136,7 +136,7 @@ impl<'r, 's> CondPattern<'r, 's> {
         
         'left_check: loop {
             if self.cond_type == CondType::Pattern {
-                let Some(left_choices) = self.left.next_match(&mut phones.left.clone(), choices) else {
+                let Some(left_choices) = self.left.next_match(&phones.left, choices) else {
                     return Ok(None);
                 };
                 new_choices.take_owned(left_choices);
@@ -146,7 +146,7 @@ impl<'r, 's> CondPattern<'r, 's> {
 
                 match self.cond_type {
                     CondType::Pattern => {
-                        let Some(right_choices) = self.right.next_match(&mut phones.right.clone(), choices) else {
+                        let Some(right_choices) = self.right.next_match(&phones.right, choices) else {
                             // if the right cannot match, resets and looks for another match on the left
                             self.right.reset();
                             if self.left.is_empty() {

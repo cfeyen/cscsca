@@ -37,6 +37,7 @@ impl<'s> Phone<'s> {
                 let utf8 = std::ptr::from_ref(&BOUND_CHAR)
                     .cast::<[u8; BOUND_CHAR.len_utf8()]>();
 
+                // Saftey: `utf8` is a valid pointer to valid unicode
                 unsafe { str::from_utf8_unchecked(&*utf8) }
             },
         }
