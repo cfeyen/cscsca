@@ -1,4 +1,4 @@
-use crate::{matcher::{rule_pattern::RulePattern, Phones}, phones::Phone, rules::{conditions::{AndType, Cond, CondType}, tokens::RuleToken}, tokens::Direction};
+use crate::{matcher::{rule_pattern::RulePattern, Phones}, phones::Phone, rules::{conditions::{AndType, Cond, CondType}, tokens::{RuleToken, ScopeId}}, tokens::Direction};
 
 #[test]
 fn matches_phones() {
@@ -240,6 +240,88 @@ fn and_not_cond() {
         &[],
     ).expect("pattern construction should be valid");
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
+}
+
+#[test]
+fn agreement_between_pattern_halves() {
+    let cond = [Cond::new(
+        CondType::Pattern,
+        vec![
+            RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
+                vec![RuleToken::Phone(Phone::Symbol("c"))],
+                vec![RuleToken::Phone(Phone::Symbol("d"))],
+            ] }
+        ],
+        vec![
+            RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
+                vec![RuleToken::Phone(Phone::Symbol("c"))],
+                vec![RuleToken::Phone(Phone::Symbol("d"))],
+            ] }
+        ]
+    )];
+
+    let mut rule_pattern = RulePattern::new(
+        &[RuleToken::Phone(Phone::Symbol("a"))],
+        &cond,
+        &[],
+    ).expect("pattern construction should be valid");
+    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
+
+    let mut rule_pattern = RulePattern::new(
+        &[RuleToken::Phone(Phone::Symbol("a"))],
+        &cond,
+        &[],
+    ).expect("pattern construction should be valid");
+    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("d")], 1, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
+}
+
+#[test]
+fn agreement_between_and_conds() {
+    let mut cond = Cond::new(
+        CondType::Pattern,
+        vec![
+            RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
+                vec![RuleToken::Phone(Phone::Symbol("c"))],
+                vec![RuleToken::Phone(Phone::Symbol("d"))],
+            ] }
+        ],
+        Vec::new()
+    );
+
+    cond.set_and(AndType::And, Cond::new(
+        CondType::Pattern,
+        Vec::new(), 
+        vec![
+            RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
+                vec![RuleToken::Phone(Phone::Symbol("c"))],
+                vec![RuleToken::Phone(Phone::Symbol("d"))],
+            ] }
+        ]
+    ));
+
+    let cond = [cond];
+
+    let mut rule_pattern = RulePattern::new(
+        &[RuleToken::Phone(Phone::Symbol("a"))],
+        &cond,
+        &[],
+    ).expect("pattern construction should be valid");
+    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
+
+    let mut rule_pattern = RulePattern::new(
+        &[RuleToken::Phone(Phone::Symbol("a"))],
+        &cond,
+        &[],
+    ).expect("pattern construction should be valid");
+    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("d")], 1, Direction::Ltr);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 }

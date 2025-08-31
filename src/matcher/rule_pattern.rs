@@ -136,7 +136,7 @@ impl<'r, 's> CondPattern<'r, 's> {
         
         'left_check: loop {
             if self.cond_type == CondType::Pattern {
-                let Some(left_choices) = self.left.next_match(&phones.left, choices) else {
+                let Some(left_choices) = self.left.next_match(&phones.left, &new_choices) else {
                     return Ok(None);
                 };
                 new_choices.take_owned(left_choices);
@@ -146,7 +146,7 @@ impl<'r, 's> CondPattern<'r, 's> {
 
                 match self.cond_type {
                     CondType::Pattern => {
-                        let Some(right_choices) = self.right.next_match(&phones.right, choices) else {
+                        let Some(right_choices) = self.right.next_match(&phones.right, &new_choices) else {
                             // if the right cannot match, resets and looks for another match on the left
                             self.right.reset();
                             if self.left.is_empty() {
@@ -174,7 +174,7 @@ impl<'r, 's> CondPattern<'r, 's> {
                     let and_cond = and_cond.as_mut();
 
                     // checks the and condition
-                    let and_match = and_cond.next_match(phones, choices)?;
+                    let and_match = and_cond.next_match(phones, &new_choices)?;
 
                     // ensures the and condition match is correct
                     match (and_type, and_match) {
