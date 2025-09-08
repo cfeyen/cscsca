@@ -801,13 +801,13 @@ fn and_cond() {
 
     let mut cond = Cond::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("c"))],
+        vec![RuleToken::Phone(Phone::Symbol("b"))],
         Vec::new(),
     );
 
-    cond.set_and(AndType::And, Cond::new(
+    cond.add_and(AndType::And, Cond::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("b"))],
+        vec![RuleToken::Phone(Phone::Symbol("c"))],
         Vec::new(),
     ));
 
@@ -838,13 +838,13 @@ fn and_anticond() {
 
     let mut cond = Cond::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("c"))],
+        vec![RuleToken::Phone(Phone::Symbol("b"))],
         Vec::new(),
     );
 
-    cond.set_and(AndType::And, Cond::new(
+    cond.add_and(AndType::And, Cond::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("b"))],
+        vec![RuleToken::Phone(Phone::Symbol("c"))],
         Vec::new(),
     ));
 
@@ -874,23 +874,21 @@ fn double_and() {
 
     let mut cond = Cond::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("d"))],
+        vec![RuleToken::Phone(Phone::Symbol("b"))],
         Vec::new(),
     );
 
-    let mut cond_2 = Cond::new(
+    cond.add_and(AndType::And, Cond::new(
         CondType::Pattern,
         vec![RuleToken::Phone(Phone::Symbol("c"))],
         Vec::new(),
-    );
-
-    cond_2.set_and(AndType::And, Cond::new(
-        CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("b"))],
-        Vec::new(),
     ));
 
-    cond.set_and(AndType::And, cond_2);
+    cond.add_and(AndType::And, Cond::new(
+        CondType::Pattern,
+        vec![RuleToken::Phone(Phone::Symbol("d"))],
+        Vec::new(),
+    ));
 
     assert_eq!(
         Ok(RuleLine::Rule(SoundChangeRule {

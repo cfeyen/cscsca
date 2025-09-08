@@ -123,7 +123,7 @@ impl Display for Pattern<'_, '_> {
 }
 
 /// A `MatchState` wrapper that lets `next_match` only be called once before exausting
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Default)]
 pub struct CheckBox<'r, 's: 'r, T: MatchState<'r, 's>> {
     checked: bool,
     match_state: T,
@@ -164,6 +164,15 @@ impl<'r, 's: 'r, T: MatchState<'r, 's>> MatchState<'r, 's> for CheckBox<'r, 's, 
     fn reset(&mut self) {
         self.checked = false;
         self.match_state.reset();
+    }
+}
+
+impl<'r, 's, T: MatchState<'r, 's> + Debug> Debug for CheckBox<'r, 's, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CheckBox")
+            .field("checked", &self.checked)
+            .field("match_state", &self.match_state)
+            .finish()
     }
 }
 

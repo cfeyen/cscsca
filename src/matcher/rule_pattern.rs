@@ -143,7 +143,6 @@ impl<'r, 's> CondPattern<'r, 's> {
             }
 
             'right_check: loop {
-
                 match self.cond_type {
                     CondType::Pattern => {
                         let Some(right_choices) = self.right.next_match(&phones.right, &new_choices) else {

@@ -5,10 +5,7 @@ use sound_change_rule::SoundChangeRule;
 use tokens::{LabelType, RuleToken, ScopeId};
 
 use crate::{
-    ir::{tokens::{Break, IrToken}, IrLine},
-    keywords::AND_CHAR,
-    executor::io_events::{IoEvent, RuntimeIoEvent},
-    tokens::{ScopeType, Shift}
+    executor::io_events::{IoEvent, RuntimeIoEvent}, ir::{tokens::{Break, IrToken}, IrLine}, rules::conditions::AndType, tokens::{ScopeType, Shift}
 };
 
 pub mod sound_change_rule;
@@ -71,7 +68,7 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
                 anti_conds.push(ir_to_cond(&tokens)?);
             },
             Break::And(and_type) => {
-                let mut cond = ir_to_cond(&tokens)?;
+                let cond = ir_to_cond(&tokens)?;
 
                 let last_cond = if to_anti_conds {
                     &mut anti_conds
@@ -79,10 +76,9 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
                     &mut conds
                 }
                 .last_mut()
-                .ok_or(RuleStructureError::AndDoesNotFollowCond)?;
+                .ok_or(RuleStructureError::AndDoesNotFollowCond(and_type))?;
 
-                cond.set_and(and_type, std::mem::take(last_cond));
-                *last_cond = cond;
+                last_cond.add_and(and_type, cond);
             },
         }
     }
@@ -332,7 +328,7 @@ pub enum RuleStructureError<'s> {
     MismatchedScopeBounds(ScopeType, ScopeType),
     UnexpectedToken(IrToken<'s>),
     NoConditionFocus,
-    AndDoesNotFollowCond,
+    AndDoesNotFollowCond(AndType),
     SecondShift(Shift),
     UnexpectedCondType(CondType)
 }
@@ -355,7 +351,7 @@ impl std::fmt::Display for RuleStructureError<'_> {
                 => write!(f, "Found mismatched scope bounds '{}'..'{}'", start.fmt_start(), end.fmt_end()),
             Self::UnexpectedToken(ir_token) => write!(f, "Found unexpected token '{ir_token}'"),
             Self::NoConditionFocus => write!(f, "Found condition without an input patern ('{}') or equality ('{}')", CondType::Pattern, CondType::Match),
-            Self::AndDoesNotFollowCond => write!(f, "Found '{AND_CHAR}' outside of a condition"),
+            Self::AndDoesNotFollowCond(and_type) => write!(f, "Found '{and_type}' outside of a condition"),
             Self::SecondShift(shift)
                 => write!(f, "Found a second shift token '{shift}' after the first"),
             Self::UnexpectedCondType(r#type)

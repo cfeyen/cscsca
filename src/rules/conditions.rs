@@ -54,10 +54,13 @@ impl<'s> Cond<'s> {
         Self { kind, before, after, and: None }
     }
 
-    /// Sets the additional required condition
-    #[inline]
-    pub fn set_and(&mut self, and_type: AndType, and: Self) {
-        self.and = Some((and_type, Box::new(and)));
+    /// Appends a new and or and not clause
+    pub fn add_and(&mut self, and_type: AndType, and: Self) {
+        if let Some((_, and_clause)) = &mut self.and {
+            and_clause.add_and(and_type, and);
+        } else {
+            self.and = Some((and_type, Box::new(and)));
+        }
     }
 
     /// gets the type of condition

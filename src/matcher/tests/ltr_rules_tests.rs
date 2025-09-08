@@ -157,7 +157,7 @@ fn and_cond() {
     let mut between_b_and_c = Cond::new(CondType::Pattern, vec![RuleToken::Phone(Phone::Symbol("b"))], Vec::new());
     let before_c = Cond::new(CondType::Pattern, Vec::new(), vec![RuleToken::Phone(Phone::Symbol("c"))]);
 
-    between_b_and_c.set_and(AndType::And, before_c);
+    between_b_and_c.add_and(AndType::And, before_c);
 
     let cond = [between_b_and_c];
 
@@ -203,7 +203,7 @@ fn and_not_cond() {
     let mut between_b_and_c = Cond::new(CondType::Pattern, vec![RuleToken::Phone(Phone::Symbol("b"))], Vec::new());
     let before_c = Cond::new(CondType::Pattern, Vec::new(), vec![RuleToken::Phone(Phone::Symbol("c"))]);
 
-    between_b_and_c.set_and(AndType::AndNot, before_c);
+    between_b_and_c.add_and(AndType::AndNot, before_c);
 
     let cond = [between_b_and_c];
 
@@ -294,7 +294,7 @@ fn agreement_between_and_conds() {
         Vec::new()
     );
 
-    cond.set_and(AndType::And, Cond::new(
+    cond.add_and(AndType::And, Cond::new(
         CondType::Pattern,
         Vec::new(), 
         vec![
