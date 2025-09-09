@@ -1,4 +1,13 @@
-use crate::{escaped_strings::EscapedStr, keywords::{char_to_str, BOUND_CHAR, ESCAPE_CHAR}, sub_string::SubString};
+use crate::{
+    escaped_strings::EscapedStr,
+    keywords::{char_to_str, BOUND_CHAR, ESCAPE_CHAR},
+    matcher::{
+        choices::{Choices, OwnedChoices},
+        match_state::UnitState,
+        phones::Phones
+    },
+    sub_string::SubString,
+};
 
 #[cfg(test)]
 mod tests;
@@ -54,6 +63,20 @@ impl<'s> Phone<'s> {
             _ => self == other,
         }
     }
+}
+
+impl<'r, 's: 'r> UnitState<'r, 's> for Phone<'s> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, _: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        let matches = Phone::matches(self, phones.next());
+
+        if matches {
+            Some(OwnedChoices::default())
+        } else {
+            None
+        }
+    }
+
+    fn len(&self) -> usize { 1 }
 }
 
 impl std::fmt::Display for Phone<'_> {

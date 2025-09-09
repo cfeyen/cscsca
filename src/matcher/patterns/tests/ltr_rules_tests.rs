@@ -1,4 +1,4 @@
-use crate::{matcher::{rule_pattern::RulePattern, Phones}, phones::Phone, rules::{conditions::{AndType, Cond, CondType}, tokens::{RuleToken, ScopeId}}, tokens::Direction};
+use crate::{matcher::{patterns::rule::RulePattern, phones::Phones}, phones::Phone, rules::{conditions::{AndType, Cond, CondType}, tokens::{RuleToken, ScopeId}}, tokens::Direction};
 
 #[test]
 fn matches_phones() {

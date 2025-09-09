@@ -1,9 +1,8 @@
-use crate::{matcher::{choices::{Choices, OwnedChoices}, Phones}};
+use crate::{matcher::{choices::{Choices, OwnedChoices}, phones::Phones}};
 
 /// A state machine that determines whether or not a rule should be applied
-pub trait MatchState<'r, 's: 'r> { /// Determines if a state matches phones
-    /// 
-    /// `self` should only be mutated to match choices
+pub trait MatchState<'r, 's: 'r> {
+    /// Determines if a state matches phones
     fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>>;
 
     /// Resets to a default state
@@ -16,4 +15,13 @@ pub trait MatchState<'r, 's: 'r> { /// Determines if a state matches phones
     /// 
     /// If there is no remaining valid match, `None` is returned
     fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>>;
+}
+
+/// A signle-state varient of `MatchState`
+pub trait UnitState<'r, 's: 'r> {
+    /// Determines if a state matches phones
+    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>>;
+
+    /// gets the number of phones in the state
+    fn len(&self) -> usize;
 }

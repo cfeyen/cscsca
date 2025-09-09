@@ -1,4 +1,4 @@
-use crate::{matcher::{choices::Choices, match_state::MatchState, pattern::{Pattern, PatternList}, Phones}, phones::Phone, rules::tokens::ScopeId, tokens::Direction};
+use crate::{matcher::{choices::Choices, match_state::{MatchState, UnitState}, patterns::{check_box::CheckBox, list::PatternList, Pattern}, phones::Phones}, phones::Phone, rules::tokens::ScopeId, tokens::Direction};
 
 #[test]
 fn single_phone() {
@@ -7,27 +7,52 @@ fn single_phone() {
     let mut phone = Phone::Symbol("a");
     let mut match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
 
-    assert!(MatchState::matches(&mut phone, &mut match_phones, &choices).is_some());
+    assert!(UnitState::matches(&mut phone, &mut match_phones, &choices).is_some());
+
+    let phone_box = CheckBox::new(phone);
+    let mut match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
+    
+    assert!(phone_box.matches(&mut match_phones, &choices).is_some());
 
     let mut phone = Phone::Bound;
     let mut match_phones = Phones::new(&[Phone::Bound], 0, Direction::Ltr);
 
-    assert!(MatchState::matches(&mut phone, &mut match_phones, &choices).is_some());
+    assert!(UnitState::matches(&mut phone, &mut match_phones, &choices).is_some());
+
+    let phone_box = CheckBox::new(phone);
+    let mut match_phones = Phones::new(&[Phone::Bound], 0, Direction::Rtl);
+    
+    assert!(phone_box.matches(&mut match_phones, &choices).is_some());
 
     let mut phone = Phone::Symbol("a");
     let mut match_phones = Phones::new(&[Phone::Bound], 0, Direction::Ltr);
 
-    assert!(MatchState::matches(&mut phone, &mut match_phones, &choices).is_none());
+    assert!(UnitState::matches(&mut phone, &mut match_phones, &choices).is_none());
+
+    let phone_box = CheckBox::new(phone);
+    let mut match_phones = Phones::new(&[Phone::Bound], 0, Direction::Rtl);
+    
+    assert!(phone_box.matches(&mut match_phones, &choices).is_none());
 
     let mut phone = Phone::Bound;
     let mut match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
 
-    assert!(MatchState::matches(&mut phone, &mut match_phones, &choices).is_none());
+    assert!(UnitState::matches(&mut phone, &mut match_phones, &choices).is_none());
+
+    let phone_box = CheckBox::new(phone);
+    let mut match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
+    
+    assert!(phone_box.matches(&mut match_phones, &choices).is_none());
 
     let mut phone = Phone::Symbol("a");
     let mut match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Ltr);
 
-    assert!(MatchState::matches(&mut phone, &mut match_phones, &choices).is_none());
+    assert!(UnitState::matches(&mut phone, &mut match_phones, &choices).is_none());
+
+    let phone_box = CheckBox::new(phone);
+    let mut match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Rtl);
+    
+    assert!(phone_box.matches(&mut match_phones, &choices).is_none());
 }
 
 #[test]

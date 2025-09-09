@@ -4,7 +4,7 @@ use crate::{
     executor::runtime::LineApplicationLimit,
     ir::tokens::IrToken,
     keywords::GAP_STR,
-    matcher::{choices::Choices, pattern::Pattern, rule_pattern::RulePattern, Phones},
+    matcher::{choices::Choices, phones::Phones, patterns::{Pattern, rule::RulePattern}},
     phones::Phone,
     rules::{sound_change_rule::SoundChangeRule, tokens::RuleToken},
     tokens::{Direction, ShiftType}
