@@ -43,7 +43,7 @@ pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<Ap
                 getter.on_end();
 
                 drop(rule_lines);
-                // Safety: Since the output is a ScaError,
+                // Safety: Since the output is a `ScaError`,
                 // which owns all of its values, and `rule_lines` is dropped,
                 // no references remain to the sources buffer in `tokenization_data`
                 unsafe { tokenization_data.free_sources() };
