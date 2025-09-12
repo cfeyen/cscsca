@@ -63,6 +63,13 @@ impl<'r, 's> CondPattern<'r, 's> {
                         let Some(right_choices) = self.right.next_match(&left_phones, &new_choices) else {
                             return Ok(None);
                         };
+
+                        // checks that the left and the right not only match
+                        // but are also the same length
+                        if self.left.len() != self.right.len() {
+                            continue 'right_check;
+                        }
+
                         new_choices.take_owned(right_choices);
                     }
                 }
