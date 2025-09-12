@@ -16,7 +16,6 @@ pub struct CondPattern<'r, 's> {
     right: PatternList<'r, 's>,
     cond_type: CondType,
     and: Option<(AndType, Box<Self>)>,
-    checked_once: bool,
 }
 
 impl<'r, 's> From<&'r Cond<'s>> for CondPattern<'r, 's> {
@@ -26,7 +25,6 @@ impl<'r, 's> From<&'r Cond<'s>> for CondPattern<'r, 's> {
             right: cond.right().into(),
             cond_type: cond.kind(),
             and: cond.and().map(|(and_type, and_cond)| (and_type, Box::new(and_cond.into()))),
-            checked_once: false,
         }
     }
 }
@@ -35,11 +33,7 @@ impl<'r, 's> CondPattern<'r, 's> {
     pub(super) fn next_match(&mut self, phones: &CondPhoneInput<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Result<Option<OwnedChoices<'r, 's>>, ApplicationError<'r, 's>> {
         let mut new_choices = choices.partial_clone();
 
-        // if all sides are empty and the condition has already been checked,
-        // the condition is exausted
-        if self.checked_once && self.left.is_empty() && self.right.is_empty() {
-            return Ok(None);
-        }
+        self.left.checked_flag_reset();
         
         'left_check: loop {
             if self.cond_type == CondType::Pattern {
@@ -55,9 +49,7 @@ impl<'r, 's> CondPattern<'r, 's> {
                         let Some(right_choices) = self.right.next_match(&phones.right, &new_choices) else {
                             // if the right cannot match, resets and looks for another match on the left
                             self.right.reset();
-                            if self.left.is_empty() {
-                                return Ok(None);
-                            }
+                            
                             continue 'left_check;
                         };
                         new_choices.take_owned(right_choices);
@@ -88,15 +80,12 @@ impl<'r, 's> CondPattern<'r, 's> {
                         (AndType::AndNot, None) => (),
                         _ => {
                             and_cond.reset();
-                            if self.right.is_empty() {
-                                return Ok(None);
-                            }
+                            
                             continue 'right_check;
                         },
                     }
                 }
 
-                self.checked_once = true;
                 return Ok(Some(new_choices.owned_choices()));
             }
         }
@@ -105,7 +94,6 @@ impl<'r, 's> CondPattern<'r, 's> {
     pub(super) fn reset(&mut self) {
         self.left.reset();
         self.right.reset();
-        self.checked_once = false;
 
         if let Some((_, and_cond)) = &mut self.and {
             and_cond.as_mut().reset();

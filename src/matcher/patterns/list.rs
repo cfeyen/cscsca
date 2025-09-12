@@ -25,9 +25,9 @@ impl<'r, 's> PatternList<'r, 's> {
         Self { patterns, checked_at_initial: false }
     }
 
-    /// Determines if there are no patterns in the list
-    pub const fn is_empty(&self) -> bool {
-        self.patterns.is_empty()
+    /// Sets the flag marking the list as checked at its current position to `false`
+    pub const fn checked_flag_reset(&mut self) {
+        self.checked_at_initial = false;
     }
 
     /// Converts a list of patterns to phones
@@ -77,8 +77,11 @@ impl<'r, 's> PatternList<'r, 's> {
 
     // Recursively determines the next match of a sublist of the `PatternList` 
     fn next_sub_match(&mut self, index: usize, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        if index >= self.patterns.len() {
+            return Some(OwnedChoices::default());
+        }
+
         let real_index = match phones.direction() {
-            _ if index >= self.patterns.len() => return Some(OwnedChoices::default()),
             Direction::Ltr => Some(index),
             Direction::Rtl => Some(self.patterns.len() - 1 - index),
         }?;
@@ -138,6 +141,8 @@ impl<'r, 's: 'r> MatchState<'r, 's> for PatternList<'r, 's> {
             if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
                 return Some(new_choices);
             }
+        } else if self.patterns.is_empty() {
+            return None;
         }
 
         self.next_sub_match(0, phones, choices)
@@ -148,6 +153,7 @@ impl<'r, 's: 'r> MatchState<'r, 's> for PatternList<'r, 's> {
     }
 
     fn reset(&mut self) {
+        self.checked_at_initial = false;
         self.patterns.iter_mut().for_each(MatchState::reset);
     }
 }
