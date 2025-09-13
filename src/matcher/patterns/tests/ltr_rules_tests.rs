@@ -327,26 +327,6 @@ fn agreement_between_and_conds() {
 }
 
 #[test]
-fn phone_equal_phone_cond() {
-    let conds = &[Cond::new(CondType::Match, vec![RuleToken::Phone(Phone::Symbol("a"))], vec![RuleToken::Phone(Phone::Symbol("a"))])];
-
-    let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
-
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
-
-    assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
-
-
-    let bad_conds = &[Cond::new(CondType::Match, vec![RuleToken::Phone(Phone::Symbol("a"))], vec![RuleToken::Phone(Phone::Symbol("b"))])];
-
-    let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], bad_conds, &[]).expect("pattern construction should be valid");
-
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
-
-    assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_none()));
-}
-
-#[test]
 fn complex_argeement() {
     let scope_id = ScopeId::Name("c");
 
@@ -373,6 +353,26 @@ fn complex_argeement() {
     let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 0, Direction::Ltr);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
+}
+
+#[test]
+fn phone_match_phone_cond() {
+    let conds = &[Cond::new(CondType::Match, vec![RuleToken::Phone(Phone::Symbol("a"))], vec![RuleToken::Phone(Phone::Symbol("a"))])];
+
+    let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
+
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
+
+
+    let bad_conds = &[Cond::new(CondType::Match, vec![RuleToken::Phone(Phone::Symbol("a"))], vec![RuleToken::Phone(Phone::Symbol("b"))])];
+
+    let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], bad_conds, &[]).expect("pattern construction should be valid");
+
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_none()));
 }
 
 #[test]
