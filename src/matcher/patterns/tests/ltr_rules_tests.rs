@@ -452,7 +452,27 @@ fn inequal_length_match_conds() {
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_none()));
 }
 
+#[test]
+fn zero_input() {
+    let default_cond = [Cond::default()];
+    let mut rule_pattern = RulePattern::new(&[], &default_cond, &[]).expect("pattern construction should be valid");
+
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_some());
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_none());
+
+
+    let cond = [Cond::new(CondType::Pattern, vec![RuleToken::Phone(Phone::Bound)], vec![RuleToken::Phone(Phone::Bound)])];
+    let mut rule_pattern = RulePattern::new(&[], &cond, &[]).expect("pattern construction should be valid");
+
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_some());
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_none());
+    
+    let cond = [Cond::new(CondType::Pattern, vec![RuleToken::Phone(Phone::Symbol("a"))], Vec::new())];
+    let mut rule_pattern = RulePattern::new(&[], &cond, &[]).expect("pattern construction should be valid");
+
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_none());
+}
+
 // todo: conds, anti-conds, &, &!, with gaps, non phone conds
-// todo: zero-input tests
 
 // todo: rtl
