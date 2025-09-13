@@ -29,19 +29,17 @@ pub enum IrToken<'s> {
 
 impl Display for IrToken<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::Any => format!("{ANY_CHAR}"),
-            Self::ArgSep => format!("{ARG_SEP_CHAR}"),
-            Self::Break(r#break) => format!("{break}"),
-            Self::Gap => GAP_STR.to_string(),
-            Self::CondType(focus) => format!("{focus}"),
-            Self::Phone(phone) => phone.to_string(),
-            Self::ScopeEnd(kind) => kind.fmt_end().to_string(),
-            Self::ScopeStart(kind) => kind.fmt_start().to_string(),
-            Self::Label(name) => format!("{LABEL_PREFIX}{name}"),
-        };
-
-        write!(f, "{s}")
+        match self {
+            Self::Any => write!(f, "{ANY_CHAR}"),
+            Self::ArgSep => write!(f, "{ARG_SEP_CHAR}"),
+            Self::Break(r#break) => write!(f, "{break}"),
+            Self::Gap => write!(f, "{GAP_STR}"),
+            Self::CondType(focus) => write!(f, "{focus}"),
+            Self::Phone(phone) => write!(f, "{phone}"),
+            Self::ScopeEnd(kind) => write!(f, "{}", kind.fmt_end()),
+            Self::ScopeStart(kind) => write!(f, "{}", kind.fmt_start()),
+            Self::Label(name) => write!(f, "{LABEL_PREFIX}{name}"),
+        }
     }
 }
 
@@ -65,13 +63,11 @@ pub enum Break {
 
 impl Display for Break {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::Shift(shift) => format!("{shift}"),
-            Self::Cond => format!("{COND_CHAR}"),
-            Self::AntiCond => format!("{COND_CHAR}{COND_CHAR}"),
-            Self::And(and_type) => format!("{and_type}"),
-        };
-
-        write!(f, "{s}")
+        match self {
+            Self::Shift(shift) => write!(f, "{shift}"),
+            Self::Cond => write!(f, "{COND_CHAR}"),
+            Self::AntiCond => write!(f, "{COND_CHAR}{COND_CHAR}"),
+            Self::And(and_type) => write!(f, "{and_type}"),
+        }
     }
 }

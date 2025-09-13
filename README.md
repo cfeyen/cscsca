@@ -35,12 +35,12 @@ A shift tells CSCSCA how changes are to be applied and separates inputs from out
 - **`>`**: Left to right, attempts to reapply the rule to the output of the last successful change
 - **`<`**: Right to left, attempts to reapply the rule to the output of the last successful change
 
-**Warning**: as it is technically possible to create an infinite loop with **`>`** or **`<`**, if applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
+**Warning**: as it is technically possible to create an infinite loop with **`>`** or **`<`** or with zero-phone inputs, if applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
 
 ### Rules
 A sound change
 
-Structured *input* *shift* *output* where *input* and *output* are phones (*input* must be at least one phone) and *shift* is a shift token
+Structured *`input`* *`shift`* *`output`* where *`input`* and *`output`* are phones and *`shift`* is a shift token
 
 Examples:
 ```cscsca
@@ -208,8 +208,8 @@ Add **`--write`** *`write_file`* or **`-w`** *`write_file`* before *`text`* to w
 
 Replace *`text`* with **`--read`** *`read_file`* or **`-r`** *`read_file`* to read each line of *`read_file`* as an individual input text
 
-### cscsca chars *text*
-`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *text* prints every character in *text*, separating combining characters
+### cscsca chars *`text`*
+`á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *`text`* prints every character in *`text`*, separating combining characters
 
 ## Crate Features
 - `ansi`: Adds ANSI color codes to IO. Ideal for CLI environments.

@@ -1,0 +1,93 @@
+use std::{borrow::Cow, collections::HashMap};
+
+use crate::{phones::Phone, rules::tokens::ScopeId};
+
+/// Choices for how agreement should occur
+#[derive(Debug, Clone, Default)]
+pub struct Choices<'c, 'r, 's> {
+    pub(super) selection: Cow<'c, HashMap<&'r ScopeId<'s>, usize>>,
+    pub(super) optional: Cow<'c, HashMap<&'r ScopeId<'s>, bool>>,
+    pub(super) gap: Cow<'c, HashMap<&'s str, usize>>,
+    pub(super) any: Cow<'c, HashMap<&'r ScopeId<'s>, Phone<'s>>>,
+}
+
+impl<'c, 'r, 's> Choices<'c, 'r, 's> {
+    /// Gets the selection scope choices
+    pub fn selection(&self) -> &HashMap<&'r ScopeId<'s>, usize> {
+        &self.selection
+    }
+
+    /// Gets the optional scope choices
+    pub fn optional(&self) -> &HashMap<&'r ScopeId<'s>, bool> {
+        &self.optional
+    }
+
+    /// Gets the gap choices
+    pub fn gap(&self) -> &HashMap<&'s str, usize> {
+        &self.gap
+    }
+
+    /// Gets the any phone choices
+    pub fn any(&self) -> &HashMap<&'r ScopeId<'s>, Phone<'s>> {
+        &self.any
+    }
+
+    /// A cheeper way to clone `Choices` with less heap allocation
+    pub fn partial_clone(&'c self) -> Self {
+        Self {
+            selection: Cow::Borrowed(&*self.selection),
+            optional: Cow::Borrowed(&*self.optional),
+            gap: Cow::Borrowed(&*self.gap),
+            any: Cow::Borrowed(&*self.any),
+        }
+    }
+
+    /// Converts a set of copy-on-write choices to only the owned choices
+    pub fn owned_choices(self) -> OwnedChoices<'r, 's> {
+        OwnedChoices {
+            selection: take_owned_from_cow(self.selection),
+            optional: take_owned_from_cow(self.optional),
+            gap: take_owned_from_cow(self.gap),
+            any: take_owned_from_cow(self.any),
+        }
+    }
+
+    /// Takes the choices from `owned`
+    pub fn take_owned(&mut self, owned: OwnedChoices<'r, 's>) {
+        if let Some(selection) = owned.selection {
+            self.selection = Cow::Owned(selection);
+        }
+
+        if let Some(optional) = owned.optional {
+            self.optional = Cow::Owned(optional);
+        }
+
+        if let Some(gap) = owned.gap {
+            self.gap = Cow::Owned(gap);
+        }
+
+        if let Some(any) = owned.any {
+            self.any = Cow::Owned(any);
+        }
+    }
+}
+
+/// A varient of `Choices` where each map is either owned or does not exist
+///
+/// Used to optimise some clones
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct OwnedChoices<'r, 's> {
+    selection: Option<HashMap<&'r ScopeId<'s>, usize>>,
+    optional: Option<HashMap<&'r ScopeId<'s>, bool>>,
+    gap: Option<HashMap<&'s str, usize>>,
+    any: Option<HashMap<&'r ScopeId<'s>, Phone<'s>>>,
+}
+
+/// Returns the owned content of a `Cow` if it exists
+fn take_owned_from_cow<T: Clone>(cow: Cow<'_, T>) -> Option<T> {
+    if let Cow::Owned(t) = cow {
+        Some(t)
+    } else {
+        None
+    }
+}

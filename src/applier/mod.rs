@@ -1,10 +1,12 @@
 use std::time::Instant;
 
 use crate::{
-    ir::tokens::IrToken,
-    matcher::{has_empty_form, match_len, tokens_match_phones_from_left, tokens_match_phones_from_right, Choices, MatchError},
-    phones::Phone, rules::{sound_change_rule::SoundChangeRule, tokens::RuleToken},
     executor::runtime::LineApplicationLimit,
+    ir::tokens::IrToken,
+    keywords::GAP_STR,
+    matcher::{choices::Choices, phones::Phones, patterns::{Pattern, rule::RulePattern}},
+    phones::Phone,
+    rules::{sound_change_rule::SoundChangeRule, tokens::RuleToken},
     tokens::{Direction, ShiftType}
 };
 
@@ -75,17 +77,13 @@ pub fn apply<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>,
 fn next_position(rule: &SoundChangeRule, input_len: usize, replace_len: usize, phone_index: usize, phones: &[Phone]) -> usize {
     let dir = rule.kind.dir;
     match (dir, rule.kind.kind) {
-        (Direction::Ltr, ShiftType::Move) => {
-            dir.change_by(phone_index, replace_len)
-        }
-        (Direction::Rtl, _) if phone_index >= phones.len() => {
+        // prevents repeat application on zero-sized inputs
+        _ if input_len == 0 && replace_len == 0 => dir.change_by_one(phone_index),
+        (Direction::Ltr, ShiftType::Move) => dir.change_by(phone_index, replace_len),
             // ensures removing a phone does not take the phone index out of the phone list ending the rule early
-            phones.len().wrapping_sub(1)
-        }
-        (Direction::Rtl, ShiftType::Move) => {
-            dir.change_by(phone_index, input_len)
-        }
-        _ => phone_index
+        (Direction::Rtl, _) if phone_index >= phones.len() => phones.len().wrapping_sub(1),
+        (Direction::Rtl, ShiftType::Move) => dir.change_by(phone_index, input_len),
+        _ => phone_index,
     }
 }
 
@@ -101,41 +99,21 @@ fn apply_at<'r, 's>(rule: &'r SoundChangeRule<'s>, phones: &mut Vec<Phone<'s>>, 
         anti_conds,
     } = rule;
 
-    if input.is_empty() || has_empty_form(input) { Err(MatchError::EmptyInput)?; }
+    let mut rule_pattern = RulePattern::new(input, conds, anti_conds)?;
+
+    let match_phones = Phones::new(phones, phone_index, kind.dir);
 
     let mut choices = Choices::default();
 
-    let dir = kind.dir;
-
-    let matches = if dir.ltr() {
-        tokens_match_phones_from_left(input, &phones[phone_index..], &mut choices)?
-    } else{
-        tokens_match_phones_from_right(input, &phones[0..=phone_index], &mut choices)?
-    };
-
-    if !matches { return Ok(None); }
-
-    let input_len = match_len(input, &choices)?;
-
-    'cond_loop: for cond in conds {
-        // saves choices to reset between conditions
-        let mut cond_choices = choices.partial_clone();
-
-        if cond.eval(phones, phone_index, input_len, &mut cond_choices, dir)? {
-            for anti_cond in anti_conds {
-                // saves choices to reset between anti-conditions
-                let mut anti_cond_choices = cond_choices.partial_clone();
-
-                if anti_cond.eval(phones, phone_index, input_len, &mut anti_cond_choices, dir)? {
-                    continue 'cond_loop;
-                }
-            }
-
-            return replace_input(phones, phone_index, input_len, output, &cond_choices, kind.dir);
-        }
+    if let Some(new_choices) = rule_pattern.next_match(&match_phones)? {
+        choices.take_owned(new_choices);
+    } else {
+        return Ok(None);
     }
 
-    Ok(None)
+    let input_len = rule_pattern.len();
+
+    replace_input(phones, phone_index, input_len, output, &choices, kind.dir)
 }
 
 /// Replaces the slice `phones[index..input_len]` with the output as phones
@@ -147,10 +125,9 @@ fn replace_input<'r, 's>(phones: &mut Vec<Phone<'s>>, index: usize, input_len: u
     let phone_iter = &mut phones.iter();
 
     // adds the proceeding phones to the new phones
-    let input_start = if dir.ltr() {
-        index
-    } else {
-        index + 1 - input_len
+    let input_start = match dir {
+        Direction::Ltr => index,
+        Direction::Rtl => index + 1 - input_len,
     };
 
     for &phone in phone_iter.take(input_start) {
@@ -160,38 +137,51 @@ fn replace_input<'r, 's>(phones: &mut Vec<Phone<'s>>, index: usize, input_len: u
     // discards the input
     phone_iter.take(input_len).for_each(|_| ()); // since take is lazy, the for each causes it to be used
 
-    // number of duplicated bounds removed
-    let mut reductions = 0;
+    let mut output_phones = Vec::new();
 
     // adds the output
     for phone in tokens_to_phones(output, choices)? {
-        if shifted_phones.last() == Some(&Phone::Bound) && phone == Phone::Bound {
-            reductions += 1;
-        } else {
-            shifted_phones.push(phone);
+        // prevents in-output bound doubling
+        if output_phones.last().is_some_and(Phone::is_bound) && phone.is_bound() {
+            continue;
         }
+        
+        output_phones.push(phone);
     }
+
+    let mut output_len = output_phones.len();
+
+    // prevents bound doubling at the start of the output
+    while shifted_phones.last().is_none_or(Phone::is_bound) && output_phones.first().is_some_and(Phone::is_bound) {
+        shifted_phones.pop();
+        output_len -= 1;
+    }
+
+    shifted_phones.append(&mut output_phones);
+    drop(output_phones);
+
+    let mut after_output_phones = Vec::new();
 
     // adds the following phones
     for &phone in phone_iter {
-        shifted_phones.push(phone);
+        after_output_phones.push(phone);
     }
 
-    let mut new_phones = Vec::new();
+    // prevents bound doubling at the end of the output
+    while shifted_phones.last().is_none_or(Phone::is_bound) && after_output_phones.first().is_some_and(Phone::is_bound) {
+        shifted_phones.pop();
 
-    // prevents bounds from doubling up
-    for phone in shifted_phones {
-        if !(new_phones.last() == Some(&Phone::Bound) && phone == Phone::Bound) {
-            new_phones.push(phone);
+        if shifted_phones.is_empty() {
+            break;
         }
     }
 
-    // allows stay motion to move if no change is made, should prevent some infinite loops
-    if new_phones == *phones { return Ok(None); }
+    shifted_phones.append(&mut after_output_phones);
+    drop(after_output_phones);
 
-    *phones = new_phones;
+    *phones = shifted_phones;
 
-    Ok(Some((match_len(output, choices)? - reductions, input_len)))
+    Ok(Some((output_len, input_len)))
 }
 
 /// Converts rule tokens to the phones that they represent according to choices that have been made
@@ -232,6 +222,7 @@ fn tokens_to_phones<'r, 's>(tokens: &'r [RuleToken<'s>], choices: &Choices<'_, '
                     return Err(ApplicationError::UnmatchedTokenInOutput(token));
                 }
             },
+            RuleToken::Gap { .. } => return Err(ApplicationError::GapOutOfCond),
             _ => return Err(ApplicationError::UnmatchedTokenInOutput(token))
         }
     }
@@ -243,36 +234,30 @@ fn tokens_to_phones<'r, 's>(tokens: &'r [RuleToken<'s>], choices: &Choices<'_, '
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum ApplicationError<'r, 's> {
-    MatchError(MatchError<'r, 's>),
     UnmatchedTokenInOutput(&'r RuleToken<'s>),
     InvalidSelectionAccess(&'r RuleToken<'s>, usize),
     ExceededLimit(LimitCondition),
-}
-
-impl<'r, 's> From<MatchError<'r, 's>> for ApplicationError<'r, 's> {
-    fn from(value: MatchError<'r, 's>) -> Self {
-        Self::MatchError(value)
-    }
+    GapOutOfCond,
+    PatternCannotBeConvertedToPhones(Pattern<'r, 's>),
 }
 
 impl std::error::Error for ApplicationError<'_, '_> {}
 
 impl std::fmt::Display for ApplicationError<'_, '_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
+        match self {
             Self::InvalidSelectionAccess(scope, elem) => {
-                format!("Cannot access element {} in scope: {scope}", elem + 1)
+                write!(f, "Cannot access element {} in scope: {scope}", elem + 1)
             },
-            Self::MatchError(e) => format!("{e}"),
             Self::UnmatchedTokenInOutput(token) => {
-                format!("Cannot match the following token in the output to a token in the input: {token}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
+                write!(f, "Cannot match the following token in the output to a token in the input: {token}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
             },
-            Self::ExceededLimit(limit) => match limit {
+            Self::ExceededLimit(limit) => write!(f, "{}", match limit {
                 LimitCondition::Time(_) => "Could not apply changes in allotted time",
                 LimitCondition::Count { attempts: _, max: _ } => "Could not apply changes with the allotted application attempts",
-            }.to_string()
-        };
-
-        write!(f, "{s}")
+            }),
+            Self::GapOutOfCond => write!(f, "Gaps ('{GAP_STR}') are not allowed outside of conditions and anti-conditions"),
+            Self::PatternCannotBeConvertedToPhones(pattern) => write!(f, "'{pattern}' cannot be converted to a phone or list of phones"),
+        }
     }
 }

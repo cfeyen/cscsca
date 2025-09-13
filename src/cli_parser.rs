@@ -1,5 +1,3 @@
-#![allow(clippy::non_minimal_cfg)]
-
 const USE_TEMPLATE_FLAGS: [&str; 2] = ["-t", "--template"];
 const CHAIN_FLAGS: [&str; 2] = ["-c", "--chain"];
 const READ_FLAGS: [&str; 2] = ["-r", "--read"];
@@ -34,46 +32,62 @@ pub enum CliCommand {
     None,
 }
 
+/// How input should be read
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InputType {
+    /// Read from file
     Read(String),
+    /// Read from the end of cli input
     Raw(String),
 }
 
+/// How output is displayed
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OutputData {
+    /// What file the output should be written to
     write: Option<String>,
+    /// How intermediate stages should be displayed
     map: Option<MapData>,
+    /// If intermediate stages should be printed during runtime
     quiet: bool,
 }
 
 impl OutputData {
+    /// Gets the map data
     pub const fn map_data(&self) -> Option<&MapData> {
         self.map.as_ref()
     }
 
+    /// Gets the file the output should be written to
     pub const fn write_path(&self) -> Option<&String> {
         self.write.as_ref()
     }
 
+    /// Gets if the quiet flag is set
     pub const fn quiet(&self) -> bool {
         self.quiet
     }
 }
 
-/// What outputs are mapped
+/// Which outputs are displayed in the final output
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MapType {
+    /// Only final phonological form should be output
     Final,
+    /// Only print statements should be output
     Logs,
+    /// Both print statements and final phonological form should be output
     FinalAndLogs,
 }
 
-/// Data about mapped output
+/// How intermediate outputs should be displayed
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MapData {
+    /// Which outputs should be displayed in the final output
     map_type: MapType,
+    /// If consecutive duplicate outputs should be removed
     reduce: bool,
+    /// What symbol should seperate outputs
     sep: String,
 }
 
@@ -129,6 +143,7 @@ impl CliCommand {
 fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, ArgumentParseError> {
     let mut paths = Vec::new();
 
+    // adds each file path to `paths`
     loop {
         if let Some(path) = args.next() {
             paths.push(path);
@@ -141,6 +156,7 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         }
     }
     
+    // sets the mapping type
     let map_type = if args.next_if(|s| MAP_OUTPUT_FLAGS.contains(&s.as_str())).is_some() {
         Some(MapType::Final)
     } else if args.next_if(|s| MAP_ALL_FLAGS.contains(&s.as_str())).is_some() {
@@ -151,6 +167,7 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         None
     };
 
+    // builds the mapping data
     let map = if let Some(map_type) = map_type {
         let reduce = args.next_if(|s| REDUCE_OUTPUT_FLAGS.contains(&s.as_str())).is_some();
 
@@ -173,8 +190,10 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         None
     };
 
+    // sets the quite flag
     let quiet = args.next_if(|s| QUIET_FLAGS.contains(&s.as_str())).is_some();
 
+    // sets the write files
     let write = if args.next_if(|s| WRITE_FLAGS.contains(&s.as_str())).is_some() {
         match args.next() {
             Some(path) => Some(path),
@@ -184,6 +203,7 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         None
     };
 
+    // sets the input type
     let input = if args.next_if(|s| READ_FLAGS.contains(&s.as_str())).is_some() {
         match args.next() {
             Some(path) => InputType::Read(path),
@@ -193,13 +213,16 @@ fn parse_sca(args: &mut std::iter::Peekable<env::Args>) -> Result<CliCommand, Ar
         InputType::Raw(args.collect::<Vec<_>>().join(" "))
     };
 
+    // returns an error for extra arguments
     if let Some(cmd) = args.next() {
         return Err(ArgumentParseError::UnexpectedCommand(cmd));
     }
 
+    // constructs the apply command
     Ok(CliCommand::Apply { paths, output_data: OutputData { write, map, quiet }, input })
 }
 
+/// An error caused by invalid cli input
 #[derive(Debug)]
 pub enum ArgumentParseError {
     UnexpectedCommand(String),

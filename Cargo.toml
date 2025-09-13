@@ -1,7 +1,7 @@
 [package]
 name = "cscsca"
 authors = ["Charles Feyen"]
-version = "0.21.1"
+version = "0.22.0"
 edition = "2024"
 readme = "README.md"
 keywords = ["linguistics", "conlang", "sound_change_applier"]
@@ -40,7 +40,7 @@ cscsca_macros = { path = "cscsca_macros" }
 
 [dev-dependencies]
 # This project uses "pollster" (Copyright (c) 2020-2021 Joshua Barretto), licensed under the MIT License.
-# Available at https://https://github.com/zesterer/pollster.
+# Available at https://github.com/zesterer/pollster.
 pollster = "0.4.0"
 
 [build-dependencies]

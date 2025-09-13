@@ -22,13 +22,13 @@ impl Display for SoundChangeRule<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let input = self.input
             .iter()
-            .map(|t| format!("{t}"))
+            .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join(" ");
 
         let output = self.output
             .iter()
-            .map(|t| format!("{t}"))
+            .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join(" ");
 

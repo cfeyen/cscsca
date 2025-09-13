@@ -109,7 +109,7 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
                 self.runtime.on_end();
 
                 drop(phones);
-                // Safety: Since the output is a ScaError,
+                // Safety: Since the output is a `ScaError`,
                 // which owns all of its values, and `phones` is dropped,
                 // no references remain to the sources buffer in `tokenization_data`
                 unsafe { tokenization_data.free_sources() };
@@ -124,7 +124,7 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
         let output = phone_list_to_string(&phones);
 
         drop(phones);
-        // Safety: Since the output is a String,
+        // Safety: Since the output is a `String`,
         // which owns all of its values, and `phones` is dropped,
         // no references remain to the sources buffer in `tokenization_data`
         unsafe { tokenization_data.free_sources() };

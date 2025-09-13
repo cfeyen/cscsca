@@ -1,4 +1,13 @@
-use crate::{escaped_strings::EscapedStr, keywords::ESCAPE_CHAR, sub_string::SubString};
+use crate::{
+    escaped_strings::EscapedStr,
+    keywords::{char_to_str, BOUND_CHAR, ESCAPE_CHAR},
+    matcher::{
+        choices::{Choices, OwnedChoices},
+        match_state::UnitState,
+        phones::Phones
+    },
+    sub_string::SubString,
+};
 
 #[cfg(test)]
 mod tests;
@@ -6,11 +15,12 @@ mod tests;
 /// A representation of a phoneme or word boundary
 /// 
 /// Stores the phoneme's symbol as a reference to the origional text or rules
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Phone<'s> {
     /// A symbol representing a phoneme
     Symbol(&'s str),
     /// A word boundary
+    #[default]
     Bound,
 }
 
@@ -18,11 +28,28 @@ impl<'s> Phone<'s> {
     /// Returns the phone's symbol.
     /// If the phone is a boundary, `" "` (space) is returned
     #[must_use]
-    pub fn as_str(&self) -> &'s str {
+    pub const fn as_str(&self) -> &'s str {
         match self {
             Self::Symbol(symbol) => symbol,
             Self::Bound => " ",
         }
+    }
+
+    
+    /// Returns the phone's symbol.
+    /// If the phone is a boundary, `BOUND_CHAR` is returned as a string
+    #[must_use]
+    pub const fn as_symbol(&self) -> &'s str {
+        match self {
+            Phone::Symbol(symbol) => symbol,
+            Phone::Bound => const { char_to_str(&BOUND_CHAR) },
+        }
+    }
+
+    /// Determines if a phone matches a bound
+    #[must_use]
+    pub fn is_bound(&self) -> bool {
+        self.matches(&Self::Bound)
     }
 
     /// Determines if two phones match
@@ -38,9 +65,29 @@ impl<'s> Phone<'s> {
     }
 }
 
+impl<'r, 's: 'r> UnitState<'r, 's> for Phone<'s> {
+    fn matches(&self, phones: &mut Phones<'_, 's>, _: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+        let matches = Phone::matches(self, phones.next());
+
+        if matches {
+            Some(OwnedChoices::default())
+        } else {
+            None
+        }
+    }
+
+    fn len(&self) -> usize { 1 }
+}
+
 impl std::fmt::Display for Phone<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
+    }
+}
+
+impl Default for &Phone<'_> {
+    fn default() -> Self {
+        &Phone::Bound
     }
 }
 
@@ -61,7 +108,7 @@ pub fn build_phone_list(input: EscapedStr) -> Vec<Phone> {
             ESCAPE_CHAR => (),
             '\n' => {
                 substring.move_after();
-                if !phones.last().is_some_and(|p| p == &Phone::Bound) {
+                if !phones.last().is_some_and(Phone::is_bound) {
                     phones.push(Phone::Bound);
                 }
                 phones.push(Phone::Symbol("\n"));
@@ -69,7 +116,7 @@ pub fn build_phone_list(input: EscapedStr) -> Vec<Phone> {
             },
             _ if c.is_whitespace() => {
                 substring.move_after();
-                if !phones.last().is_some_and(|p| p == &Phone::Bound) {
+                if !phones.last().is_some_and(Phone::is_bound) {
                     phones.push(Phone::Bound);
                 }
             },

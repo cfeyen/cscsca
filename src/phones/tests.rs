@@ -7,7 +7,7 @@ io_test! {
     fn shifting_bounds() {
         assert_eq!(
             await_io! { apply("a #c", "\\# >> b") },
-            "a bc".to_string()
+            "a bc"
         )
     }
 }
@@ -26,7 +26,7 @@ fn phone_list() {
 
     assert_eq!(
         build_phone_list(EscapedString::from(format!("a{BOUND_CHAR}b c").as_str()).as_escaped_str()),
-        vec![Phone::Symbol("a"), Phone::Symbol(&format!("{ESCAPE_CHAR}{BOUND_CHAR}").to_string()), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
+        vec![Phone::Symbol("a"), Phone::Symbol(&format!("{ESCAPE_CHAR}{BOUND_CHAR}")), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
     );
 }
 
@@ -34,17 +34,17 @@ fn phone_list() {
 fn phone_list_to_str() {
     assert_eq!(
         phone_list_to_string(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")]),
-        "abc".to_string()
+        "abc"
     );
 
     assert_eq!(
         phone_list_to_string(&[Phone::Symbol("a"), Phone::Bound, Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]),
-        "a b c".to_string()
+        "a b c"
     );
 
     assert_eq!(
-        phone_list_to_string(&[Phone::Symbol(&BOUND_CHAR.to_string())]),
-        BOUND_CHAR.to_string()
+        phone_list_to_string(&[Phone::Symbol(char_to_str(&BOUND_CHAR))]),
+        char_to_str(&BOUND_CHAR)
     );
 }
 
@@ -52,17 +52,17 @@ fn phone_list_to_str() {
 fn phone_list_to_str_with_escapes() {
     assert_eq!(
         phone_list_to_string(&[Phone::Symbol(&format!("{ESCAPE_CHAR}.")), Phone::Symbol("b"), Phone::Symbol("c")]),
-        ".bc".to_string()
+        ".bc"
     );
 
     assert_eq!(
         phone_list_to_string(&[Phone::Symbol(&format!("a{ESCAPE_CHAR}.")), Phone::Bound, Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]),
-        "a. b c".to_string()
+        "a. b c"
     );
 
     assert_eq!(
         phone_list_to_string(&[Phone::Symbol("a"), Phone::Bound, Phone::Symbol(&format!("{ESCAPE_CHAR}b")), Phone::Bound, Phone::Symbol("c")]),
-        "a b c".to_string()
+        "a b c"
     );
 
     assert_eq!(
@@ -71,8 +71,8 @@ fn phone_list_to_str_with_escapes() {
     );
 
     assert_eq!(
-        phone_list_to_string(&[Phone::Symbol(&BOUND_CHAR.to_string())]),
-        BOUND_CHAR.to_string()
+        phone_list_to_string(&[Phone::Symbol(char_to_str(&BOUND_CHAR))]),
+        char_to_str(&BOUND_CHAR)
     );
 }
 

@@ -15,12 +15,12 @@ A shift tells CSCSCA how changes are to be applied and separates inputs from out
 - **`>`**: Left to right, attempts to reapply the rule to the output of the last successful change
 - **`<`**: Right to left, attempts to reapply the rule to the output of the last successful change
 
-**Warning**: as it is technically possible to create an infinite loop with **`>`** or **`<`**, if applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
+**Warning**: as it is technically possible to create an infinite loop with **`>`** or **`<`** or with zero-phone inputs, if applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
 
 ### Rules
 A sound change
 
-Structured *input* *shift* *output* where *input* and *output* are phones (*input* must be at least one phone) and *shift* is a shift token
+Structured *`input`* *`shift`* *`output`* where *`input`* and *`output`* are phones and *`shift`* is a shift token
 
 Examples:
 ```cscsca
