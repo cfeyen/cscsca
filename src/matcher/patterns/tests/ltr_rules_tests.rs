@@ -405,6 +405,35 @@ fn optional_match_conds() {
 }
 
 #[test]
+fn selection_match_conds() {
+    let label = ScopeId::Name("label");
+
+    let conds = &[Cond::new(CondType::Match, vec![RuleToken::SelectionScope { id: Some(label.clone()), options: vec![vec![RuleToken::Phone(Phone::Symbol("a"))], vec![RuleToken::Phone(Phone::Symbol("b"))]] }], vec![RuleToken::Phone(Phone::Symbol("a"))])];
+
+    let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
+
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).is_err());
+
+    let input = [RuleToken::SelectionScope { id: Some(label.clone()), options: vec![vec![RuleToken::Phone(Phone::Symbol("a"))], vec![RuleToken::Phone(Phone::Symbol("b"))]] }];
+
+    let mut rule_pattern = RulePattern::new(&input, conds, &[]).expect("pattern construction should be valid");
+
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
+
+    let conds = &[Cond::new(CondType::Match, vec![RuleToken::Phone(Phone::Symbol("a"))], vec![RuleToken::SelectionScope { id: None,  options: vec![vec![RuleToken::Phone(Phone::Symbol("a"))], vec![RuleToken::Phone(Phone::Symbol("b"))]] }])];
+
+    let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
+
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+
+    assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
+}
+
+#[test]
 fn inequal_length_match_conds() {
     let conds = [Cond::new(CondType::Match, vec![RuleToken::Phone(Phone::Symbol("a")), RuleToken::Phone(Phone::Symbol("b"))], vec![RuleToken::Phone(Phone::Symbol("a"))])];
     
@@ -424,7 +453,6 @@ fn inequal_length_match_conds() {
 }
 
 // todo: conds, anti-conds, &, &!, with gaps, non phone conds
-// todo: test equality conds causing errors, succeeding, and failing
 // todo: zero-input tests
 
 // todo: rtl
