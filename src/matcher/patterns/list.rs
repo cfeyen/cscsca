@@ -81,6 +81,8 @@ impl<'r, 's> PatternList<'r, 's> {
             return Some(OwnedChoices::default());
         }
 
+        // gets the actual index from the input index based on direction
+        // (`index` phones from the initial side)
         let real_index = match phones.direction() {
             Direction::Ltr => Some(index),
             Direction::Rtl => Some(self.patterns.len() - 1 - index),
@@ -102,6 +104,7 @@ impl<'r, 's> PatternList<'r, 's> {
                 // if the remaining patterns match there is another match
                 new_choices.take_owned(next_choices);
             } else {
+                // resets all the patterns directionally after the real index
                 match phones.direction() {
                     Direction::Ltr => self.patterns.get_mut(real_index + 1..).unwrap_or_default(),
                     Direction::Rtl => &mut self.patterns[..real_index]
@@ -110,7 +113,7 @@ impl<'r, 's> PatternList<'r, 's> {
                 continue;
             }
 
-            return Some(new_choices.owned_choices())
+            return Some(new_choices.owned_choices());
         }
     }
 }
