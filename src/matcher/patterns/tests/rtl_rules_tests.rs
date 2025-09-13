@@ -9,7 +9,7 @@ fn matches_phones() {
         &default_conds,
         &[]
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
     let default_conds = [Cond::default()];
@@ -23,7 +23,7 @@ fn matches_phones() {
         &default_conds,
         &[]
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 2, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 }
@@ -37,7 +37,7 @@ fn match_phone_with_cond() {
         &before_b,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 
@@ -46,7 +46,7 @@ fn match_phone_with_cond() {
         &before_b,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -55,7 +55,7 @@ fn match_phone_with_cond() {
         &before_b,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -66,7 +66,7 @@ fn match_phone_with_cond() {
         &after_b,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 
@@ -75,7 +75,7 @@ fn match_phone_with_cond() {
         &after_b,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -84,7 +84,7 @@ fn match_phone_with_cond() {
         &after_b,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 }
@@ -100,7 +100,7 @@ fn match_phone_with_anti_cond() {
         &default_conds,
         &before_b,
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -109,7 +109,7 @@ fn match_phone_with_anti_cond() {
         &default_conds,
         &before_b,
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 
@@ -118,7 +118,7 @@ fn match_phone_with_anti_cond() {
         &default_conds,
         &before_b,
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -129,7 +129,7 @@ fn match_phone_with_anti_cond() {
         &default_conds,
         &after_b,
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -138,7 +138,7 @@ fn match_phone_with_anti_cond() {
         &default_conds,
         &after_b,
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 
@@ -147,7 +147,7 @@ fn match_phone_with_anti_cond() {
         &default_conds,
         &after_b,
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 }
@@ -166,7 +166,7 @@ fn and_cond() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 
@@ -175,7 +175,7 @@ fn and_cond() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("c")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("c")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -184,7 +184,7 @@ fn and_cond() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -193,7 +193,7 @@ fn and_cond() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 }
@@ -212,7 +212,7 @@ fn and_not_cond() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -221,7 +221,7 @@ fn and_not_cond() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("c")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("c")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 
@@ -230,7 +230,7 @@ fn and_not_cond() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 
@@ -239,7 +239,7 @@ fn and_not_cond() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 }
@@ -267,7 +267,7 @@ fn agreement_between_pattern_halves() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 
@@ -276,7 +276,7 @@ fn agreement_between_pattern_halves() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("d")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("d")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 }
@@ -312,7 +312,7 @@ fn agreement_between_and_conds() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 
@@ -321,7 +321,7 @@ fn agreement_between_and_conds() {
         &cond,
         &[],
     ).expect("pattern construction should be valid");
-    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("d")], 1, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("d")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
 }
@@ -350,7 +350,7 @@ fn complex_argeement() {
         &anti_cond,
     ).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
 }
@@ -361,7 +361,7 @@ fn phone_match_phone_cond() {
 
     let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
 
@@ -370,7 +370,7 @@ fn phone_match_phone_cond() {
 
     let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], bad_conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_none()));
 }
@@ -383,7 +383,7 @@ fn optional_match_conds() {
 
     let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_err());
 
@@ -391,7 +391,7 @@ fn optional_match_conds() {
 
     let mut rule_pattern = RulePattern::new(&input, conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
 
@@ -399,7 +399,7 @@ fn optional_match_conds() {
 
     let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
 }
@@ -412,7 +412,7 @@ fn selection_match_conds() {
 
     let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_err());
 
@@ -420,7 +420,7 @@ fn selection_match_conds() {
 
     let mut rule_pattern = RulePattern::new(&input, conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
 
@@ -428,7 +428,7 @@ fn selection_match_conds() {
 
     let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_some()));
 }
@@ -439,7 +439,7 @@ fn inequal_length_match_conds() {
     
     let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], &conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_none()));
 
@@ -447,7 +447,7 @@ fn inequal_length_match_conds() {
     
     let mut rule_pattern = RulePattern::new(&[RuleToken::Phone(Phone::Symbol("a"))], &conds, &[]).expect("pattern construction should be valid");
 
-    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Ltr);
+    let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).is_ok_and(|res| res.is_none()));
 }
@@ -457,20 +457,20 @@ fn zero_input() {
     let default_cond = [Cond::default()];
     let mut rule_pattern = RulePattern::new(&[], &default_cond, &[]).expect("pattern construction should be valid");
 
-    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_some());
-    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_none());
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_some());
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_none());
 
 
     let cond = [Cond::new(CondType::Pattern, vec![RuleToken::Phone(Phone::Bound)], vec![RuleToken::Phone(Phone::Bound)])];
     let mut rule_pattern = RulePattern::new(&[], &cond, &[]).expect("pattern construction should be valid");
 
-    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_some());
-    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_none());
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_some());
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_none());
     
     let cond = [Cond::new(CondType::Pattern, vec![RuleToken::Phone(Phone::Symbol("a"))], Vec::new())];
     let mut rule_pattern = RulePattern::new(&[], &cond, &[]).expect("pattern construction should be valid");
 
-    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Ltr)).expect("next match should not error").is_none());
+    assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_none());
 }
 
 // todo: conds, anti-conds, &, &!, with gaps, non phone conds
