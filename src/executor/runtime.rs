@@ -118,7 +118,7 @@ impl Runtime for CliRuntime {
     }
 
     #[inline]
-    #[io_fn]
+    #[io_fn(impl)]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
         println!("{msg} '{BLUE}{phones}{RESET}'");
         Ok(())
@@ -172,7 +172,7 @@ impl LogRuntime {
 }
 
 impl Runtime for LogRuntime {
-    #[io_fn]
+    #[io_fn(impl)]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
         self.logs.push((msg.to_string(), phones));
         Ok(())
@@ -224,7 +224,7 @@ impl Runtime for LogAndPrintRuntime {
     }
 
     #[inline]
-    #[io_fn]
+    #[io_fn(impl)]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
         println!("{msg} '{BLUE}{phones}{RESET}'");
         await_io!{ self.0.put_io(msg, phones) }

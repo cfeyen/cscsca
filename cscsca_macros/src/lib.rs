@@ -1,61 +1,47 @@
 use proc_macro::TokenStream;
-#[cfg(feature = "async_io")]
-use proc_macro2::TokenStream as TokenStream2;
-#[cfg(feature = "async_io")]
-use quote::{quote, ToTokens};
-#[cfg(feature = "async_io")]
-use syn::parse::{Parse, ParseStream};
+use quote::quote;
+use syn::{self, parse::{Parse, ParseStream}, Path};
 
+mod io_fn;
+mod io_test;
 
-#[cfg(not(feature = "async_io"))]
-/// Makes a function asyncronous if the `async_io` feature flag is active
+/// Makes a function asynchronous if the `async_io` feature flag is active
+/// 
+/// This attribute may take `impl` as an argument to mark the function as part of a trait implementation
+/// (prevents documentation from being overriden)
 #[proc_macro_attribute]
-pub fn io_fn(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    item
-}
+pub fn io_fn(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let mut io_fn = syn::parse_macro_input!(item as io_fn::IoFn);
+    io_fn.impls  = syn::parse_macro_input!(attr as MaybeToken<syn::Token![impl]>).token.is_some();
 
-#[cfg(feature = "async_io")]
-/// Makes a function asyncronous if the `async_io` feature flag is active
-#[proc_macro_attribute]
-pub fn io_fn(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let io_fn = syn::parse_macro_input!(item as IoFn);
     quote! { #io_fn }.into()
 }
 
-#[cfg(feature = "async_io")]
-struct IoFn {
-    attrs: Vec<syn::Attribute>,
-    public: bool,
-    fn_rest: TokenStream2,
-}
+/// Turns a function into a unit test
+/// 
+/// If the `async_io` feature flag is active the function also becomes asynchronous
+/// 
+/// This attribute should take as an argument the path to a function that will block until it finishes polling a future
+#[proc_macro_attribute]
+pub fn io_test(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let mut io_test = syn::parse_macro_input!(item as io_test::IoTest);
 
-#[cfg(feature = "async_io")]
-impl Parse for IoFn {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let attrs = input.call(syn::Attribute::parse_outer)?;
-        let public = input.parse::<syn::Token![pub]>().is_ok();
-        input.parse::<syn::Token![fn]>()?;
-        let fn_rest = input.parse()?;
-        Ok(Self { attrs, public, fn_rest })
+    if let Some(poller) = syn::parse_macro_input!(attr as MaybeToken<Path>).token {
+        io_test.poller = Some(poller)
     }
+
+    quote! { #io_test }.into()
 }
 
-#[cfg(feature = "async_io")]
-impl ToTokens for IoFn {
-    fn to_tokens(&self, tokens: &mut TokenStream2) {
-        let Self {attrs,  public, fn_rest } = self;
 
-        let attrs = attrs.into_iter();
+struct MaybeToken<T: Parse> {
+    token: Option<T>,
+}
 
-        let public = if *public {
-            quote! { pub }
-        } else {
-            quote! {}
-        };
-
-        tokens.extend(quote! {
-            #(#attrs)*
-            #public async fn #fn_rest
-        });
+impl<T: Parse> Parse for MaybeToken<T> {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        Ok(Self {
+            token: input.parse::<T>().ok(),
+        })
     }
 }

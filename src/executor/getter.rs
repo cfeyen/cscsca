@@ -79,7 +79,7 @@ impl CliGetter {
 
 impl IoGetter for CliGetter {
     #[inline]
-    #[io_fn]
+    #[io_fn(impl)]
     fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn Error>> {
         print!("{msg} ");
         let mut buffer = String::new();

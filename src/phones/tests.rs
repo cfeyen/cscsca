@@ -3,13 +3,12 @@ use crate::io_macros::{await_io, io_test};
 
 use super::*;
 
-io_test! {
-    fn shifting_bounds() {
-        assert_eq!(
-            await_io! { apply("a #c", "\\# >> b") },
-            "a bc"
-        )
-    }
+#[io_test(pollster::block_on)]
+fn shifting_bounds() {
+    assert_eq!(
+        await_io! { apply("a #c", "\\# >> b") },
+        "a bc"
+    )
 }
 
 #[test]
