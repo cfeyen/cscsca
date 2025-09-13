@@ -33,7 +33,11 @@ impl<'r, 's> CondPattern<'r, 's> {
     pub(super) fn next_match(&mut self, phones: &CondPhoneInput<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Result<Option<OwnedChoices<'r, 's>>, ApplicationError<'r, 's>> {
         let mut new_choices = choices.partial_clone();
 
-        self.left.checked_flag_reset();
+        // resets the checked flag on the left of the input
+        // so the right can be fully checked before it is advanced
+        if self.cond_type == CondType::Pattern {
+            self.left.checked_flag_reset();
+        }
         
         'left_check: loop {
             if self.cond_type == CondType::Pattern {
