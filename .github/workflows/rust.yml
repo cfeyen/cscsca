@@ -21,4 +21,4 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Run tests with async_io
-      run: cargo test --lib --feature async_io --verbose
+      run: cargo test --lib --features async_io --verbose
