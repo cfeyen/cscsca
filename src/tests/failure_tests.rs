@@ -1,13 +1,14 @@
 use std::time::Duration;
 
-use crate::{apply_fallible, executor::{LineByLineExecuter, runtime::{CliRuntime, LineApplicationLimit}, getter::CliGetter}};
+use crate::executor::{LineByLineExecuter, runtime::LineApplicationLimit};
 use crate::io_macros::{await_io, io_test};
+use crate::tests::{apply_fallible, NoGet, NoLog};
 
 #[io_test(pollster::block_on)]
 fn time_out_of_infinte_loop() {
     let mut exector = LineByLineExecuter::new(
-        CliRuntime::new(Some(LineApplicationLimit::Time(Duration::from_millis(100)))),
-        CliGetter::new()
+        NoLog::new(Some(LineApplicationLimit::Time(Duration::from_millis(100)))),
+        NoGet
     );
 
     assert!(await_io! { exector.apply_fallible("a", "{a, b} > {b, a}") }.is_err());

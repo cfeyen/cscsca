@@ -2,7 +2,6 @@ use std::{error::Error, time::Duration};
 
 use crate::{
     applier::apply,
-    color::{BLUE, RESET},
     phones::{phone_list_to_string, Phone},
     rules::RuleLine,
     ScaError,
@@ -96,43 +95,6 @@ pub(super) trait RuntimeApplier: Runtime {
 
 impl<T: Runtime> RuntimeApplier for T {}
 
-/// A basic `Runtime` that prints to standard output
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct CliRuntime {
-    line_application_limit: Option<LineApplicationLimit>,
-}
-
-impl CliRuntime {
-    /// Creates a new `CliRuntime`
-    #[inline]
-    #[must_use]
-    pub const fn new(line_application_limit: Option<LineApplicationLimit>) -> Self {
-        Self { line_application_limit }
-    }
-}
-
-impl Runtime for CliRuntime {
-    #[inline]
-    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
-        self.line_application_limit
-    }
-
-    #[inline]
-    #[io_fn(impl)]
-    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
-        println!("{msg} '{BLUE}{phones}{RESET}'");
-        Ok(())
-    }
-}
-
-impl Default for CliRuntime {
-    fn default() -> Self {
-        Self {
-            line_application_limit: Some(DEFAULT_LINE_APPLICATION_LIMIT),
-        }
-    }
-}
-
 /// A basic `Runtime` that logs outputs to itself
 /// 
 /// Clears its logs before starting to apply a new set of rules
@@ -195,43 +157,5 @@ impl Default for LogRuntime {
             logs: Vec::default(),
             line_application_limit: Some(DEFAULT_LINE_APPLICATION_LIMIT),
         }
-    }
-}
-
-/// A basic `Runtime` that logs outputs to itself and prints its logs to standard output
-/// 
-/// Clears its logs before starting to apply a new set of rules
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct LogAndPrintRuntime(LogRuntime);
-
-impl LogAndPrintRuntime {
-    /// Returns the logs
-    #[must_use]
-    pub fn logs(&self) -> &[(String, String)] {
-        self.0.logs()
-    }
-
-    /// Returns the logs and replaces them with empty logs
-    pub fn flush_logs(&mut self) -> Vec<(String, String)> {
-        self.0.flush_logs()
-    }
-}
-
-impl Runtime for LogAndPrintRuntime {
-    #[inline]
-    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
-        self.0.line_application_limit()
-    }
-
-    #[inline]
-    #[io_fn(impl)]
-    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
-        println!("{msg} '{BLUE}{phones}{RESET}'");
-        await_io!{ self.0.put_io(msg, phones) }
-    }
-
-    #[inline]
-    fn on_start(&mut self) {
-        self.0.on_start();
     }
 }

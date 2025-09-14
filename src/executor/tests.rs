@@ -1,10 +1,10 @@
 use super::{
-    runtime::{CliRuntime, LogRuntime},
-    getter::{CliGetter, IoGetter},
+    runtime::LogRuntime,
+    getter::IoGetter,
     LineByLineExecuter,
 };
 
-use crate::io_macros::{await_io, io_test, io_fn};
+use crate::{io_macros::{await_io, io_fn, io_test}, tests::{NoGet, NoLog}};
 
 struct SingleGetter(&'static str);
 
@@ -23,7 +23,7 @@ fn line_by_line_getter() {
 
     assert_eq!(
         await_io! {
-            LineByLineExecuter::new(CliRuntime::default(), get_b)
+            LineByLineExecuter::new(NoLog::default(), get_b)
                 .apply_fallible("a", rules)
         },
         Ok("b".to_string())
@@ -34,7 +34,7 @@ fn line_by_line_getter() {
 fn line_by_line_log_runtime() {
     let rules = "PRINT 1:\na >> b\nPRINT 2:\nc >> d\nPRINT 3:";
 
-    let mut executor = LineByLineExecuter::new(LogRuntime::default(), CliGetter);
+    let mut executor = LineByLineExecuter::new(LogRuntime::default(), NoGet);
 
     assert_eq!(
         await_io! { executor.apply_fallible("abcd", rules) },

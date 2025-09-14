@@ -1,4 +1,4 @@
-use crate::{apply, executor::{runtime::LogRuntime, LineByLineExecuter, getter::CliGetter}};
+use crate::{executor::{runtime::LogRuntime, LineByLineExecuter}, tests::{apply, NoGet}};
 use crate::io_macros::{await_io, io_test};
 
 const DEMO: &'static str = include_str!("../assets/demo.sca");
@@ -53,7 +53,7 @@ fn demo_harmony() {
 
 #[io_test(pollster::block_on)]
 fn demo_print() {
-    let mut executor = LineByLineExecuter::new(LogRuntime::default(), CliGetter);
+    let mut executor = LineByLineExecuter::new(LogRuntime::default(), NoGet);
     
     _ = await_io! { executor.apply_fallible("pata takan", DEMO) };
 

@@ -1,4 +1,5 @@
-use crate::{apply, escaped_strings::EscapedString, keywords::BOUND_CHAR};
+use crate::tests::apply;
+use crate::{escaped_strings::EscapedString, keywords::BOUND_CHAR};
 use crate::io_macros::{await_io, io_test};
 
 use super::*;

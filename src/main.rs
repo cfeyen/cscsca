@@ -7,13 +7,13 @@ compile_error! { "binary cannot be compiled with the feature flag `async_io`" }
 
 use std::{fs, fmt::Write as _};
 
-mod color;
-mod cli_parser;
+mod cli_tools;
 
-use cli_parser::{CliCommand, InputType, OutputData};
-use color::{BLUE, BOLD, GREEN, RED, RESET, YELLOW};
-
-use crate::cli_parser::{MapData, MapType};
+use cli_tools::{
+    ansi::{BLUE, BOLD, GREEN, RED, RESET, YELLOW},
+    cli_parser::{MapData, MapType, CliCommand, InputType, OutputData},
+    cli_io::{CliGetter, LogAndPrintRuntime},
+};
 
 const APPLY_CMD: &str = "sca";
 const CHAR_HELP_CMD: &str = "chars";
@@ -104,29 +104,29 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     if build {
         // build each rule set into an appliable form
         let appliable_rule_sets = match rule_sets.iter()
-            .map(|rule_set| cscsca::build_rules(rule_set, &mut cscsca::CliGetter))
+            .map(|rule_set| cscsca::build_rules(rule_set, &mut CliGetter))
             .collect::<Result<Vec<_>, _>>() {
                 Ok(rules) => rules,
                 Err(e) => {
-                    println!("{e}");
+                    print_error(&e);
                     return Ok(());
                 },
             };
 
         // applies each rule set in the rules chain to each line of the input
         for input in input.lines() {
-            let line_output = apply_rule_sets(paths, output_data, &appliable_rule_sets, input.to_string())
-                .unwrap_or_else(|e| {
-                    let error = e.to_string()
-                        // removes ansi
-                        .replace(RED, "")
-                        .replace(RESET, "");
-
-                    format!("{input}: {error}")
-            });
+            let line_output = match apply_rule_sets(paths, output_data, &appliable_rule_sets, input.to_string()) {
+                Ok(out) => {
+                    println!("{out}");
+                    out
+                },
+                Err(e) => {
+                    print_error(&e);
+                    format!("{e}")
+                },
+            };
 
             // records the output
-            println!("{line_output}");
             _ = writeln!(full_output, "{line_output}");
         }
     } else {
@@ -138,7 +138,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
                 println!("{output}");
             },
             Err(e) => {
-                println!("{e}");
+                print_error(&e);
                 return Ok(());
             },
         }
@@ -165,7 +165,7 @@ fn apply_rule_sets(paths: &[String], output_data: &OutputData, rule_sets: &[cscs
     let mut runtime = if output_data.quiet() {
         AppRuntime::Quiet(cscsca::LogRuntime::default())
     } else {
-        AppRuntime::Loud(cscsca::LogAndPrintRuntime::default())
+        AppRuntime::Loud(LogAndPrintRuntime::default())
     };
 
     // applies each rule set
@@ -194,11 +194,10 @@ fn apply_changes(paths: &[String], output_data: &OutputData, rule_sets: &[String
     let runtime = if output_data.quiet() {
         AppRuntime::Quiet(cscsca::LogRuntime::default())
     } else {
-        AppRuntime::Loud(cscsca::LogAndPrintRuntime::default())
+        AppRuntime::Loud(LogAndPrintRuntime::default())
     };
 
-    let getter = cscsca::CliGetter;
-    let mut executor = cscsca::LineByLineExecuter::new(runtime, getter);
+    let mut executor = cscsca::LineByLineExecuter::new(runtime, CliGetter);
 
     // applies each rule set
     for (i, rule_set) in rule_sets.iter().enumerate() {
@@ -252,6 +251,17 @@ fn extend_mapping(map_type: MapType, output: &str, mapping: &mut Vec<String>, ru
     }
 }
 
+fn print_error(e: &cscsca::ScaError) {
+    print!("{RED}");
+
+    if e.is_io_error() {
+        print!("IO ")
+    }
+    
+    println!("Error{RESET}: {}", e.error_message());
+    println!("Line {}: {}", e.line_number(), e.line())
+}
+
 /// prints the characters in a string
 fn print_chars(text: &str) {
     println!("Characters in '{BLUE}{text}{RESET}':");
@@ -277,7 +287,7 @@ const fn template() -> &'static str {
 #[derive(Debug)]
 enum AppRuntime {
     Quiet(cscsca::LogRuntime),
-    Loud(cscsca::LogAndPrintRuntime),
+    Loud(LogAndPrintRuntime),
 }
 
 impl AppRuntime {

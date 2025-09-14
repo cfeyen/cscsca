@@ -1,5 +1,3 @@
-use std::{error::Error, io::{self, Write}};
-
 use crate::{
     ir::tokenization_data::TokenizationData,
     ScaError,
@@ -18,7 +16,7 @@ pub trait IoGetter {
     /// # Note:
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
-    fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn Error>>;
+    fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn std::error::Error>>;
 
     /// Called before building a set of rules
     /// 
@@ -63,28 +61,3 @@ pub(super) trait ComptimeCommandExecuter: IoGetter {
 }
 
 impl<T: IoGetter> ComptimeCommandExecuter for T {}
-
-/// A basic `IoGetter` that get input from standard input
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct CliGetter;
-
-impl CliGetter {
-    /// Creates a new `CliGetter`
-    #[inline]
-    #[must_use]
-    pub const fn new() -> Self {
-        Self
-    }
-}
-
-impl IoGetter for CliGetter {
-    #[inline]
-    #[io_fn(impl)]
-    fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn Error>> {
-        print!("{msg} ");
-        let mut buffer = String::new();
-        _ = io::stdout().flush();
-        io::stdin().read_line(&mut buffer)?;
-        Ok(buffer.trim().to_string())
-    }
-}

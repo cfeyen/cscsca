@@ -10,7 +10,6 @@ mod applier;
 mod matcher;
 mod sub_string;
 mod escaped_strings;
-mod color;
 mod executor;
 mod keywords;
 mod io_macros;
@@ -25,14 +24,9 @@ pub use crate::{
         runtime::{
             Runtime,
             LineApplicationLimit,
-            CliRuntime,
             LogRuntime,
-            LogAndPrintRuntime,
         },
-        getter::{
-            IoGetter,
-            CliGetter,
-        },
+        getter::IoGetter,
     },
 };
 
@@ -42,39 +36,7 @@ use io_macros::{
 };
 
 #[cfg(test)]
-mod tests;
-
-/// Applies sca source code to an input string
-/// 
-/// Returns a string of either the final text or a formatted error
-/// 
-/// # Note:
-/// IO is done through the standard io
-#[inline]
-#[must_use]
-#[io_fn]
-pub fn apply(input: &str, rules: &str) -> String {
-    await_io! {
-        apply_fallible(input, rules)
-    }.unwrap_or_else(|e| e.to_string())
-}
-
-/// Applies sca source code to an input string
-/// 
-/// # Errors
-/// Errors on invalid rules, application that takes too long, and failed io
-/// 
-/// # Note:
-/// IO is done through the standard io
-#[inline]
-#[io_fn]
-pub fn apply_fallible(input: &str, rules: &str) -> Result<String, ScaError> {
-    let getter = CliGetter::new();
-    let runtime = CliRuntime::default();
-    await_io! {
-        LineByLineExecuter::new(runtime, getter).apply_fallible(input, rules)
-    }
-}
+pub(crate) mod tests;
 
 #[cfg(feature = "docs")]
 /// Returns the content of the README markdown file pertaining to writing sound change rules
@@ -152,9 +114,9 @@ impl std::fmt::Display for ScaError {
     #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.from_io {
-            write!(f, "{}IO Error: {}", color::RED, color::RESET)?;
+            write!(f, "IO Error: ")?;
         } else {
-            write!(f, "{}Error: {}", color::RED, color::RESET)?;
+            write!(f, "Error: ")?;
         }
         writeln!(f, "{}", self.err)?;
         write!(f, "Line {}: {}", self.line_num, self.line)

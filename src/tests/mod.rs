@@ -1,5 +1,67 @@
-use crate::{apply, apply_fallible, executor::{LineByLineExecuter, runtime::CliRuntime, getter::IoGetter}};
+use crate::{executor::{getter::IoGetter, runtime::DEFAULT_LINE_APPLICATION_LIMIT, LineByLineExecuter}, LineApplicationLimit, Runtime, ScaError};
 use crate::io_macros::{await_io, io_test, io_fn};
+
+/// Applies rules to an input with default execution and errors converted to a string
+#[io_fn]
+pub fn apply(input: &str, rules: &str) -> String {
+    await_io! {
+        LineByLineExecuter::new(NoLog::default(), NoGet)
+            .apply(input, rules)
+    }
+}
+
+/// Applies rules to an input with default execution
+#[io_fn]
+pub fn apply_fallible(input: &str, rules: &str) -> Result<String, ScaError> {
+    await_io! {
+        LineByLineExecuter::new(NoLog::default(), NoGet)
+            .apply_fallible(input, rules)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoGet;
+
+impl IoGetter for NoGet {
+    #[io_fn(impl)]
+    fn get_io(&mut self, _: &str) -> Result<String, Box<dyn std::error::Error>> {
+        return Err(Box::new(Self) as Box<dyn std::error::Error>);
+    }
+}
+
+impl std::error::Error for NoGet {}
+
+impl std::fmt::Display for NoGet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "`GET` and `GET_AS_CODE` not implemented")
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NoLog(Option<LineApplicationLimit>);
+
+impl NoLog {
+    pub const fn new(line_application_limit: Option<LineApplicationLimit>) -> Self {
+        Self(line_application_limit)
+    }
+}
+
+impl Runtime for NoLog {
+    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
+        self.0
+    }
+
+    #[io_fn(impl)]
+    fn put_io(&mut self, _: &str, _:String) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
+}
+
+impl Default for NoLog {
+    fn default() -> Self {
+        Self(Some(DEFAULT_LINE_APPLICATION_LIMIT))
+    }
+}
 
 mod demo_tests;
 mod failure_tests;
@@ -30,7 +92,7 @@ impl IoGetter for SingleInputGetter {
 
 #[io_test(pollster::block_on)]
 fn input() {
-    let runtime = CliRuntime::default();
+    let runtime = NoLog::default();
 
     assert_eq!(
         await_io! {
