@@ -121,7 +121,7 @@ impl ScaError {
     /// Returns `true` if the error was caused by getting or writing IO
     #[must_use]
     #[inline]
-    pub fn is_io_error(&self) -> bool {
+    pub const fn is_io_error(&self) -> bool {
         self.from_io
     }
 
