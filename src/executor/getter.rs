@@ -14,7 +14,7 @@ pub trait IoGetter {
     /// # Errors
     /// Should only error on failed io
     /// 
-    /// # Note:
+    /// # Note
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
     fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn std::error::Error>>;

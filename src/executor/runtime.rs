@@ -37,7 +37,7 @@ pub trait Runtime {
     /// # Errors
     /// Should only error on failed io
     /// 
-    /// # Note:
+    /// # Note
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
     fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>>;
