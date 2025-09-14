@@ -12,6 +12,7 @@ use crate::{
     phones::{build_phone_list, phone_list_to_string},
     rules::{build_rule, RuleLine},
     ScaError,
+    ScaErrorType,
     await_io,
     io_fn,
 };
@@ -140,7 +141,7 @@ where
     G: IoGetter
 {
     let ir_line = tokenize_line_or_create_command(line, tokenization_data)
-        .map_err(|e| ScaError::from_error(&e, line, line_num))?;
+        .map_err(|e| ScaError::from_error(&e, ScaErrorType::Parse, line, line_num))?;
 
     match ir_line {
         IrLine::IoEvent(IoEvent::Tokenizer(cmd)) => {
@@ -150,6 +151,6 @@ where
         // builds a rule from ir
         ir_line =>
             build_rule(ir_line)
-                .map_err(|e| ScaError::from_error(&e, line, line_num)),
+                .map_err(|e| ScaError::from_error(&e, ScaErrorType::Parse, line, line_num)),
     }
 }

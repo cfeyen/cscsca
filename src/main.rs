@@ -254,11 +254,14 @@ fn extend_mapping(map_type: MapType, output: &str, mapping: &mut Vec<String>, ru
 fn print_error(e: &cscsca::ScaError) {
     print!("{RED}");
 
-    if e.is_io_error() {
-        print!("IO ")
-    }
+    let error_type_msg = match e.error_type() {
+        cscsca::ScaErrorType::Input => "Input",
+        cscsca::ScaErrorType::Output => "Output",
+        cscsca::ScaErrorType::Parse => "Syntax",
+        cscsca::ScaErrorType::Application => "Application",
+    };
     
-    println!("Error{RESET}: {}", e.error_message());
+    println!("{error_type_msg} Error{RESET}: {}", e.error_message());
     println!("Line {}: {}", e.line_number(), e.line())
 }
 

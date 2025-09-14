@@ -5,6 +5,7 @@ use crate::{
     phones::{phone_list_to_string, Phone},
     rules::RuleLine,
     ScaError,
+    ScaErrorType,
     await_io,
     io_fn,
 };
@@ -76,7 +77,7 @@ pub(super) trait RuntimeApplier: Runtime {
                 self.execute_runtime_command(cmd, phones, line, line_num)
             },
             RuleLine::Rule(rule) => apply(rule, phones, self.line_application_limit())
-                .map_err(|e| ScaError::from_error(&e, line, line_num))
+                .map_err(|e| ScaError::from_error(&e, ScaErrorType::Application, line, line_num))
         }
     }
 
@@ -87,7 +88,7 @@ pub(super) trait RuntimeApplier: Runtime {
             RuntimeIoEvent::Print { msg } => {
                 await_io! {
                     self.put_io(msg, phone_list_to_string(phones))
-                }.map_err(|e| ScaError::from_io_error(&*e, line, line_num))
+                }.map_err(|e| ScaError::from_error(&*e, ScaErrorType::Output, line, line_num))
             }
         }
     }
