@@ -212,7 +212,6 @@ Replace *`text`* with **`--read`** *`read_file`* or **`-r`** *`read_file`* to re
 `á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *`text`* prints every character in *`text`*, separating combining characters
 
 ## Crate Features
-- `ansi`: Adds ANSI color codes to IO. Ideal for CLI environments.
 - `async_io`: Allows for IO to be done through asynchronous functions instead of synchronous ones. Cannot be active when compiling CSCSCA to an executable 
 - `docs`: Adds the function `cscsca::docs` that returns everything under the heading `Writing Sound Change Rules With CSCSCA` in this file
 
