@@ -262,7 +262,7 @@ fn print_error(e: &cscsca::ScaError) {
     };
     
     println!("{error_type_msg} Error{RESET}: {}", e.error_message());
-    println!("Line {}: {}", e.line_number(), e.line())
+    println!("Line {}: {}", e.line_number(), e.line());
 }
 
 /// prints the characters in a string
