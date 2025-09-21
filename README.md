@@ -145,7 +145,7 @@ DEFINE intervocalic @V _ @V
 - **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
 - **`..`**: a gap of zero or more non-boundary phones. (**Notes**: **`..`** must have a space on both sides and is only allowed in conditions). A gap may be preceded by a label to limit gap length to less than or equal to the length of the first gap with the same label
 - **`#`**: a word boundary
-- **`\`**: escapes the effects of the following character
+- **`\`**: escapes the effects of the following character, may be used at the end of a line to continue the rule on the next line
 
 ### Reserved Characters
 Characters that do nothing, but need to be escaped
