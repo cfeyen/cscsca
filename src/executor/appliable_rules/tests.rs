@@ -1,5 +1,5 @@
 use super::*;
-use crate::{io_macros::{await_io, io_test}, tests::{NoGet, NoLog}};
+use crate::{io_macros::{await_io, io_test}, tests::{NoGet, NoLog}, ONE};
 
 #[io_test(pollster::block_on)]
 fn appliable_rules() {
@@ -33,7 +33,7 @@ fn appliable_rule_runtime_errors() {
         .expect("rules should compile");
 
     let result = await_io! { appliable_rules.apply_fallible("b", &mut NoLog::default()) };
-    assert!(result.is_err_and(|e| e.line == rules && e.line_num == 1));
+    assert!(result.is_err_and(|e| e.rule == rules && e.line_num == ONE));
 }
 
 #[io_test(pollster::block_on)]
@@ -41,7 +41,7 @@ fn appliable_rule_build_time_errors() {
     let rules = "a > b > c";
 
     let result = await_io! { build_rules(rules, &mut NoGet) };
-    assert!(result.is_err_and(|e| e.line == rules && e.line_num == 1));
+    assert!(result.is_err_and(|e| e.rule == rules && e.line_num == ONE));
 }
 
 #[io_test(pollster::block_on)]

@@ -1,6 +1,6 @@
 /// A wrapper around a str reference that allows slices of it to be taken
 /// 
-/// The slices may only grow in length or move right to a non intersecting position
+/// The slices may only grow in length, be reduced by a character it ends with, or move right to a non intersecting position
 /// and with the length being reset
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SubString<'s> {
@@ -40,14 +40,6 @@ impl<'s> SubString<'s> {
         self.start += self.len;
         self.len = 0;
     }
-    
-    /// Moves the substring start to the index after the slice ends and resets the length
-    /// then moves skipping a byte
-    #[inline]
-    pub const fn skip_byte(&mut self) {
-        self.move_after();
-        self.start += 1;
-    }
 
     /// Moves the substring start to the index after the substring ends and resets the length
     /// then moves skipping a substring the size of c in utf-8
@@ -55,5 +47,17 @@ impl<'s> SubString<'s> {
     pub const fn skip(&mut self, c: char) {
         self.move_after();
         self.start += c.len_utf8();
+    }
+
+    /// Shrinks the substring by the length of a character if it ends with it
+    /// 
+    /// Returns `true` if the substring was shrunk
+    pub fn shrink(&mut self, c: char) -> bool {
+        if self.take_slice().ends_with(c) {
+            self.len -= c.len_utf8();
+            true
+        } else {
+            false
+        }
     }
 }

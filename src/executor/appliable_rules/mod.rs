@@ -1,19 +1,12 @@
 #[cfg(test)]
 mod tests;
 
+use std::num::NonZero;
+
 use crate::{
-    escaped_strings::EscapedString,
-    executor::{
-        build_line,
-        runtime::{Runtime, RuntimeApplier},
-        getter::IoGetter,
-    },
-    ir::tokenization_data::TokenizationData,
-    phones::{build_phone_list, phone_list_to_string},
-    rules::RuleLine,
-    ScaError,
-    await_io,
-    io_fn
+    await_io, escaped_strings::EscapedString, executor::{
+        build_line, getter::IoGetter, runtime::{Runtime, RuntimeApplier}
+    }, io_fn, ir::tokenization_data::TokenizationData, phones::{build_phone_list, phone_list_to_string}, rules::RuleLine, ScaError, ONE
 };
 
 /// Builds all rules to a form that may be applied more easily
@@ -22,20 +15,18 @@ use crate::{
 /// Errors on invalid rules or failed io
 #[io_fn]
 pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
-    let mut line_num = 0;
     let mut rule_lines = Vec::new();
     let mut tokenization_data = TokenizationData::new();
+    let mut lines = rules.lines().enumerate().map(|(line_num, line)| (unsafe { NonZero::new_unchecked(line_num + 1) }, line));
 
     // prepares the getter to start fetching a new set of input
     getter.on_start();
 
     // builds each line
-    for line in rules.lines() {
-        line_num += 1;
-
+    while let Some((line_num, line)) = lines.next() {
         // builds the line and returns any errors
         let rule_line = match await_io! {
-            build_line(line, line_num, &mut tokenization_data, getter)
+            build_line(line, &mut lines, line_num, &mut tokenization_data, getter)
         } {
             Ok(rule_line) => rule_line,
             Err(e) => {
@@ -47,7 +38,9 @@ pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<Ap
                 // which owns all of its values, and `rule_lines` is dropped,
                 // no references remain to the sources buffer in `tokenization_data`
                 unsafe { tokenization_data.free_sources() };
-                return Err(e)
+
+                
+                return Err(e.into_sca_error(rules.lines()))
             }
         };
         rule_lines.push(rule_line);
@@ -96,23 +89,23 @@ impl AppliableRules<'_> {
         let escaped_input = EscapedString::from(input);
         let mut phones = build_phone_list(escaped_input.as_escaped_str());
 
-        let mut line_num = 0;
+        let mut line_num = ONE;
 
         // prepares the runtime for a new set of applications
         runtime.on_start();
 
         // applies rules
         for rule_line in &self.rules {
-            let line = self.lines.get(line_num).copied().unwrap_or_default();
-            line_num += 1;
-
             if let Err(e) = await_io! {
-                runtime.apply_line(rule_line, &mut phones, line, line_num)
+                runtime.apply_line(rule_line, &mut phones, line_num)
             } {
                 // signals to the runtime that execution is complete
                 runtime.on_end();
-                return Err(e);
+
+                return Err(e.into_sca_error(self.lines.iter().copied()));
             }
+
+            line_num = unsafe { NonZero::new_unchecked(line_num.get() + rule_line.lines().get()) };
         }
 
         // signals to the runtime that execution is complete

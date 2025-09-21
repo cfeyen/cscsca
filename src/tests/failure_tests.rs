@@ -48,3 +48,35 @@ fn invalid_condition_tokens() {
     assert!(await_io! { apply_fallible("a", "a >> b / _ # _") }.is_err());
     assert!(await_io! { apply_fallible("a", "a >> b / a = b = c") }.is_err());
 }
+
+#[io_test(pollster::block_on)]
+fn multi_line_errors() {
+    let e = await_io! { apply_fallible("", "h >> \\\n @a") }.expect_err("should error");
+    assert_eq!(e.line_num.get(), 1);
+    assert_eq!(e.line_count.get(), 2);
+
+    let e = await_io! { apply_fallible("", "h >> \\\n kh \n @a") }.expect_err("should error");
+    assert_eq!(e.line_num.get(), 3);
+    assert_eq!(e.line_count.get(), 1);
+
+    let e = await_io! { apply_fallible("", "h >> \\\n <") }.expect_err("should error");
+    assert_eq!(e.line_num.get(), 1);
+    assert_eq!(e.line_count.get(), 2);
+
+    let e = await_io! { apply_fallible("", "h >> \\\n kh \n >><") }.expect_err("should error");
+    assert_eq!(e.line_num.get(), 3);
+    assert_eq!(e.line_count.get(), 1);
+
+    let e = await_io! { apply_fallible("h", "h >> \\\n / {a} = a") }.expect_err("should error");
+    assert_eq!(e.line_num.get(), 1);
+    assert_eq!(e.line_count.get(), 2);
+
+    let e = await_io! { apply_fallible("h", "h >> \\\n kh \n kh >> / {a} = a") }.expect_err("should error");
+    assert_eq!(e.line_num.get(), 3);
+    assert_eq!(e.line_count.get(), 1);
+
+
+    let e = await_io! { apply_fallible("", "DEFINE def h >> \\\n kh \n @a") }.expect_err("should error");
+    assert_eq!(e.line_num.get(), 3);
+    assert_eq!(e.line_count.get(), 1);
+}

@@ -6,15 +6,10 @@ pub(crate) mod io_events;
 #[cfg(test)]
 mod tests;
 
+use std::num::NonZero;
+
 use crate::{
-    escaped_strings::EscapedString, 
-    ir::{tokenization_data::{TokenizationData}, tokenize_line_or_create_command, IrLine},
-    phones::{build_phone_list, phone_list_to_string},
-    rules::{build_rule, RuleLine},
-    ScaError,
-    ScaErrorType,
-    await_io,
-    io_fn,
+    await_io, escaped_strings::EscapedString, io_fn, ir::{tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command, IrLine}, phones::{build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, RulelessScaError, ScaError, ScaErrorType, ONE
 };
 use io_events::IoEvent;
 use runtime::{Runtime, RuntimeApplier};
@@ -81,24 +76,21 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
         let escaped = EscapedString::from(input);
         let mut phones = build_phone_list(escaped.as_escaped_str());
 
-        let lines = rules.lines();
+        let mut lines = rules.lines().enumerate().map(|(line_num, line)| (unsafe { NonZero::new_unchecked(line_num + 1) }, line));
         let mut tokenization_data = TokenizationData::new();
-        let mut line_num = 0;
 
         // prepares the runtime and getter for a new set of applications
         self.getter.on_start();
         self.runtime.on_start();
 
         // builds and applies rules line by line
-        for line in lines {
-            line_num += 1;
-
+        while let Some((line_num, line)) = lines.next() {
             // builds and attempts to apply the rules
             let application_result = match await_io! {
-                build_line(line, line_num, &mut tokenization_data, &mut self.getter)
+                build_line(line, &mut lines, line_num, &mut tokenization_data, &mut self.getter)
             } {
                 Ok(rule_line) => Ok(await_io! {
-                    self.runtime.apply_line(&rule_line, &mut phones, line, line_num)
+                    self.runtime.apply_line(&rule_line, &mut phones, line_num)
                 }),
                 Err(e) => Err(e),
             };
@@ -114,7 +106,8 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
                 // which owns all of its values, and `phones` is dropped,
                 // no references remain to the sources buffer in `tokenization_data`
                 unsafe { tokenization_data.free_sources() };
-                return Err(e);
+
+                return Err(e.into_sca_error(rules.lines()));
             }
         }
 
@@ -136,21 +129,23 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
 
 /// Builds a line from a string to a `RuleLine`
 #[io_fn]
-fn build_line<'s, G>(line: &'s str, line_num: usize, tokenization_data: &mut TokenizationData<'s>, getter: &mut G) -> Result<RuleLine<'s>, ScaError>
-where
-    G: IoGetter
-{
-    let ir_line = tokenize_line_or_create_command(line, tokenization_data)
-        .map_err(|e| ScaError::from_error(&e, ScaErrorType::Parse, line, line_num))?;
+fn build_line<'s, G: IoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item = (NonZero<usize>, &'s str)>, line_num: NonZero<usize>, tokenization_data: &mut TokenizationData<'s>, getter: &mut G) -> Result<RuleLine<'s>, RulelessScaError> {
+    let mut line_count = ONE;
+
+    let ir_line = tokenize_line_or_create_command(line, &mut rem_lines.map(|(_, line)| {
+        line_count = unsafe { NonZero::new_unchecked(line_count.get() + 1) };
+        line
+    }), tokenization_data)
+        .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Parse, line_num, line_count))?;
 
     match ir_line {
         IrLine::IoEvent(IoEvent::Tokenizer(cmd)) => {
-            await_io! { getter.run_build_time_command(&cmd, tokenization_data, line, line_num) }?;
+            await_io! { getter.run_build_time_command(&cmd, tokenization_data, line_num) }?;
             Ok(RuleLine::Empty)
         },
         // builds a rule from ir
         ir_line =>
             build_rule(ir_line)
-                .map_err(|e| ScaError::from_error(&e, ScaErrorType::Parse, line, line_num)),
+                .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Parse, line_num, line_count)),
     }
 }

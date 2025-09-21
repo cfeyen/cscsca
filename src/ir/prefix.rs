@@ -11,14 +11,19 @@ pub enum Prefix {
     Variable
 }
 
-impl std::fmt::Display for Prefix {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let c = match self {
+impl Prefix {
+    /// Returns the character associated with the `Prefix`
+    pub const fn char(self) -> char {
+        match self {
             Self::Definition => DEFINITION_PREFIX,
             Self::Label => LABEL_PREFIX,
-            Self::Variable => VARIABLE_PREFIX
-        };
+            Self::Variable => VARIABLE_PREFIX,
+        }
+    }
+}
 
-        write!(f, "{c}")
+impl std::fmt::Display for Prefix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.char())
     }
 }

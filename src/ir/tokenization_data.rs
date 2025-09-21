@@ -5,7 +5,7 @@ use crate::{
     escaped_strings::{EscapedStr, EscapedString},
 };
 
-use super::{tokens::IrToken, tokenize_line, IrError};
+use super::{tokens::IrToken, tokenizer::tokenize_line, IrError};
 
 /// Data that is created in the tokenization process
 /// and lasts longer than the tokenization of a single line
@@ -60,7 +60,11 @@ impl<'s> TokenizationData<'s> {
     pub fn set_variable_as_ir(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
         let source = self.add_source_string(source);
 
-        let tokens = tokenize_line(source, self)?;
+        let (tokens, escaped_end) = tokenize_line(source, self)?;
+
+        if escaped_end {
+            return Err(IrError::BadEscape(None));
+        }
 
         self.variables.insert(name, tokens);
         Ok(())

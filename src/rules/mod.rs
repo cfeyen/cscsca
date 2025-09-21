@@ -1,11 +1,11 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, num::NonZero, rc::Rc};
 
 use conditions::{Cond, CondType};
 use sound_change_rule::SoundChangeRule;
 use tokens::{LabelType, RuleToken, ScopeId};
 
 use crate::{
-    executor::io_events::{IoEvent, RuntimeIoEvent}, ir::{tokens::{Break, IrToken}, IrLine}, rules::conditions::AndType, tokens::{ScopeType, Shift}
+    executor::io_events::{IoEvent, RuntimeIoEvent}, ir::{tokens::{Break, IrToken}, IrLine}, rules::conditions::AndType, tokens::{ScopeType, Shift}, ONE
 };
 
 pub mod sound_change_rule;
@@ -19,9 +19,21 @@ mod tests;
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug, Clone)]
 pub enum RuleLine<'s> {
-    Rule(SoundChangeRule<'s>),
+    Rule {
+        rule: SoundChangeRule<'s>,
+        lines: NonZero<usize>,
+    },
     IoEvent(RuntimeIoEvent<'s>),
     Empty,
+}
+
+impl RuleLine<'_> {
+    pub const fn lines(&self) -> NonZero<usize> {
+        match self {
+            Self::Rule { lines, .. } => *lines,
+            _ => ONE,
+        }
+    }
 }
 
 /// Default ids for unlabled scopes
@@ -37,11 +49,13 @@ struct DefaultScopeIds {
 /// # Warning:
 /// Built time commands should be handled before this function is called
 pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
+    let line_count = line.lines();
+
     let line = match line {
         IrLine::Empty | IrLine::IoEvent(IoEvent::Tokenizer(_)) => return Ok(RuleLine::Empty),
         IrLine::IoEvent(IoEvent::Runtime(cmd)) => return Ok(RuleLine::IoEvent(cmd)),
-        IrLine::Ir(tokens) if tokens.is_empty() => return Ok(RuleLine::Empty),
-        IrLine::Ir(tokens) => tokens
+        IrLine::Ir { tokens, .. } if tokens.is_empty() => return Ok(RuleLine::Empty),
+        IrLine::Ir { tokens, .. } => tokens
     };
 
     let (input_region, other_regions) = regionize_ir(&line);
@@ -83,13 +97,16 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
         }
     }
 
-    Ok(RuleLine::Rule(SoundChangeRule {
-        kind: shift,
-        input,
-        output,
-        conds: if conds.is_empty() { vec![Cond::default()] } else { conds },
-        anti_conds,
-    }))
+    Ok(RuleLine::Rule {
+        rule: SoundChangeRule {
+            kind: shift,
+            input,
+            output,
+            conds: if conds.is_empty() { vec![Cond::default()] } else { conds },
+            anti_conds,
+        },
+        lines: line_count,
+    })
 }
 
 /// Converts the ir tokens for the input and output of a rule to rule tokens

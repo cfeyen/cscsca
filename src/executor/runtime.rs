@@ -1,13 +1,7 @@
-use std::{error::Error, time::Duration};
+use std::{error::Error, num::NonZero, time::Duration};
 
 use crate::{
-    applier::apply,
-    phones::{phone_list_to_string, Phone},
-    rules::RuleLine,
-    ScaError,
-    ScaErrorType,
-    await_io,
-    io_fn,
+    applier::apply, await_io, io_fn, phones::{phone_list_to_string, Phone}, rules::RuleLine, RulelessScaError, ScaErrorType, ONE
 };
 
 use super::io_events::RuntimeIoEvent;
@@ -70,25 +64,25 @@ pub trait Runtime {
 pub(super) trait RuntimeApplier: Runtime {
     /// Applies changes for a single `RuleLine`
     #[io_fn]
-    fn apply_line<'s>(&mut self, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'s>>, line: &str, line_num: usize) -> Result<(), ScaError> {
+    fn apply_line<'s>(&mut self, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'s>>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
         match rule_line {
             RuleLine::Empty => Ok(()),
             RuleLine::IoEvent(cmd) => await_io! {
-                self.execute_runtime_command(cmd, phones, line, line_num)
+                self.execute_runtime_command(cmd, phones, line_num)
             },
-            RuleLine::Rule(rule) => apply(rule, phones, self.line_application_limit())
-                .map_err(|e| ScaError::from_error(&e, ScaErrorType::Application, line, line_num))
+            RuleLine::Rule { rule, lines } => apply(rule, phones, self.line_application_limit())
+                .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Application, line_num, *lines))
         }
     }
 
     /// Executes a command at runtime
     #[io_fn]
-    fn execute_runtime_command(&mut self, cmd: &RuntimeIoEvent<'_>, phones: &[Phone<'_>], line: &str, line_num: usize) -> Result<(), ScaError> {
+    fn execute_runtime_command(&mut self, cmd: &RuntimeIoEvent<'_>, phones: &[Phone<'_>], line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
         match cmd {
             RuntimeIoEvent::Print { msg } => {
                 await_io! {
                     self.put_io(msg, phone_list_to_string(phones))
-                }.map_err(|e| ScaError::from_error(&*e, ScaErrorType::Output, line, line_num))
+                }.map_err(|e| RulelessScaError::from_error(&*e, ScaErrorType::Output, line_num, ONE))
             }
         }
     }

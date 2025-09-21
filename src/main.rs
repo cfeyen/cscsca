@@ -252,17 +252,16 @@ fn extend_mapping(map_type: MapType, output: &str, mapping: &mut Vec<String>, ru
 }
 
 fn print_error(e: &cscsca::ScaError) {
-    print!("{RED}");
+    println!("{RED}{} Error{RESET}: {}", e.error_type(), e.error_message());
 
-    let error_type_msg = match e.error_type() {
-        cscsca::ScaErrorType::Input => "Input",
-        cscsca::ScaErrorType::Output => "Output",
-        cscsca::ScaErrorType::Parse => "Syntax",
-        cscsca::ScaErrorType::Application => "Application",
-    };
+    if e.line_count().get() == 1 {
+        print!("Line {}", e.line_number());
+    } else {
+        print!("Lines {}-{}", e.line_number(), e.line_number().get() + e.line_count().get() - 1);
+    }
+
+    println!(": {}", e.rule());
     
-    println!("{error_type_msg} Error{RESET}: {}", e.error_message());
-    println!("Line {}: {}", e.line_number(), e.line());
 }
 
 /// prints the characters in a string

@@ -81,6 +81,12 @@ fn reserved_chars() {
     assert!(await_io! { apply_fallible("..", ". >> b") }.is_err());
 }
 
+#[io_test(pollster::block_on)]
+fn multi_line() {
+    assert_eq!("aha", await_io! { apply("hahah", "h >> \\\n / # _ \\\n / _ #") });
+    assert_eq!("aha", await_io! { apply("hahah", "DEFINE cond / # _ \\\n / _ # \n h >> \\\n @cond") });
+}
+
 struct SingleInputGetter(&'static str);
 
 impl IoGetter for SingleInputGetter {

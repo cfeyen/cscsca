@@ -1,9 +1,7 @@
+use std::num::NonZero;
+
 use crate::{
-    ir::tokenization_data::TokenizationData,
-    ScaError,
-    ScaErrorType,
-    await_io,
-    io_fn,
+    await_io, io_fn, ir::tokenization_data::TokenizationData, RulelessScaError, ScaErrorType, ONE
 };
 use super::io_events::{TokenizerIoEvent, GetType};
 
@@ -42,17 +40,17 @@ pub trait IoGetter {
 pub(super) trait ComptimeCommandExecuter: IoGetter {
     /// Runs a command at build time
     #[io_fn]
-    fn run_build_time_command<'s>(&mut self, cmd: &TokenizerIoEvent<'s>, tokenization_data: &mut TokenizationData<'s>, line: &str, line_num: usize) -> Result<(), ScaError> {
+    fn run_build_time_command<'s>(&mut self, cmd: &TokenizerIoEvent<'s>, tokenization_data: &mut TokenizationData<'s>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
         match cmd {
             TokenizerIoEvent::Get { get_type, var, msg } => {
                 let input = await_io! {
                     self.get_io(msg)
-                }.map_err(|e| ScaError::from_error(&*e, ScaErrorType::Input, line, line_num))?;
+                }.map_err(|e| RulelessScaError::from_error(&*e, ScaErrorType::Input, line_num, ONE))?;
 
                 match get_type {
                     GetType::Phones => tokenization_data.set_variable(var, &input),
                     GetType::Code => tokenization_data.set_variable_as_ir(var, input)
-                        .map_err(|e| ScaError::from_error(&e, ScaErrorType::Input, line, line_num))?,
+                        .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Input, line_num, ONE))?,
                 }
 
                 Ok(())
