@@ -28,7 +28,7 @@ impl ToTokens for IoTest {
 
         let Some(poller) = poller else {
             return tokens.extend(quote! {
-                compile_error!("#[io_test] expected function that will block until a future is polled to completion")
+                compile_error!("#[io_test] expected function that will block until a future is polled to completion, try #[io_test(`path`)]")
             });
         };
 

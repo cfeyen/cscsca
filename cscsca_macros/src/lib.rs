@@ -21,7 +21,7 @@ pub fn io_fn(attr: TokenStream, item: TokenStream) -> TokenStream {
 /// 
 /// If the `async_io` feature flag is active the function also becomes asynchronous
 /// 
-/// This attribute should take as an argument the path to a function that will block until it finishes polling a future
+/// This attribute should take, as an argument, the path to a function that will block until it finishes polling a future
 #[proc_macro_attribute]
 pub fn io_test(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut io_test = syn::parse_macro_input!(item as io_test::IoTest);
