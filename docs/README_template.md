@@ -90,4 +90,4 @@ Building refers to converting the raw text input into rules that can be easily a
 ### `AppliableRules`
 If building lines every time you apply a change is not ideal, you may use the function `build_rules` to convert the entire rule set to an appliable form. Then you can call the `apply` and `apply_fallible` methods to apply rules any number of times
 
-`AppliableRules` has the `extend` and `extend_from` form methods which let you add more rules to the end of the appliable format
+`AppliableRules` has the `extend` and `extend_from` methods which let you add more rules to the end of the appliable format
