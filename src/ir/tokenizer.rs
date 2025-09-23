@@ -18,12 +18,10 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
         // handles definitions
         let (mut ir, mut continues_on_next_line) = tokenize_line(definition_content, tokenization_data)?;
 
-        while continues_on_next_line {
-            if let Some(next_line) = rem_lines.next() {
-                let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data)?;
-                ir.append(&mut next_ir);
-                continues_on_next_line = continue_again;
-            }
+        while continues_on_next_line && let Some(next_line) = rem_lines.next() {
+            let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data)?;
+            ir.append(&mut next_ir);
+            continues_on_next_line = continue_again;
         }
 
         if let Some(IrToken::Phone(name)) = ir.first() {
@@ -63,13 +61,11 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
 
         let mut line_count = 1;
 
-        while continues_on_next_line {
-            if let Some(next_line) = rem_lines.next() {
+        while continues_on_next_line && let Some(next_line) = rem_lines.next() {
                 let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data)?;
                 ir.append(&mut next_ir);
                 continues_on_next_line = continue_again;
                 line_count += 1;
-            }
         }
 
         let mut ir_line = IrLine::Ir {
