@@ -74,7 +74,7 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
 
         let mut ir_line = IrLine::Ir {
             tokens: ir,
-            // Saftey: `line_count` starts at one and is only incremented
+            // Safety: `line_count` starts at one and is only incremented
             lines: unsafe { NonZero::new_unchecked(line_count) }
         };
         
