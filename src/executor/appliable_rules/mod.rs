@@ -150,6 +150,7 @@ impl<'s> AppliableRules<'s> {
     }
 
     /// Returns a copy of the source rules
+    #[must_use]
     pub fn get_rules(&self) -> String {
         self.lines.join("\n")
     }
