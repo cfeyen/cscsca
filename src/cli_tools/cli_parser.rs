@@ -13,7 +13,7 @@ const DEFAULT_MAP_SPACER: &str = "->";
 
 use std::env;
 
-use crate::{APPLY_CMD, CHAR_HELP_CMD, HELP_CMD, NEW_CMD};
+use crate::{cli_tools::ansi::{BOLD, RESET}, APPLY_CMD, CHAR_HELP_CMD, HELP_CMD, NEW_CMD};
 
 /// Parsed CLI input
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -235,9 +235,11 @@ impl std::error::Error for ArgumentParseError {}
 impl std::fmt::Display for ArgumentParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UnexpectedCommand(cmd) => write!(f, "Unexpected command '{cmd}'"),
-            Self::ExpectedFileName => write!(f, "Input ended unexpectedly, expected a file name"),
-            Self::ExpectedSeparator => write!(f, "Expected a seperator after flag {}", MAP_SEPARATOR_FLAGS.join(" or ")),
+            Self::UnexpectedCommand(cmd) => writeln!(f, "Unexpected command '{cmd}'")?,
+            Self::ExpectedFileName => writeln!(f, "Input ended unexpectedly, expected a file name")?,
+            Self::ExpectedSeparator => writeln!(f, "Expected a seperator after flag {}", MAP_SEPARATOR_FLAGS.join(" or "))?,
         }
+
+        write!(f, "Run '{BOLD}cscsca help{RESET}' for more information")
     }
 }
