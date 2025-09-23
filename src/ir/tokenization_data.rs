@@ -128,9 +128,39 @@ impl<'s> TokenizationData<'s> {
         self.sources.push(std::ptr::from_ref(source));
     }
 
-    /// Consumes the `TokenizationData` and returns the sources buffer
-    pub fn take_sources(self) -> Vec<*const str> {
-        self.sources
+    /// Returns a reference to the sources buffer
+    /// 
+    /// # Warning
+    /// The internal `HashMap`s may contain references to data in the sources buffer
+    /// 
+    /// Do not free the sources until this struct is dropped
+    pub fn sources(&self) -> &[*const str] {
+        &self.sources
+    }
+
+    /// Takes the sources from another `TokenizationData`
+    /// 
+    /// # Warning
+    /// There may still be data referencing taken sources in `other`
+    /// 
+    /// `other` must be dropped before the sources are freed
+    pub fn take_sources_from(&mut self, other: &mut Self) {
+        self.sources.append(&mut other.sources);
+    }
+
+    /// Creates a new `TokenizationData` by cloning the definitions and variables,
+    /// but without copying or moving the source pointers
+    /// 
+    /// # Warning
+    /// The cloned `HashMap`s may contain references to data in the origional sources buffer
+    /// 
+    /// The new `TokenizationData` must be dropped before the origional sources can be freed
+    pub fn with_inserts(&self) -> Self {
+        Self {
+            definitions: self.definitions.clone(),
+            variables: self.variables.clone(),
+            sources: Vec::new(),
+        }
     }
 }
 

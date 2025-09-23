@@ -15,9 +15,20 @@ use crate::{
 /// Errors on invalid rules or failed io
 #[io_fn]
 pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
+    let tokenization_data = TokenizationData::new();
+    
+    await_io! { build_rules_with_tokenization_data(rules, tokenization_data, 0, getter) }
+}
+
+/// Builds an `AppliableRules` struct from rules, pre-built tokenization data,
+/// the number of lines that proceed the first line, and an `IoGetter`
+/// 
+/// # Errors
+/// Errors on invalid rules or failed io
+#[io_fn]
+fn build_rules_with_tokenization_data<'s, G: IoGetter>(rules: &'s str, mut tokenization_data: TokenizationData<'s>, line_offset: usize, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
     let mut rule_lines = Vec::new();
-    let mut tokenization_data = TokenizationData::new();
-    let mut lines = rules.lines().enumerate().map(|(line_num, line)| (unsafe { NonZero::new_unchecked(line_num + 1) }, line));
+    let mut lines = rules.lines().enumerate().map(|(line_num, line)| (unsafe { NonZero::new_unchecked(line_num + line_offset + 1) }, line));
 
     // prepares the getter to start fetching a new set of input
     getter.on_start();
@@ -52,7 +63,7 @@ pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<Ap
     Ok(AppliableRules {
         lines: rules.lines().collect(),
         rules: rule_lines,
-        sources: tokenization_data.take_sources(),
+        tokenization_data,
     })
 }
 
@@ -64,13 +75,11 @@ pub struct AppliableRules<'s> {
     lines: Vec<&'s str>,
     /// The built rules
     rules: Vec<RuleLine<'s>>,
-    /// Pointers to input (freed on drop)
-    ///
-    /// Should not be cloned or leaked to other owners
-    sources: Vec<*const str>,
+    /// Data required to build rules, including raw pointers to input strings
+    tokenization_data: TokenizationData<'s>,
 }
 
-impl AppliableRules<'_> {
+impl<'s> AppliableRules<'s> {
     /// Applies all rules to the input using a runtime, errors are formatted as a string
     #[inline]
     #[io_fn]
@@ -114,24 +123,45 @@ impl AppliableRules<'_> {
         Ok(phone_list_to_string(&phones))
     }
 
-    /// Extends a rule set with rules from another
-    pub fn extend(&mut self, mut other: Self) {
-        self.rules.append(&mut other.rules);
-        self.lines.append(&mut other.lines);
-        // input sources are moved to `self` so it is safe to drop `other`
-        self.sources.append(&mut other.sources);
+    /// Extends appliable rules with new rules source
+    /// 
+    /// # Errors
+    /// Errors on invalid rules or failed io
+    /// 
+    /// leaves `self` unchanged on error
+    #[io_fn]
+    pub fn extend<G: IoGetter>(&mut self, next_rules: &'s str, getter: &mut G) -> Result<(), ScaError> {
+        let line_offset = self.rules.iter().fold(0, |acc, rule_line| acc + rule_line.lines().get());
+        let tokenization_data = self.tokenization_data.with_inserts();
+        
+        let mut new_appliable = await_io! {
+            build_rules_with_tokenization_data(next_rules, tokenization_data, line_offset, getter)
+        }?;
+
+        self.lines.append(&mut new_appliable.lines);
+        self.rules.append(&mut new_appliable.rules);
+        std::mem::swap(&mut self.tokenization_data, &mut new_appliable.tokenization_data);
+        self.tokenization_data.take_sources_from(&mut new_appliable.tokenization_data);
+
+        // Saftey: it is safe to drop `new_appliable`
+        // because all of its sources have been moved to `self`
+
+        Ok(())
+    }
+
+    /// Returns a copy of the source rules
+    pub fn get_rules(&self) -> String {
+        self.lines.join("\n")
     }
 }
 
 impl Drop for AppliableRules<'_> {
     fn drop(&mut self) {
-        for source in &self.sources {
-            // Safety: Using `AppliableRules` should not
-            // leak references to sources and the source
-            // pointers should never be cloned
-            unsafe {
-                source.cast_mut().drop_in_place();
-            }
+        for source in self.tokenization_data.sources() {
+            // Safety: `AppliableRules` should never be cloned
+            // or leak references to the IO sources
+            // ! this must be invarient and maintained within the `AppliableRules` API
+            unsafe { source.cast_mut().drop_in_place() };
         }
     }
 }

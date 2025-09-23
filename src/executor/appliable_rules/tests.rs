@@ -50,9 +50,44 @@ fn extend_rules() {
     let rules_2 = "bc >> d";
 
     let mut rules = await_io! { build_rules(rules_1, &mut NoGet) }.expect("Rules should be valid");
-    let rules_extension = await_io! { build_rules(rules_2, &mut NoGet) }.expect("Rules should be valid");
     
-    rules.extend(rules_extension);
+    await_io! { rules.extend(rules_2, &mut NoGet) }.expect("Rules should be valid");
+
+    let output = await_io! { rules.apply_fallible("a bc", &mut NoLog::default()) }.expect("Rules should be valid");
+
+    assert_eq!(&output, "d bc");
+}
+
+#[io_test(pollster::block_on)]
+fn extend_rules_with_error() {
+    let rules_1 = "a >> bc";
+    let rules_2 = "@a";
+
+    let mut rules = await_io! { build_rules(rules_1, &mut NoGet) }.expect("Rules should be valid");
+    
+    let res = await_io! { rules.extend(rules_2, &mut NoGet) };
+
+    assert!(res.is_err());
+    assert_eq!(res.unwrap_err().line_num.get(), 2);
+
+    let rules_3 = "bc >> d / {a} = a";
+
+    await_io! { rules.extend(rules_3, &mut NoGet) }.expect("Rules should be valid");
+
+    let res = await_io! { rules.apply_fallible("a bc", &mut NoLog::default()) };
+
+    assert!(res.is_err());
+    assert_eq!(res.unwrap_err().line_num.get(), 2);
+}
+
+#[io_test(pollster::block_on)]
+fn extend_rules_with_definition() {
+    let rules_1 = "DEFINE a bc >> d\na >> bc";
+    let rules_2 = "@a";
+
+    let mut rules = await_io! { build_rules(rules_1, &mut NoGet) }.expect("Rules should be valid");
+    
+    await_io! { rules.extend(rules_2, &mut NoGet) }.expect("Rules should be valid");
 
     let output = await_io! { rules.apply_fallible("a bc", &mut NoLog::default()) }.expect("Rules should be valid");
 

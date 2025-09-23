@@ -200,7 +200,7 @@ Add one of the following map flags:
 
 Add **`--reduce`** or **`-x`** to remove consecutive dupicates in the output chain
 
-Add **`--separator`** *`sep`* or **`-s`** *`sep`* after any of the map flags or reduce flag to change the default mapping separator from **`->`** to *`sep`*
+Add **`--separator`** *`sep`* or **`-s`** *`sep`* after any of the map flags or reduce flag to change the mapping separator from **`->`** to *`sep`*
 
 Add **`--quiet`** or **`-q`** to not print logs
 
@@ -243,4 +243,6 @@ A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. Yo
 Building refers to converting the raw text input into rules that can be easily applied
 
 ### `AppliableRules`
-If building lines every time you apply a change is not ideal, you may use the function `build_rules` to convert the entire rule set to an appliable form. Then you can call the `apply` and `apply_fallible` methods to apply rules any number of times.
+If building lines every time you apply a change is not ideal, you may use the function `build_rules` to convert the entire rule set to an appliable form. Then you can call the `apply` and `apply_fallible` methods to apply rules any number of times
+
+`AppliableRules` has the `extend` and `extend_from` form methods which let you add more rules to the end of the appliable format
