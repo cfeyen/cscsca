@@ -136,7 +136,7 @@ Characters that do nothing, but need to be escaped
 ### IO and Variables
 To print the current phonetic form, type **`PRINT`** at the start of a line, followed by the message you would like to print with it
 
-To get input at runtime, type **`GET`** *`variable_name`* *message* where *message* is what you want to display to prompt input. To access the input later prefix *`variable_name`* with **`%`**
+To get input at runtime, type **`GET`** *`variable_name`* *`message`* where *`message`* is what you want to display to prompt input. To access the input later prefix *`variable_name`* with **`%`**
 
 **Note**: here the content of *`variable_name`* will be a list of phones, where each character is a phone, whitespace is bounds, and all special characters are properly escaped
 
