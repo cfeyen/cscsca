@@ -51,7 +51,7 @@ fn build_rules_with_tokenization_data<'s, G: IoGetter>(rules: &'s str, mut token
                 unsafe { tokenization_data.free_sources() };
 
                 
-                return Err(e.into_sca_error(rules.lines()))
+                return Err(e.into_sca_error(rules.lines()));
             }
         };
         rule_lines.push(rule_line);

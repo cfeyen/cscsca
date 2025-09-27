@@ -226,7 +226,7 @@ fn selection_contents_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item =
         let mut option = Vec::new();
 
         // continously takes the next item in ir, if there is not another one an error is returned
-        while let Some(ir_token) = ir.next() {
+        for ir_token in ir.by_ref() {
             match ir_token {
                 // if there is an ArgSep token directly in the selection scope,
                 // the option accumulator is pushed and a new one is started
