@@ -221,56 +221,53 @@ fn selection_contents_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item =
     // scope_stack tracks which scope the function is analyzing to determine when to seperate options and return
     let mut scope_stack = Vec::new();
 
-    // continues creates options until a value is returned
-    loop {
+    // continues creates options until the scope's end is found
+    'option_parser: loop {
         let mut option = Vec::new();
 
         // continously takes the next item in ir, if there is not another one an error is returned
-        // (uses loop { if let {} else {}} instead of while let {} so an error can be returned if there are no items left)
-        loop {
-            if let Some(ir_token) = ir.next() {
-                match ir_token {
-                    // if there is an ArgSep token directly in the selection scope,
-                    // the option accumulator is pushed and a new one is started
-                    IrToken::ArgSep if scope_stack.is_empty() => {
+        while let Some(ir_token) = ir.next() {
+            match ir_token {
+                // if there is an ArgSep token directly in the selection scope,
+                // the option accumulator is pushed and a new one is started
+                IrToken::ArgSep if scope_stack.is_empty() => {
+                    options.push(option);
+                    continue 'option_parser;
+                },
+                IrToken::ScopeEnd(kind) => {
+                    // if the scope end is the end of the selection scope,
+                    // the last option is pushed
+                    // and the options are converted into rule token lists and returned
+                    if scope_stack.is_empty() && kind == &ScopeType::Selection {
                         options.push(option);
-                        break;
-                    },
-                    IrToken::ScopeEnd(kind) => {
-                        // if the scope end is the end of the selection scope,
-                        // the last option is pushed
-                        // and the options are converted into rule token lists and returned
-                        if scope_stack.is_empty() && kind == &ScopeType::Selection {
-                            options.push(option);
-                            let mut items = Vec::new();
+                        let mut items = Vec::new();
 
-                            for item in options {
-                                items.push(ir_tokens_to_rule_tokens(&mut item.into_iter(), default_scope_ids, scope, None)?);
-                            }
-
-                            return Ok(items);
-                        } else if let Some(needed_end) = scope_stack.last() {
-                            // otherwise the scope stack is popped or an error is returned
-                            if needed_end == kind {
-                                scope_stack.pop();
-                                option.push(ir_token);
-                            } else {
-                                return Err(RuleStructureError::MismatchedScopeBounds(*needed_end, *kind));
-                            }
-                        } else {
-                            return Err(RuleStructureError::MismatchedScopeBounds(ScopeType::Selection, ScopeType::Optional));
+                        for item in options {
+                            items.push(ir_tokens_to_rule_tokens(&mut item.into_iter(), default_scope_ids, scope, None)?);
                         }
-                    },
-                    IrToken::ScopeStart(kind) => {
-                        scope_stack.push(*kind);
-                        option.push(ir_token);
-                    },
-                    _ => option.push(ir_token),
-                }
-            } else {
-                return Err(RuleStructureError::UnclosedScope(ScopeType::Selection))
+
+                        return Ok(items);
+                    } else if let Some(needed_end) = scope_stack.last() {
+                        // otherwise the scope stack is popped or an error is returned
+                        if needed_end == kind {
+                            scope_stack.pop();
+                            option.push(ir_token);
+                        } else {
+                            return Err(RuleStructureError::MismatchedScopeBounds(*needed_end, *kind));
+                        }
+                    } else {
+                        return Err(RuleStructureError::MismatchedScopeBounds(ScopeType::Selection, ScopeType::Optional));
+                    }
+                },
+                IrToken::ScopeStart(kind) => {
+                    scope_stack.push(*kind);
+                    option.push(ir_token);
+                },
+                _ => option.push(ir_token),
             }
         }
+        
+        return Err(RuleStructureError::UnclosedScope(ScopeType::Selection));
     }
 }
 
