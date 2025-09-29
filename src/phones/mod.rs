@@ -65,8 +65,8 @@ impl<'s> Phone<'s> {
     }
 }
 
-impl<'r, 's: 'r> UnitState<'r, 's> for Phone<'s> {
-    fn matches(&self, phones: &mut Phones<'_, 's>, _: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'s> UnitState<'s> for Phone<'s> {
+    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, _: &Choices<'_, 'p>) -> Option<OwnedChoices<'s>> where 's: 'p {
         let matches = Phone::matches(self, phones.next());
 
         if matches {
@@ -91,12 +91,11 @@ impl Default for &Phone<'_> {
     }
 }
 
-/// Builds a list of phones (as string slices with lifetime 's)
-/// from an input (string slice with 's)
+/// Builds a list of phones from an input
 /// where each phone is a character or escaped character
 /// and reformats whitespace as word bounderies
 #[must_use]
-pub fn build_phone_list(input: EscapedStr) -> Vec<Phone> {
+pub fn build_phone_list(input: EscapedStr<'_>) -> Vec<Phone<'_>> {
     let input = input.inner();
     let mut substring = SubString::new(input);
     let mut phones = Vec::new();

@@ -9,7 +9,7 @@ mod tests;
 use std::num::NonZero;
 
 use crate::{
-    await_io, escaped_strings::EscapedString, io_fn, ir::{tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command, IrLine}, phones::{build_phone_list, phone_list_to_string}, rules::{build_rule, RuleLine}, RulelessScaError, ScaError, ScaErrorType, ONE
+    await_io, escaped_strings::EscapedString, io_fn, ir::{tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command, IrLine}, matcher::patterns::ir_to_patterns::{build_rule, RuleLine}, phones::{build_phone_list, phone_list_to_string}, RulelessScaError, ScaError, ScaErrorType, ONE
 };
 use io_events::IoEvent;
 use runtime::{Runtime, RuntimeApplier};

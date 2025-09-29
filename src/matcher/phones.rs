@@ -4,8 +4,8 @@ use crate::{phones::Phone, tokens::Direction};
 /// 
 /// Note: does not implement `Copy` to avoid confusion with implicit copies via the `Iterator` trait
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Phones<'p, 's> {
-    phone_list: &'p [Phone<'s>],
+pub struct Phones<'b, 'p> {
+    phone_list: &'b [Phone<'p>],
     /// the index of the next phone LTR,
     /// the index after the next phone RTL,
     /// 

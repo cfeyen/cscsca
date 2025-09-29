@@ -8,8 +8,8 @@ pub struct Gap<'s> {
     pub(super) id: Option<&'s str>,
 }
 
-impl<'r, 's: 'r> MatchState<'r, 's> for Gap<'s> {
-    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'s> MatchState<'s> for Gap<'s> {
+    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         for _ in 0..self.len() {
             if phones.next().is_bound() {
                 // returns `None` if a bound is crossed
@@ -34,7 +34,7 @@ impl<'r, 's: 'r> MatchState<'r, 's> for Gap<'s> {
         Some(new_choices.owned_choices())
     }
 
-    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+    fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if self.checked_at_zero {
             self.len += 1;
         } else {

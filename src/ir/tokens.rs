@@ -1,7 +1,9 @@
 use std::fmt::Display;
 
 use crate::{
-    keywords::{ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, LABEL_PREFIX}, phones::Phone, rules::conditions::{AndType, CondType}, tokens::{ScopeType, Shift}
+    keywords::{ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, LABEL_PREFIX},
+    phones::Phone,
+    tokens::{ScopeType, Shift, CondType, AndType}
 };
 
 /// Tokens that make up the intermediate representation of sound shifts

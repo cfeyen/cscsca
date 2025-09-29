@@ -4,31 +4,29 @@ use crate::matcher::{choices::{Choices, OwnedChoices}, match_state::{MatchState,
 
 /// A `MatchState` complient wrapper for a `UnitState`
 #[derive(Clone, Copy, PartialEq, Eq, Default)]
-pub struct CheckBox<'r, 's: 'r, T: UnitState<'r, 's>> {
+pub struct CheckBox<'s, T: UnitState<'s>> {
     pub(super) checked: bool,
-    pub(super) unit_state: T,
-    _phantom_lifetime_r: PhantomData<&'r ()>,
+    pub unit_state: T,
     _phantom_lifetime_s: PhantomData<&'s ()>,
 }
 
-impl<'r, 's: 'r, T: UnitState<'r, 's>> CheckBox<'r, 's, T> {
+impl<'s, T: UnitState<'s>> CheckBox<'s, T> {
     /// Creates a new `CheckBox` wrapper
     pub const fn new(match_state: T) -> Self {
         Self {
             checked: false,
             unit_state: match_state,
-            _phantom_lifetime_r: PhantomData,
             _phantom_lifetime_s: PhantomData,
         }
     }
 }
 
-impl<'r, 's: 'r, T: UnitState<'r, 's>> MatchState<'r, 's> for CheckBox<'r, 's, T> {
-    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'s, T: UnitState<'s>> MatchState<'s> for CheckBox<'s, T> {
+    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         self.unit_state.matches(phones, choices)
     }
 
-    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+    fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if self.checked {
             None
         } else {
@@ -46,7 +44,7 @@ impl<'r, 's: 'r, T: UnitState<'r, 's>> MatchState<'r, 's> for CheckBox<'r, 's, T
     }
 }
 
-impl<'r, 's, T: UnitState<'r, 's> + std::fmt::Debug> std::fmt::Debug for CheckBox<'r, 's, T> {
+impl<'s, T: UnitState<'s> + std::fmt::Debug> std::fmt::Debug for CheckBox<'s, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CheckBox")
             .field("checked", &self.checked)

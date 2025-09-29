@@ -5,7 +5,6 @@ use std::{error::Error, num::NonZero};
 mod ir;
 mod phones;
 mod tokens;
-mod rules;
 mod applier;
 mod matcher;
 mod sub_string;

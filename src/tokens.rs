@@ -1,10 +1,6 @@
-use crate::keywords::{
-    OPTIONAL_START_CHAR, OPTIONAL_END_CHAR,
-    SELECTION_START_CHAR, SELECTION_END_CHAR,
-    LTR_CHAR, RTL_CHAR,
-};
+use crate::{ir::tokens::IrToken, keywords::{AND_CHAR, ANY_CHAR, INPUT_PATTERN_STR, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}};
 
-use std::fmt::Display;
+use std::{fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Shift {
@@ -103,5 +99,78 @@ impl ScopeType {
 impl Display for ScopeType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}...{}", self.fmt_start(), self.fmt_end())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum AndType {
+    #[default]
+    And,
+    AndNot
+}
+
+impl std::fmt::Display for AndType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::And => write!(f, "{AND_CHAR}"),
+            Self::AndNot => write!(f, "{AND_CHAR}{NOT_CHAR}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum CondType {
+    /// The input in a pattern based condition or anti-condition
+    #[default]
+    Pattern,
+    /// A deliminator for a match between to groups of tokens
+    Match,
+}
+
+impl std::fmt::Display for CondType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Pattern => write!(f, "{INPUT_PATTERN_STR}"),
+            Self::Match => write!(f, "{MATCH_CHAR}"),
+        }
+    }
+}
+
+/// A scope label
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ScopeId<'s> {
+    /// Named label
+    Name(&'s str),
+    /// The number that a scope is of its type in an input or output
+    /// Along with the scope type and the id of the parent scope
+    /// (allows for scope matching inference)
+    IOUnlabeled {
+        id_num: usize,
+        label_type: LabelType,
+        parent: Option<Rc<Self>>,
+    }
+}
+
+impl std::fmt::Display for ScopeId<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::IOUnlabeled { id_num: _, label_type: _, parent: _ } => Ok(()),
+            Self::Name(name) => write!(f, "{}", IrToken::Label(name)),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LabelType {
+    Scope(ScopeType),
+    Any,
+}
+
+impl std::fmt::Display for LabelType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Scope(kind) => write!(f, "{kind}"),
+            Self::Any => write!(f, "{ANY_CHAR}"),
+        }
     }
 }

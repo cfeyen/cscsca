@@ -1,4 +1,13 @@
-use crate::{applier::ApplicationError, matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, patterns::list::PatternList, phones::Phones}, rules::conditions::{AndType, Cond, CondType}, tokens::Direction};
+use crate::{
+    applier::ApplicationError,
+    matcher::{
+        choices::{Choices, OwnedChoices},
+        match_state::MatchState,
+        patterns::list::PatternList,
+        phones::Phones,
+    },
+    tokens::{Direction, AndType, CondType},
+};
 
 
 
@@ -10,27 +19,33 @@ pub struct CondPhoneInput<'p, 's> {
 }
 
 /// A matchable pattern for a condition or anti-condition
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CondPattern<'r, 's> {
-    left: PatternList<'r, 's>,
-    right: PatternList<'r, 's>,
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct CondPattern<'s> {
+    left: PatternList<'s>,
+    right: PatternList<'s>,
     cond_type: CondType,
     and: Option<(AndType, Box<Self>)>,
 }
 
-impl<'r, 's> From<&'r Cond<'s>> for CondPattern<'r, 's> {
-    fn from(cond: &'r Cond<'s>) -> Self {
-        CondPattern {
-            left: cond.left().into(),
-            right: cond.right().into(),
-            cond_type: cond.kind(),
-            and: cond.and().map(|(and_type, and_cond)| (and_type, Box::new(and_cond.into()))),
+impl<'s> CondPattern<'s> {
+    pub fn new(cond_type: CondType, left: PatternList<'s>, right: PatternList<'s>) -> Self {
+        Self {
+            left,
+            right,
+            cond_type,
+            and: None,
         }
     }
-}
 
-impl<'r, 's> CondPattern<'r, 's> {
-    pub(super) fn next_match(&mut self, phones: &CondPhoneInput<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Result<Option<OwnedChoices<'r, 's>>, ApplicationError<'r, 's>> {
+    pub fn add_and(&mut self, and_type: AndType, and: Self) {
+        if let Some((_, and_cond)) = &mut self.and {
+            and_cond.add_and(and_type, and);
+        } else {
+            self.and = Some((and_type, Box::new(and)));
+        }
+    }
+
+    pub(super) fn next_match<'p>(&mut self, phones: &CondPhoneInput<'_, 'p>, choices: &Choices<'_, 'p>) -> Result<Option<OwnedChoices<'p>>, ApplicationError<'s>> where 's: 'p {
         let mut new_choices = choices.partial_clone();
 
         // resets the checked flag on the left of the input
@@ -109,5 +124,17 @@ impl<'r, 's> CondPattern<'r, 's> {
         if let Some((_, and_cond)) = &mut self.and {
             and_cond.as_mut().reset();
         }
+    }
+}
+
+impl std::fmt::Display for CondPattern<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {} {}", self.left, self.cond_type, self.right)?;
+
+        if let Some((and_type, and_cond)) = &self.and {
+            write!(f, "{and_type} {and_cond}")?;
+        }
+
+        Ok(())
     }
 }

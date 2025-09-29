@@ -1,19 +1,26 @@
-use crate::{keywords::ARG_SEP_CHAR, matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, patterns::list::PatternList, phones::Phones}, rules::tokens::ScopeId, tokens::ScopeType};
+use crate::{
+    keywords::ARG_SEP_CHAR,
+    matcher::{choices::{Choices, OwnedChoices},
+    match_state::MatchState,
+    patterns::list::PatternList, phones::Phones},
+    tokens::ScopeId,
+    tokens::ScopeType,
+};
 
 /// A pattern that repersents one of its sub-patterns
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Selection<'r, 's> {
+pub struct Selection<'s> {
     /// should always contain at least one item
-    pub(super) options: Vec<PatternList<'r, 's>>,
+    pub options: Vec<PatternList<'s>>,
     pub(super) selected_index: usize,
-    pub(super) id: Option<&'r ScopeId<'s>>,
+    pub id: Option<ScopeId<'s>>,
 }
 
-impl<'r, 's: 'r> MatchState<'r, 's>  for Selection<'r, 's> {
-    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'s> MatchState<'s>  for Selection<'s> {
+    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         let mut new_choices = choices.partial_clone();
 
-        if let Some(id) = self.id {
+        if let Some(id) = &self.id {
             if let Some(choice) = choices.selection.get(id).copied() {
                 if self.selected_index != choice {
                     // selections cannot be changed
@@ -29,7 +36,7 @@ impl<'r, 's: 'r> MatchState<'r, 's>  for Selection<'r, 's> {
                 // chooses the current index
                 let option = self.options.get(self.selected_index)?;
 
-                new_choices.selection.to_mut().insert(id, self.selected_index);
+                new_choices.selection.to_mut().insert(id.clone(), self.selected_index);
 
                 let internal_choices = option.matches(phones, &new_choices)?;
 
@@ -46,7 +53,7 @@ impl<'r, 's: 'r> MatchState<'r, 's>  for Selection<'r, 's> {
         Some(new_choices.owned_choices())
     }
 
-    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+    fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         loop {
             // checks if the option has a next match form
             if self.options.get_mut(self.selected_index)?.next_match(phones, choices).is_some() {
@@ -78,9 +85,9 @@ impl<'r, 's: 'r> MatchState<'r, 's>  for Selection<'r, 's> {
     }
 }
 
-impl std::fmt::Display for Selection<'_, '_> {
+impl std::fmt::Display for Selection<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(id) = self.id {
+        if let Some(id) = &self.id {
             write!(f, "{id}")?;
         }
 

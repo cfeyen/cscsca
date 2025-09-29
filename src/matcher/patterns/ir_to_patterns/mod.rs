@@ -1,16 +1,18 @@
 use std::{cell::RefCell, num::NonZero, rc::Rc};
 
-use conditions::{Cond, CondType};
-use sound_change_rule::SoundChangeRule;
-use tokens::{LabelType, RuleToken, ScopeId};
-
 use crate::{
-    executor::io_events::{IoEvent, RuntimeIoEvent}, ir::{tokens::{Break, IrToken}, IrLine}, rules::conditions::AndType, tokens::{ScopeType, Shift}, ONE
+    executor::io_events::{IoEvent, RuntimeIoEvent},
+    ir::{tokens::{Break, IrToken}, IrLine},
+    keywords::GAP_STR,
+    matcher::patterns::{
+        cond::CondPattern,
+        list::PatternList,
+        rule::{RulePattern, SoundChangeRule},
+        Pattern,
+    },
+    tokens::{ScopeType, Shift, CondType, AndType, ScopeId, LabelType},
+    ONE,
 };
-
-pub mod sound_change_rule;
-pub mod conditions;
-pub mod tokens;
 
 #[cfg(test)]
 mod tests;
@@ -100,19 +102,17 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
     Ok(RuleLine::Rule {
         rule: SoundChangeRule {
             kind: shift,
-            input,
             output,
-            conds: if conds.is_empty() { vec![Cond::default()] } else { conds },
-            anti_conds,
+            pattern: RefCell::new(RulePattern::new(PatternList::new(input), conds, anti_conds)?),
         },
         lines: line_count,
     })
 }
 
-/// Converts the ir tokens for the input and output of a rule to rule tokens
+/// Converts the ir tokens for the input and output of a rule to patterns
 #[inline]
-fn ir_to_input_output<'s>(ir: &[&IrToken<'s>]) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
-    ir_tokens_to_rule_tokens(
+fn ir_to_input_output<'s>(ir: &[&IrToken<'s>]) -> Result<Vec<Pattern<'s>>, RuleStructureError<'s>> {
+    ir_tokens_to_patterns(
         &mut ir.iter().copied(), 
         Some(&RefCell::default()),
         None, 
@@ -120,8 +120,8 @@ fn ir_to_input_output<'s>(ir: &[&IrToken<'s>]) -> Result<Vec<RuleToken<'s>>, Rul
     )
 }
 
-/// Converts lists of ir tokens for the (anti-)conditions of a rule to a list of Cond structs
-fn ir_to_cond<'s>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'s>> {
+/// Converts lists of ir tokens for the (anti-)conditions of a rule to a list of `CondPattern`s
+fn ir_to_cond<'s>(ir: &[&IrToken<'s>]) -> Result<CondPattern<'s>, RuleStructureError<'s>> {
         let focus = if ir.contains(&&IrToken::CondType(CondType::Pattern)) {
             CondType::Pattern
         } else if ir.contains(&&IrToken::CondType(CondType::Match)) {
@@ -135,39 +135,33 @@ fn ir_to_cond<'s>(ir: &[&IrToken<'s>]) -> Result<Cond<'s>, RuleStructureError<'s
         // and discards the input token leaving cond_ir as the portion after it
         let before = &mut cond_ir.take_while(|&token| token != &IrToken::CondType(focus));
 
-        Ok(Cond::new(
+        Ok(CondPattern::new(
             focus,
-            ir_tokens_to_rule_tokens(before, None, None, None)?,
-            ir_tokens_to_rule_tokens(cond_ir, None, None, None)?,
+            PatternList::new(ir_tokens_to_patterns(before, None, None, None)?),
+            PatternList::new(ir_tokens_to_patterns(cond_ir, None, None, None)?),
         ))
 }
 
-/// Converts ir tokens to rule tokens
-fn ir_tokens_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<RuleToken<'s>>, RuleStructureError<'s>> {
-    let mut rule_tokens = Vec::new();
+/// Converts ir tokens to patterns
+fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<Pattern<'s>>, RuleStructureError<'s>> {
+    let mut patterns = Vec::new();
 
     while let Some(ir_token) = ir.next() {
-        let rule_token = match ir_token {
-            IrToken::Phone(phone) => RuleToken::Phone(*phone),
-            IrToken::Any => RuleToken::Any { id: any_id(default_scope_ids, parent_scope.cloned()) },
-            IrToken::Gap => RuleToken::Gap { id: None },
+        let pattern = match ir_token {
+            IrToken::Phone(phone) => Pattern::new_phone(*phone),
+            IrToken::Any => Pattern::new_any(any_id(default_scope_ids, parent_scope.cloned())),
+            IrToken::Gap => Pattern::new_gap(None),
             // starts a default labeled option scope
             IrToken::ScopeStart(ScopeType::Optional) => {
                 let id = optional_id(default_scope_ids, parent_scope.cloned());
 
-                RuleToken::OptionalScope {
-                    content: ir_tokens_to_rule_tokens(ir, default_scope_ids, id.as_ref(), Some(ScopeType::Optional))?,
-                    id,
-                }
+                Pattern::new_optional(ir_tokens_to_patterns(ir, default_scope_ids, id.as_ref(), Some(ScopeType::Optional))?, id)
             },
             // starts a default labeled selection scope
             IrToken::ScopeStart(ScopeType::Selection) => {
                 let id = selection_id(default_scope_ids, parent_scope.cloned());
 
-                RuleToken::SelectionScope {
-                    options: selection_contents_to_rule_tokens(ir, default_scope_ids, id.as_ref())?,
-                    id,
-                }
+                Pattern::new_selection(selection_contents_to_patterns(ir, default_scope_ids, id.as_ref())?, id)
             },
             // ensures a label is proceeding a labelable token then creates that token with the label
             IrToken::Label(name) => {
@@ -176,26 +170,20 @@ fn ir_tokens_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrT
 
                 if let Some(IrToken::ScopeStart(kind)) = next {
                     match kind {
-                        ScopeType::Optional => RuleToken::OptionalScope {
-                            content: ir_tokens_to_rule_tokens(ir, default_scope_ids, id.as_ref(), Some(ScopeType::Optional))?,
-                            id,
-                        },
-                        ScopeType::Selection => RuleToken::SelectionScope {
-                            options: selection_contents_to_rule_tokens(ir, default_scope_ids, id.as_ref())?,
-                            id,
-                        }
+                        ScopeType::Optional => Pattern::new_optional(ir_tokens_to_patterns(ir, default_scope_ids, id.as_ref(), Some(ScopeType::Optional))?, id),
+                        ScopeType::Selection => Pattern::new_selection(selection_contents_to_patterns(ir, default_scope_ids, id.as_ref())?, id),
                     }
                 } else if let Some(IrToken::Any) = next {
-                    RuleToken::Any { id }
+                    Pattern::new_any(id)
                 } else if let Some(IrToken::Gap) = next {
-                    RuleToken::Gap { id: Some(name) }
+                    Pattern::new_gap(Some(name))
                 } else {
                     return Err(RuleStructureError::LabelNotFollowedByScope(name));
                 }
             },
             // ends a scope returning either its contents or a related error
             IrToken::ScopeEnd(kind) => return if Some(*kind) == end_at {
-                Ok(rule_tokens)
+                Ok(patterns)
             } else if let Some(start_type) = end_at {
                 Err(RuleStructureError::MismatchedScopeBounds(start_type, *kind))
             } else {
@@ -207,16 +195,16 @@ fn ir_tokens_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrT
             _ => return Err(RuleStructureError::UnexpectedToken(*ir_token)),
         };
 
-        rule_tokens.push(rule_token);
+        patterns.push(pattern);
     }
 
-    Ok(rule_tokens)
+    Ok(patterns)
 }
 
-/// Converts the ir tokens in a selection scope to a list of rule token lists
+/// Converts the ir tokens in a selection scope to a list of pattern lists
 /// where each is an option to be selected by the scope: 
 /// (options are seperated by the `ArgSep` token)
-fn selection_contents_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, scope: Option<&ScopeId<'s>>) -> Result<Vec<Vec<RuleToken<'s>>>, RuleStructureError<'s>> {
+fn selection_contents_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, scope: Option<&ScopeId<'s>>) -> Result<Vec<Vec<Pattern<'s>>>, RuleStructureError<'s>> {
     let mut options = Vec::new();
     // scope_stack tracks which scope the function is analyzing to determine when to seperate options and return
     let mut scope_stack = Vec::new();
@@ -237,13 +225,13 @@ fn selection_contents_to_rule_tokens<'ir, 's: 'ir>(ir: &mut impl Iterator<Item =
                 IrToken::ScopeEnd(kind) => {
                     // if the scope end is the end of the selection scope,
                     // the last option is pushed
-                    // and the options are converted into rule token lists and returned
+                    // and the options are converted into pattern lists and returned
                     if scope_stack.is_empty() && kind == &ScopeType::Selection {
                         options.push(option);
                         let mut items = Vec::new();
 
                         for item in options {
-                            items.push(ir_tokens_to_rule_tokens(&mut item.into_iter(), default_scope_ids, scope, None)?);
+                            items.push(ir_tokens_to_patterns(&mut item.into_iter(), default_scope_ids, scope, None)?);
                         }
 
                         return Ok(items);
@@ -329,7 +317,7 @@ fn any_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Opti
     }
 }
 
-/// An error that occurs when converting ir tokens to rule tokens
+/// An error that occurs when converting ir tokens to patterns
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum RuleStructureError<'s> {
@@ -344,7 +332,8 @@ pub enum RuleStructureError<'s> {
     NoConditionFocus,
     AndDoesNotFollowCond(AndType),
     SecondShift(Shift),
-    UnexpectedCondType(CondType)
+    UnexpectedCondType(CondType),
+    GapOutOfCond,
 }
 
 impl std::error::Error for RuleStructureError<'_> {}
@@ -370,6 +359,7 @@ impl std::fmt::Display for RuleStructureError<'_> {
                 => write!(f, "Found a second shift token '{shift}' after the first"),
             Self::UnexpectedCondType(r#type)
                 => write!(f, "Found '{type}' either outside of a condition or after '{}' or '{}'", CondType::Pattern, CondType::Match),
+            Self::GapOutOfCond => write!(f, "Gaps ('{GAP_STR}') are not allowed outside of conditions and anti-conditions"),
         }
     }
 }
