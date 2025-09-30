@@ -250,8 +250,8 @@ impl std::fmt::Display for ApplicationError<'_> {
             Self::InvalidSelectionAccess(scope, elem) => {
                 write!(f, "Cannot access element {} in scope: {scope}", elem + 1)
             },
-            Self::UnmatchedTokenInOutput(token) => {
-                write!(f, "Cannot match the following token in the output to a token in the input: {token}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
+            Self::UnmatchedTokenInOutput(pattern) => {
+                write!(f, "Cannot match the following token in the output to a token in the input: {pattern}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
             },
             Self::ExceededLimit(limit) => write!(f, "{}", match limit {
                 LimitCondition::Time(_) => "Could not apply changes in allotted time",
