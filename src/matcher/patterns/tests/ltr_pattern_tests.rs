@@ -1,4 +1,4 @@
-use crate::{matcher::{choices::Choices, match_state::{MatchState, UnitState}, patterns::{check_box::CheckBox, list::PatternList, Pattern}, phones::Phones}, phones::Phone, rules::tokens::ScopeId, tokens::Direction};
+use crate::{matcher::{choices::Choices, match_state::{MatchState, UnitState}, patterns::{check_box::CheckBox, list::PatternList, Pattern}, phones::Phones}, phones::Phone, tokens::{Direction, ScopeId}};
 
 #[test]
 fn single_phone() {
@@ -125,7 +125,7 @@ fn agreeing_non_bounds() {
 
     let label = ScopeId::Name("label");
 
-    let patterns = vec![Pattern::new_any(Some(&label)), Pattern::new_any(Some(&label))];
+    let patterns = vec![Pattern::new_any(Some(label.clone())), Pattern::new_any(Some(label.clone()))];
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("a")], 0, Direction::Ltr);
 
     let Some(new_choices) = PatternList::new(patterns).matches(&mut match_phones, &choices) else {
@@ -140,7 +140,7 @@ fn agreeing_non_bounds() {
 
     let label = ScopeId::Name("label");
 
-    let patterns = vec![Pattern::new_any(Some(&label)), Pattern::new_any(Some(&label))];
+    let patterns = vec![Pattern::new_any(Some(label.clone())), Pattern::new_any(Some(label.clone()))];
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Ltr);
 
     assert!(PatternList::new(patterns).matches(&mut match_phones, &choices).is_none());
@@ -273,10 +273,10 @@ fn agreeing_optionals() {
     let mut patterns = PatternList::new(vec![
         Pattern::new_optional(vec![
             Pattern::new_phone(Phone::Symbol("a")),
-        ], Some(&label)),
+        ], Some(label.clone())),
         Pattern::new_optional(vec![
             Pattern::new_phone(Phone::Symbol("b")),
-        ], Some(&label)),
+        ], Some(label.clone())),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Ltr);
 
@@ -286,10 +286,10 @@ fn agreeing_optionals() {
     let mut patterns = PatternList::new(vec![
         Pattern::new_optional(vec![
             Pattern::new_phone(Phone::Symbol("a")),
-        ], Some(&label)),
+        ], Some(label.clone())),
         Pattern::new_optional(vec![
             Pattern::new_phone(Phone::Symbol("b")),
-        ], Some(&label)),
+        ], Some(label.clone())),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("b")], 0, Direction::Ltr);
 
@@ -343,12 +343,12 @@ fn agreeing_selection() {
             vec![Pattern::new_phone(Phone::Symbol("a"))],
             vec![Pattern::new_phone(Phone::Symbol("b"))],
             vec![Pattern::new_phone(Phone::Symbol("c"))],
-        ], Some(&label)),
+        ], Some(label.clone())),
         Pattern::new_selection(vec![
             vec![Pattern::new_phone(Phone::Symbol("d"))],
             vec![Pattern::new_phone(Phone::Symbol("e"))],
             vec![Pattern::new_phone(Phone::Symbol("f"))],
-        ], Some(&label)),
+        ], Some(label.clone())),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("e")], 0, Direction::Ltr);
 
@@ -360,12 +360,12 @@ fn agreeing_selection() {
             vec![Pattern::new_phone(Phone::Symbol("a"))],
             vec![Pattern::new_phone(Phone::Symbol("b"))],
             vec![Pattern::new_phone(Phone::Symbol("c"))],
-        ], Some(&label)),
+        ], Some(label.clone())),
         Pattern::new_selection(vec![
             vec![Pattern::new_phone(Phone::Symbol("d"))],
             vec![Pattern::new_phone(Phone::Symbol("e"))],
             vec![Pattern::new_phone(Phone::Symbol("f"))],
-        ], Some(&label)),
+        ], Some(label.clone())),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("d")], 0, Direction::Ltr);
 

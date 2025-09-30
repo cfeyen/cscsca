@@ -5,7 +5,6 @@ use std::{error::Error, num::NonZero};
 mod ir;
 mod phones;
 mod tokens;
-mod rules;
 mod applier;
 mod matcher;
 mod sub_string;
@@ -87,35 +86,35 @@ pub struct ScaError {
 impl Error for ScaError {}
 
 impl ScaError {
-    /// Returns the number of the line on which the error occured
+    /// Gets the error message
     #[must_use]
     #[inline]
     pub fn error_message(&self) -> &str {
         &self.err
     }
 
-    /// Returns the number of the line on which the error occured
+    /// Gets the number of the line on which the error occured
     #[must_use]
     #[inline]
     pub const fn line_number(&self) -> NonZero<usize> {
         self.line_num
     }
 
-    /// Returns the number of lines on which the error occured
+    /// Gets the number of lines on which the error occured
     #[must_use]
     #[inline]
     pub const fn line_count(&self) -> NonZero<usize> {
         self.line_count
     }
 
-    /// Returns the number of the line on which the error occured
+    /// Gets the rule where the error occured
     #[must_use]
     #[inline]
     pub fn rule(&self) -> &str {
         &self.rule
     }
 
-    /// Returns the type of error
+    /// Gets the type of error
     #[must_use]
     #[inline]
     pub const fn error_type(&self) -> ScaErrorType {

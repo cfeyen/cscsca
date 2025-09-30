@@ -1,5 +1,11 @@
 
-use crate::{executor::io_events::RuntimeIoEvent, ir::{tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command, tokens::Break}, phones::Phone, rules::conditions::CondType, tokens::{Direction, ScopeType, Shift, ShiftType}, ONE};
+use crate::{
+    executor::io_events::RuntimeIoEvent,
+    ir::{tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command, tokens::Break},
+    phones::Phone,
+    tokens::{Direction, ScopeType, Shift, ShiftType, CondType},
+    ONE,
+};
 
 use super::*;
 

@@ -1,7 +1,7 @@
 use std::{error::Error, num::NonZero, time::Duration};
 
 use crate::{
-    applier::apply, await_io, io_fn, phones::{phone_list_to_string, Phone}, rules::RuleLine, RulelessScaError, ScaErrorType, ONE
+    applier::apply, await_io, io_fn, matcher::patterns::ir_to_patterns::RuleLine, phones::{phone_list_to_string, Phone}, RulelessScaError, ScaErrorType, ONE
 };
 
 use super::io_events::RuntimeIoEvent;
@@ -64,7 +64,7 @@ pub trait Runtime {
 pub(super) trait RuntimeApplier: Runtime {
     /// Applies changes for a single `RuleLine`
     #[io_fn]
-    fn apply_line<'s>(&mut self, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'s>>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
+    fn apply_line<'s: 'p, 'p>(&mut self, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'p>>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
         match rule_line {
             RuleLine::Empty => Ok(()),
             RuleLine::IoEvent(cmd) => await_io! {

@@ -1,6 +1,6 @@
 use std::{num::NonZero, rc::Rc};
 
-use crate::{phones::Phone, rules::conditions::AndType, tokens::{Direction, Shift, ShiftType}};
+use crate::{phones::Phone, tokens::{Direction, Shift, ShiftType, AndType}};
 use super::*;
 
 const ONE: NonZero<usize> = NonZero::new(1).expect("1 ought to be nonzero");
@@ -33,10 +33,12 @@ fn one_to_one() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-        conds: vec![Cond::default()],
-        anti_conds: Vec::new()
+        output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+            Vec::new(),
+            Vec::new(),
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -50,10 +52,12 @@ fn three_to_three() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a")), RuleToken::Phone(Phone::Symbol("b")), RuleToken::Phone(Phone::Symbol("c"))],
-        output: vec![RuleToken::Phone(Phone::Symbol("d")), RuleToken::Phone(Phone::Symbol("e")), RuleToken::Phone(Phone::Symbol("f"))],
-        conds: vec![Cond::default()],
-        anti_conds: Vec::new()
+        output: vec![Pattern::new_phone(Phone::Symbol("d")), Pattern::new_phone(Phone::Symbol("e")), Pattern::new_phone(Phone::Symbol("f"))],
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a")), Pattern::new_phone(Phone::Symbol("b")), Pattern::new_phone(Phone::Symbol("c"))]),
+            Vec::new(),
+            Vec::new(),
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Phone(Phone::Symbol("b")),
@@ -69,20 +73,30 @@ fn three_to_three() {
 fn selected_three_to_selected_three() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
+    let input = PatternList::new(vec![Pattern::new_selection(
+        vec![
+            vec![Pattern::new_phone(Phone::Symbol("a"))],
+            vec![Pattern::new_phone(Phone::Symbol("b"))],
+            vec![Pattern::new_phone(Phone::Symbol("c"))],
+        ],
+        Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) }),
+    )]);
+
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::SelectionScope { id: Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) }), options: vec![
-            vec![RuleToken::Phone(Phone::Symbol("a"))],
-            vec![RuleToken::Phone(Phone::Symbol("b"))],
-            vec![RuleToken::Phone(Phone::Symbol("c"))],
-        ] }],
-        output: vec![RuleToken::SelectionScope { id: Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) }), options: vec![
-            vec![RuleToken::Phone(Phone::Symbol("d"))],
-            vec![RuleToken::Phone(Phone::Symbol("e"))],
-            vec![RuleToken::Phone(Phone::Symbol("f"))],
-        ] }],
-        conds: vec![Cond::default()],
-        anti_conds: Vec::new()
+        output: vec![Pattern::new_selection(
+            vec![
+                vec![Pattern::new_phone(Phone::Symbol("d"))],
+                vec![Pattern::new_phone(Phone::Symbol("e"))],
+                vec![Pattern::new_phone(Phone::Symbol("f"))],
+            ],
+            Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) }),
+        )],
+        pattern: RefCell::new(
+            RulePattern::new(input,
+            Vec::new(),
+            Vec::new(),
+        ).expect("pattern construction should be valid")),
 
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::ScopeStart(ScopeType::Selection),
@@ -107,20 +121,30 @@ fn selected_three_to_selected_three() {
 fn labeled_selected_three_to_selected_three() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
+    let input = PatternList::new(vec![Pattern::new_selection(
+        vec![
+            vec![Pattern::new_phone(Phone::Symbol("a"))],
+            vec![Pattern::new_phone(Phone::Symbol("b"))],
+            vec![Pattern::new_phone(Phone::Symbol("c"))],
+        ],
+        Some(ScopeId::Name("label")),
+    )]);
+
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
-            vec![RuleToken::Phone(Phone::Symbol("a"))],
-            vec![RuleToken::Phone(Phone::Symbol("b"))],
-            vec![RuleToken::Phone(Phone::Symbol("c"))],
-        ] }],
-        output: vec![RuleToken::SelectionScope { id: Some(ScopeId::Name("label")), options: vec![
-            vec![RuleToken::Phone(Phone::Symbol("d"))],
-            vec![RuleToken::Phone(Phone::Symbol("e"))],
-            vec![RuleToken::Phone(Phone::Symbol("f"))],
-        ] }],
-        conds: vec![Cond::default()],
-        anti_conds: Vec::new()
+        output: vec![Pattern::new_selection(
+            vec![
+                vec![Pattern::new_phone(Phone::Symbol("d"))],
+                vec![Pattern::new_phone(Phone::Symbol("e"))],
+                vec![Pattern::new_phone(Phone::Symbol("f"))],
+            ],
+            Some(ScopeId::Name("label")),
+        )],
+        pattern: RefCell::new(
+            RulePattern::new(input,
+            Vec::new(),
+            Vec::new(),
+        ).expect("pattern construction should be valid")),
 
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Label("label"),
@@ -171,15 +195,17 @@ fn no_shift() {
 }
 
 #[test]
-fn no_left() {
+fn no_output() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
         output: Vec::new(),
-        conds: vec![Cond::default()],
-        anti_conds: Vec::new()
+        pattern: RefCell::new(
+            RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+            Vec::new(),
+            Vec::new(),
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -190,14 +216,16 @@ fn no_left() {
 fn single_option() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
+    let input = PatternList::new(vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("a"))], Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Optional) }))]);
+
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::OptionalScope { id: Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Optional) }), content: vec![
-            RuleToken::Phone(Phone::Symbol("a")),
-        ] }],
         output: Vec::new(),
-        conds: vec![Cond::default()],
-        anti_conds: Vec::new()
+        pattern: RefCell::new(
+            RulePattern::new(input,
+            Vec::new(),
+            Vec::new(),
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::ScopeStart(ScopeType::Optional),
         IrToken::Phone(Phone::Symbol("a")),
@@ -210,45 +238,37 @@ fn single_option() {
 fn nested_scopes() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
+    let label_0 = Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) });
+    let label_1 = Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) });
+    let label_2 = Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) });
+
+    let input = PatternList::new(vec![Pattern::new_selection(
+        vec![
+            vec![Pattern::new_phone(Phone::Symbol("a"))],
+            vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("b"))], label_1.clone())],
+            vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("c"))], label_2.clone())],
+            vec![Pattern::new_phone(Phone::Symbol("d"))],
+        ],
+        label_0.clone()
+    )]);
+
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![
-                RuleToken::SelectionScope {
-                    id: Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) }),
-                    options: vec![
-                        vec![RuleToken::Phone(Phone::Symbol("a"))],
-                        vec![RuleToken::OptionalScope {
-                            id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
-                            content: vec![RuleToken::Phone(Phone::Symbol("b"))],
-                        }],
-                        vec![RuleToken::OptionalScope {
-                            id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
-                            content: vec![RuleToken::Phone(Phone::Symbol("c"))],
-                        }],
-                        vec![RuleToken::Phone(Phone::Symbol("d"))],
-                    ],
-                }
-            ],
-            output: vec![
-                RuleToken::SelectionScope {
-                    id: Some(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) }),
-                    options: vec![
-                        vec![RuleToken::Phone(Phone::Symbol("e"))],
-                        vec![RuleToken::OptionalScope {
-                            id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
-                            content: vec![RuleToken::Phone(Phone::Symbol("f"))],
-                        }],
-                        vec![RuleToken::OptionalScope {
-                            id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Optional), parent: Some(Rc::new(ScopeId::IOUnlabeled { parent: None, id_num: 0, label_type: LabelType::Scope(ScopeType::Selection) })) }),
-                            content: vec![RuleToken::Phone(Phone::Symbol("g"))],
-                        }],
-                        vec![RuleToken::Phone(Phone::Symbol("h"))],
-                    ],
-                }
-            ],
-            conds: vec![Cond::default()],
-            anti_conds: Vec::new(),
+            output: vec![Pattern::new_selection(
+                vec![
+                    vec![Pattern::new_phone(Phone::Symbol("e"))],
+                    vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("f"))], label_1)],
+                    vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("g"))], label_2)],
+                    vec![Pattern::new_phone(Phone::Symbol("h"))],
+                ],
+                label_0
+            )],
+            pattern: RefCell::new(
+            RulePattern::new(    input,
+                Vec::new(),
+                Vec::new(),
+            ).expect("pattern construction should be valid")),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::ScopeStart(ScopeType::Selection),
@@ -288,14 +308,16 @@ fn single_cond() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-        conds: vec![Cond::new(
-            CondType::Pattern,
-            vec![RuleToken::Phone(Phone::Symbol("c"))],
-            vec![RuleToken::Phone(Phone::Symbol("d"))],
-        )],
-        anti_conds: Vec::new()
+        output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+            vec![CondPattern::new(
+                CondType::Pattern,
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+            )],
+            Vec::new(),
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -313,26 +335,28 @@ fn three_conds() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-        conds: vec![
-            Cond::new(
-                CondType::Pattern,
-                vec![RuleToken::Phone(Phone::Symbol("c"))],
-                Vec::new(),
-            ),
-            Cond::new(
-                CondType::Pattern,
-                vec![RuleToken::Phone(Phone::Symbol("d"))],
-                vec![RuleToken::Phone(Phone::Symbol("e"))],
-            ),
-            Cond::new(
-                CondType::Pattern,
-                Vec::new(),
-                vec![RuleToken::Phone(Phone::Symbol("f"))],
-            ),
-        ],
-        anti_conds: Vec::new()
+        output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+            vec![
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+                    PatternList::default(),
+                ),
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("e"))]),
+                ),
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::default(),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("f"))]),
+                ),
+            ],
+            Vec::new(),
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -356,14 +380,16 @@ fn single_anti_cond() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-        conds: vec![Cond::default()],
-        anti_conds: vec![Cond::new(
-            CondType::Pattern,
-            vec![RuleToken::Phone(Phone::Symbol("c"))],
-            vec![RuleToken::Phone(Phone::Symbol("d"))],
-        )],
+        output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+            Vec::new(),
+            vec![CondPattern::new(
+                CondType::Pattern,
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+            )]
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -381,26 +407,28 @@ fn three_anti_conds() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-        conds: vec![Cond::default()],
-        anti_conds: vec![
-            Cond::new(
-                CondType::Pattern,
-                vec![RuleToken::Phone(Phone::Symbol("c"))],
-                Vec::new(),
-            ),
-            Cond::new(
-                CondType::Pattern,
-                vec![RuleToken::Phone(Phone::Symbol("d"))],
-                vec![RuleToken::Phone(Phone::Symbol("e"))],
-            ),
-            Cond::new(
-                CondType::Pattern,
-                Vec::new(),
-                vec![RuleToken::Phone(Phone::Symbol("f"))],
-            ),
-        ],
+        output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+            Vec::new(),
+            vec![
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+                    PatternList::default(),
+                ),
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("e"))]),
+                ),
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::default(),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("f"))]),
+                ),
+            ]
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -424,18 +452,20 @@ fn cond_and_anti_cond() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-        conds: vec![Cond::new (
-            CondType::Pattern,
-            vec![RuleToken::Phone(Phone::Symbol("c"))],
-            vec![RuleToken::Phone(Phone::Symbol("d"))],
-        )],
-        anti_conds: vec![Cond::new (
-            CondType::Pattern,
-            vec![RuleToken::Phone(Phone::Symbol("e"))],
-            vec![RuleToken::Phone(Phone::Symbol("f"))],
-        )],
+        output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+            vec![CondPattern::new (
+                CondType::Pattern,
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+            )],
+            vec![CondPattern::new (
+                CondType::Pattern,
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("e"))]),
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("f"))]),
+            )],
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -457,42 +487,44 @@ fn three_conds_and_anti_conds() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-        output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-        conds: vec![
-            Cond::new(
-                CondType::Pattern,
-                vec![RuleToken::Phone(Phone::Symbol("c"))],
-                Vec::new(),
-            ),
-            Cond::new(
-                CondType::Pattern,
-                vec![RuleToken::Phone(Phone::Symbol("d"))],
-                vec![RuleToken::Phone(Phone::Symbol("e"))],
-            ),
-            Cond::new(
-                CondType::Pattern,
-                Vec::new(),
-                vec![RuleToken::Phone(Phone::Symbol("f"))],
-            ),
-        ],
-        anti_conds: vec![
-            Cond::new(
-                CondType::Pattern,
-                vec![RuleToken::Phone(Phone::Symbol("g"))],
-                Vec::new(),
-            ),
-            Cond::new(
-                CondType::Pattern,
-                vec![RuleToken::Phone(Phone::Symbol("h"))],
-                vec![RuleToken::Phone(Phone::Symbol("i"))],
-            ),
-            Cond::new(
-                CondType::Pattern,
-                Vec::new(),
-                vec![RuleToken::Phone(Phone::Symbol("j"))],
-            ),
-        ],
+        output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+            vec![
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+                    PatternList::default(),
+                ),
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("e"))]),
+                ),
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::default(),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("f"))]),
+                ),
+            ],
+            vec![
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("g"))]),
+                    PatternList::default(),
+                ),
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("h"))]),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("i"))]),
+                ),
+                CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::default(),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("j"))]),
+                ),
+            ],
+        ).expect("pattern construction should be valid")),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -526,14 +558,18 @@ fn shift_cond_gap_input() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: Vec::new(),
         output: Vec::new(),
-        conds: vec![Cond::new(
-            CondType::Pattern,
-            vec![RuleToken::Gap { id: None }],
-            Vec::new(),
-        )],
-        anti_conds: Vec::new(),
+        pattern: RefCell::new(
+            RulePattern::new(
+                PatternList::default(),
+                vec![CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_gap(None)]),
+                    PatternList::default(),
+                )],
+                Vec::new(),
+            ).expect("pattern construction should be valid")
+        ),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
@@ -548,14 +584,18 @@ fn shift_anti_cond_gap_input() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: Vec::new(),
         output: Vec::new(),
-        conds: vec![Cond::default()],
-        anti_conds: vec![Cond::new(
-            CondType::Pattern,
-            vec![RuleToken::Gap { id: None }],
-            Vec::new(),
-    )],
+        pattern: RefCell::new(
+            RulePattern::new(
+                PatternList::default(),
+                Vec::new(),
+                vec![CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_gap(None)]),
+                    PatternList::default(),
+                )],
+            ).expect("pattern construction should be valid")
+        ),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::AntiCond),
@@ -570,14 +610,18 @@ fn shift_cond_label_gap_input() {
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
         kind: shift,
-        input: Vec::new(),
         output: Vec::new(),
-        conds: vec![Cond::new(
-            CondType::Pattern,
-            vec![RuleToken::Gap { id: Some("label") }],
-            Vec::new(),
-    )],
-        anti_conds: Vec::new(),
+        pattern: RefCell::new(
+            RulePattern::new(
+                PatternList::default(),
+                vec![CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_gap(Some("label"))]),
+                    PatternList::default(),
+                )],
+                Vec::new(),
+            ).expect("pattern construction should be valid")
+        ),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
@@ -590,14 +634,20 @@ fn shift_cond_label_gap_input() {
 #[test]
 fn any_to_any() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
+    
+    let any = vec![Pattern::new_any(Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }))];
 
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
-            output: vec![RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) }],
-            conds: vec![Cond::default()],
-            anti_conds: Vec::new(),
+            output: any.clone(),
+            pattern: RefCell::new(
+                RulePattern::new(
+                    PatternList::new(any),
+                    Vec::new(),
+                    Vec::new(),
+                ).expect("pattern construction should be valid")
+            ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Any,
@@ -610,20 +660,23 @@ fn any_to_any() {
 #[test]
 fn any_any_to_any_any() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
+    
+    let anys = vec![
+        Pattern::new_any(Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None })),
+        Pattern::new_any(Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Any, parent: None })),
+    ];
 
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![
-                RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) },
-                RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Any, parent: None }) },
-            ],
-            output: vec![
-                RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) },
-                RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Any, parent: None }) },
-            ],
-            conds: vec![Cond::default()],
-            anti_conds: Vec::new(),
+            output: anys.clone(),
+            pattern: RefCell::new(
+                RulePattern::new(
+                    PatternList::new(anys),
+                    Vec::new(),
+                    Vec::new(),
+                ).expect("pattern construction should be valid")
+            ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Any,
@@ -639,13 +692,19 @@ fn any_any_to_any_any() {
 fn labeled_any_to_any() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
+    let any = vec![Pattern::new_any(Some(ScopeId::Name("label")))];
+
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![RuleToken::Any { id: Some(ScopeId::Name("label")) }],
-            output: vec![RuleToken::Any { id: Some(ScopeId::Name("label")) }],
-            conds: vec![Cond::default()],
-            anti_conds: Vec::new(),
+            output: any.clone(),
+            pattern: RefCell::new(
+                RulePattern::new(
+                    PatternList::new(any),
+                    Vec::new(),
+                    Vec::new(),
+                ).expect("pattern construction should be valid")
+            ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Label("label"),
@@ -661,21 +720,28 @@ fn labeled_any_to_any() {
 fn selections_around_any_to_any() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
+    let selection = |n, sym| Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol(sym))]], Some(ScopeId::IOUnlabeled { id_num: n, label_type: LabelType::Scope(ScopeType::Selection), parent: None }));
+    let any = Pattern::new_any(Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }));
+
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![
-                    RuleToken::SelectionScope { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Selection), parent: None }), options: vec![vec![RuleToken::Phone(Phone::Symbol("a"))]] },
-                    RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) },
-                    RuleToken::SelectionScope { id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Selection), parent: None }), options: vec![vec![RuleToken::Phone(Phone::Symbol("b"))]] },
-                ],
             output: vec![
-                    RuleToken::SelectionScope { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Selection), parent: None }), options: vec![vec![RuleToken::Phone(Phone::Symbol("c"))]] },
-                    RuleToken::Any { id: Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }) },
-                    RuleToken::SelectionScope { id: Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Selection), parent: None }), options: vec![vec![RuleToken::Phone(Phone::Symbol("d"))]] },
+                    selection(0, "c"),
+                    any.clone(),
+                    selection(1, "d"),
                 ],
-            conds: vec![Cond::default()],
-            anti_conds: Vec::new(),
+            pattern: RefCell::new(
+                RulePattern::new(
+                    PatternList::new(vec![
+                        selection(0, "a"),
+                        any,
+                        selection(1, "b"),
+                    ]),
+                    Vec::new(),
+                    Vec::new(),
+                ).expect("pattern construction should be valid")
+            ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::ScopeStart(ScopeType::Selection),
@@ -704,18 +770,23 @@ fn cond_with_scope() {
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-            output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-            conds: vec![Cond::new (
+            output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+            pattern: RefCell::new(RulePattern::new(
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+                vec![CondPattern::new (
                     CondType::Pattern,
-                    vec![RuleToken::SelectionScope { id: None, options: vec![
-                            vec![RuleToken::Phone(Phone::Symbol("c"))],
-                            vec![RuleToken::Phone(Phone::Symbol("d"))],
-                            vec![RuleToken::Phone(Phone::Symbol("e"))],
-                        ]}],
-                    Vec::new(),
+                    PatternList::new(vec![Pattern::new_selection(
+                        vec![
+                            vec![Pattern::new_phone(Phone::Symbol("c"))],
+                            vec![Pattern::new_phone(Phone::Symbol("d"))],
+                            vec![Pattern::new_phone(Phone::Symbol("e"))],
+                        ],
+                        None
+                    )]),
+                    PatternList::default(),
                 )],
-            anti_conds: Vec::new(),
+                Vec::new(),
+            ).expect("pattern construction should be valid"))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -741,16 +812,16 @@ fn anti_cond_with_scope() {
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-            output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-            conds: vec![Cond::default()],
-            anti_conds: vec![Cond::new (
-                CondType::Pattern,
-                vec![RuleToken::OptionalScope { id: Some(ScopeId::Name("label")), content: vec![
-                        RuleToken::Phone(Phone::Symbol("c"))
-                    ]}],
-                vec![RuleToken::Phone(Phone::Symbol("d"))],
-            )],
+            output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+            pattern: RefCell::new(RulePattern::new(
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+                Vec::new(),
+                vec![CondPattern::new (
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("c"))], Some(ScopeId::Name("label")))]),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+                )],
+            ).expect("pattern construction should be valid")),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -774,14 +845,16 @@ fn equality_cond() {
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![RuleToken::Phone(Phone::Symbol("a"))],
-            output: vec![RuleToken::Phone(Phone::Symbol("b"))],
-            conds: vec![Cond::new (
-                CondType::Match,
-                vec![RuleToken::Phone(Phone::Symbol("c"))],
-                vec![RuleToken::Phone(Phone::Symbol("d"))],
-            )],
-            anti_conds: Vec::new(),
+            output: vec![Pattern::new_phone(Phone::Symbol("b"))],
+            pattern: RefCell::new(RulePattern::new(
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+                vec![CondPattern::new (
+                    CondType::Match,
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+                    PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+                )],
+                Vec::new(),
+            ).expect("pattern construction should be valid"))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -799,25 +872,27 @@ fn equality_cond() {
 fn and_cond() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
-    let mut cond = Cond::new(
+    let mut cond = CondPattern::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("b"))],
-        Vec::new(),
+        PatternList::new(vec![Pattern::new_phone(Phone::Symbol("b"))]),
+        PatternList::default(),
     );
 
-    cond.add_and(AndType::And, Cond::new(
+    cond.add_and(AndType::And, CondPattern::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("c"))],
-        Vec::new(),
+        PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+        PatternList::default(),
     ));
 
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![RuleToken::Phone(Phone::Symbol("a"))],
             output: Vec::new(),
-            conds: vec![cond],
-            anti_conds: Vec::new(),
+            pattern: RefCell::new(RulePattern::new(
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+                vec![cond],
+                Vec::new(),
+            ).expect("pattern construction should be valid"))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -836,25 +911,27 @@ fn and_cond() {
 fn and_anticond() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
-    let mut cond = Cond::new(
+    let mut cond = CondPattern::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("b"))],
-        Vec::new(),
+        PatternList::new(vec![Pattern::new_phone(Phone::Symbol("b"))]),
+        PatternList::default(),
     );
 
-    cond.add_and(AndType::And, Cond::new(
+    cond.add_and(AndType::And, CondPattern::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("c"))],
-        Vec::new(),
+        PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+        PatternList::default(),
     ));
 
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![RuleToken::Phone(Phone::Symbol("a"))],
             output: Vec::new(),
-            conds: vec![Cond::default()],
-            anti_conds: vec![cond],
+            pattern: RefCell::new(RulePattern::new(
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+                Vec::new(),
+                vec![cond],
+            ).expect("pattern construction should be valid"))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -873,31 +950,33 @@ fn and_anticond() {
 fn double_and() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
-    let mut cond = Cond::new(
+    let mut cond = CondPattern::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("b"))],
-        Vec::new(),
+        PatternList::new(vec![Pattern::new_phone(Phone::Symbol("b"))]),
+        PatternList::default(),
     );
 
-    cond.add_and(AndType::And, Cond::new(
+    cond.add_and(AndType::And, CondPattern::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("c"))],
-        Vec::new(),
+        PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
+        PatternList::default(),
     ));
 
-    cond.add_and(AndType::And, Cond::new(
+    cond.add_and(AndType::And, CondPattern::new(
         CondType::Pattern,
-        vec![RuleToken::Phone(Phone::Symbol("d"))],
-        Vec::new(),
+        PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
+        PatternList::default(),
     ));
 
     assert_eq!(
         Ok(RuleLine::Rule { rule: SoundChangeRule {
             kind: shift,
-            input: vec![RuleToken::Phone(Phone::Symbol("a"))],
             output: Vec::new(),
-            conds: vec![cond],
-            anti_conds: Vec::new(),
+            pattern: RefCell::new(RulePattern::new(
+                PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
+                vec![cond],
+                Vec::new(),
+            ).expect("pattern construction should be valid"))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),

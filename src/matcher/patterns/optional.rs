@@ -1,16 +1,24 @@
-use crate::{matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, patterns::list::PatternList, phones::Phones}, rules::tokens::ScopeId, tokens::ScopeType};
+use crate::{
+    matcher::{
+        choices::{Choices, OwnedChoices},
+        match_state::MatchState,
+        patterns::list::PatternList,
+        phones::Phones,
+    },
+    tokens::{ScopeId, ScopeType}
+};
 
 /// A pattern the represents the potential of a sub-pattern
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Optional<'r, 's> {
+pub struct Optional<'s> {
     pub(super) selected: bool,
-    pub(super) option: PatternList<'r, 's>,
-    pub(super) id: Option<&'r ScopeId<'s>>,
+    pub option: PatternList<'s>,
+    pub id: Option<ScopeId<'s>>,
 }
 
-impl<'r, 's: 'r> MatchState<'r, 's> for Optional<'r, 's> {
-    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
-        if let Some(id) = self.id {
+impl<'s> MatchState<'s> for Optional<'s> {
+    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
+        if let Some(id) = &self.id {
             if let Some(choice) = choices.optional.get(id).copied() {
                 // if choice and selection do not align, the match fails
                 if self.selected != choice {
@@ -28,7 +36,7 @@ impl<'r, 's: 'r> MatchState<'r, 's> for Optional<'r, 's> {
             } else {
                 // chooses the selection and checks it
                 let mut new_choices = choices.partial_clone();
-                new_choices.optional.to_mut().insert(id, self.selected);
+                new_choices.optional.to_mut().insert(id.clone(), self.selected);
 
                 // checks if the option matches with the new selection
                 if self.selected {
@@ -47,7 +55,7 @@ impl<'r, 's: 'r> MatchState<'r, 's> for Optional<'r, 's> {
         }
     }
 
-    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+    fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if self.selected {
             loop {
                 if self.option.next_match(phones, choices).is_some() {
@@ -84,9 +92,9 @@ impl<'r, 's: 'r> MatchState<'r, 's> for Optional<'r, 's> {
     }
 }
 
-impl std::fmt::Display for Optional<'_, '_> {
+impl std::fmt::Display for Optional<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(id) = self.id {
+        if let Some(id) = &self.id {
             write!(f, "{id}")?;
         }
 

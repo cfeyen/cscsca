@@ -6,7 +6,7 @@ use std::num::NonZero;
 use crate::{
     await_io, escaped_strings::EscapedString, executor::{
         build_line, getter::IoGetter, runtime::{Runtime, RuntimeApplier}
-    }, io_fn, ir::tokenization_data::TokenizationData, phones::{build_phone_list, phone_list_to_string}, rules::RuleLine, ScaError, ONE
+    }, io_fn, ir::tokenization_data::TokenizationData, matcher::patterns::ir_to_patterns::RuleLine, phones::{build_phone_list, phone_list_to_string}, ScaError, ONE
 };
 
 /// Builds all rules to a form that may be applied more easily

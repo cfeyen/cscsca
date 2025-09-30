@@ -93,7 +93,8 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     };
 
     let mut full_output = String::new();
-    // determines if rules should be pre-built or line-by-line interpretation
+
+    // determines if rules should be pre-built or line-by-line use interpretation
     let build = input.contains('\n');
 
     // gets each rule set in the chain

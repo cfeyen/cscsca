@@ -1,24 +1,24 @@
 use std::{borrow::Cow, collections::HashMap};
 
-use crate::{phones::Phone, rules::tokens::ScopeId};
+use crate::{phones::Phone, tokens::ScopeId};
 
 /// Choices for how agreement should occur
 #[derive(Debug, Clone, Default)]
-pub struct Choices<'c, 'r, 's> {
-    pub(super) selection: Cow<'c, HashMap<&'r ScopeId<'s>, usize>>,
-    pub(super) optional: Cow<'c, HashMap<&'r ScopeId<'s>, bool>>,
+pub struct Choices<'c, 's> {
+    pub(super) selection: Cow<'c, HashMap<ScopeId<'s>, usize>>,
+    pub(super) optional: Cow<'c, HashMap<ScopeId<'s>, bool>>,
     pub(super) gap: Cow<'c, HashMap<&'s str, usize>>,
-    pub(super) any: Cow<'c, HashMap<&'r ScopeId<'s>, Phone<'s>>>,
+    pub(super) any: Cow<'c, HashMap<ScopeId<'s>, Phone<'s>>>,
 }
 
-impl<'c, 'r, 's> Choices<'c, 'r, 's> {
+impl<'c, 's> Choices<'c, 's> {
     /// Gets the selection scope choices
-    pub fn selection(&self) -> &HashMap<&'r ScopeId<'s>, usize> {
+    pub fn selection(&self) -> &HashMap<ScopeId<'s>, usize> {
         &self.selection
     }
 
     /// Gets the optional scope choices
-    pub fn optional(&self) -> &HashMap<&'r ScopeId<'s>, bool> {
+    pub fn optional(&self) -> &HashMap<ScopeId<'s>, bool> {
         &self.optional
     }
 
@@ -28,7 +28,7 @@ impl<'c, 'r, 's> Choices<'c, 'r, 's> {
     }
 
     /// Gets the any phone choices
-    pub fn any(&self) -> &HashMap<&'r ScopeId<'s>, Phone<'s>> {
+    pub fn any(&self) -> &HashMap<ScopeId<'s>, Phone<'s>> {
         &self.any
     }
 
@@ -43,7 +43,7 @@ impl<'c, 'r, 's> Choices<'c, 'r, 's> {
     }
 
     /// Converts a set of copy-on-write choices to only the owned choices
-    pub fn owned_choices(self) -> OwnedChoices<'r, 's> {
+    pub fn owned_choices(self) -> OwnedChoices<'s> {
         OwnedChoices {
             selection: take_owned_from_cow(self.selection),
             optional: take_owned_from_cow(self.optional),
@@ -53,7 +53,7 @@ impl<'c, 'r, 's> Choices<'c, 'r, 's> {
     }
 
     /// Takes the choices from `owned`
-    pub fn take_owned(&mut self, owned: OwnedChoices<'r, 's>) {
+    pub fn take_owned(&mut self, owned: OwnedChoices<'s>) {
         if let Some(selection) = owned.selection {
             self.selection = Cow::Owned(selection);
         }
@@ -76,11 +76,11 @@ impl<'c, 'r, 's> Choices<'c, 'r, 's> {
 ///
 /// Used to optimise some clones
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct OwnedChoices<'r, 's> {
-    selection: Option<HashMap<&'r ScopeId<'s>, usize>>,
-    optional: Option<HashMap<&'r ScopeId<'s>, bool>>,
+pub struct OwnedChoices<'s> {
+    selection: Option<HashMap<ScopeId<'s>, usize>>,
+    optional: Option<HashMap<ScopeId<'s>, bool>>,
     gap: Option<HashMap<&'s str, usize>>,
-    any: Option<HashMap<&'r ScopeId<'s>, Phone<'s>>>,
+    any: Option<HashMap<ScopeId<'s>, Phone<'s>>>,
 }
 
 /// Returns the owned content of a `Cow` if it exists

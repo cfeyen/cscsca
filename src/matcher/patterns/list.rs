@@ -1,28 +1,33 @@
-use crate::{applier::ApplicationError, matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, patterns::{check_box::CheckBox, gap::Gap, non_bound::NonBound, optional::Optional, selection::Selection, Pattern}, phones::Phones}, phones::Phone, rules::tokens::RuleToken, tokens::Direction};
+use crate::{
+    applier::ApplicationError,
+    matcher::{
+        choices::{Choices, OwnedChoices},
+        match_state::MatchState,
+        patterns::{check_box::CheckBox, gap::Gap, non_bound::NonBound, optional::Optional, selection::Selection, Pattern},
+        phones::Phones
+    },
+    phones::Phone,
+    tokens::Direction,
+};
 
 
 
 /// A list of matchable `Pattern`s
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct PatternList<'r, 's> {
+pub struct PatternList<'s> {
     checked_at_initial: bool,
-    patterns: Vec<Pattern<'r, 's>>,
+    patterns: Vec<Pattern<'s>>,
 }
 
-impl<'r, 's> From<&'r [RuleToken<'s>]> for PatternList<'r, 's> {
-    fn from(tokens: &'r [RuleToken<'s>]) -> Self {
-        let patterns = tokens.iter()
-            .map(Pattern::from)
-            .collect();
-
+impl<'s> PatternList<'s> {
+    /// Creates a new `PatternList`
+    pub const fn new(patterns: Vec<Pattern<'s>>) -> Self {
         Self { patterns, checked_at_initial: false }
     }
-}
 
-impl<'r, 's> PatternList<'r, 's> {
-    /// Creates a new `PatternList`
-    pub const fn new(patterns: Vec<Pattern<'r, 's>>) -> Self {
-        Self { patterns, checked_at_initial: false }
+    /// Gets the inner list of `Pattern`s
+    pub fn inner(&self) -> &[Pattern<'s>] {
+        &self.patterns
     }
 
     /// Sets the flag marking the list as checked at its current position to `false`
@@ -31,7 +36,7 @@ impl<'r, 's> PatternList<'r, 's> {
     }
 
     /// Converts a list of patterns to phones
-    pub fn as_phones(&self, choices: &Choices<'_, 'r, 's>) -> Result<Vec<Phone<'s>>, ApplicationError<'r, 's>> {
+    pub fn as_phones<'p>(&self, choices: &Choices<'_, 'p>) -> Result<Vec<Phone<'p>>, ApplicationError<'s>> where 's: 'p {
         let mut phones = Vec::new();
 
         for pattern in &self.patterns {
@@ -76,7 +81,7 @@ impl<'r, 's> PatternList<'r, 's> {
     }
 
     // Recursively determines the next match of a sublist of the `PatternList` 
-    fn next_sub_match(&mut self, index: usize, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+    fn next_sub_match<'p>(&mut self, index: usize, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if index >= self.patterns.len() {
             return Some(OwnedChoices::default());
         }
@@ -118,8 +123,8 @@ impl<'r, 's> PatternList<'r, 's> {
     }
 }
 
-impl<'r, 's: 'r> MatchState<'r, 's> for PatternList<'r, 's> {
-    fn matches(&self, phones: &mut Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+impl<'s> MatchState<'s> for PatternList<'s> {
+    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         let mut new_choices = choices.partial_clone();
 
         // matches each pattern and saves the choices
@@ -138,7 +143,7 @@ impl<'r, 's: 'r> MatchState<'r, 's> for PatternList<'r, 's> {
         Some(new_choices.owned_choices())
     }
 
-    fn next_match(&mut self, phones: &Phones<'_, 's>, choices: &Choices<'_, 'r, 's>) -> Option<OwnedChoices<'r, 's>> {
+    fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if !self.checked_at_initial {
             self.checked_at_initial = true;
             if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
@@ -161,7 +166,7 @@ impl<'r, 's: 'r> MatchState<'r, 's> for PatternList<'r, 's> {
     }
 }
 
-impl std::fmt::Display for PatternList<'_, '_> {
+impl std::fmt::Display for PatternList<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let content_fmt = self.patterns.iter()
             .map(ToString::to_string)
