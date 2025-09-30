@@ -141,7 +141,7 @@ fn replace_input<'s: 'p, 'p>(phones: &mut Vec<Phone<'p>>, index: usize, input_le
     let mut output_phones = Vec::new();
 
     // adds the output
-    for phone in tokens_to_phones(output, choices)? {
+    for phone in patterns_to_phones(output, choices)? {
         // prevents in-output bound doubling
         if output_phones.last().is_some_and(Phone::is_bound) && phone.is_bound() {
             continue;
@@ -185,11 +185,11 @@ fn replace_input<'s: 'p, 'p>(phones: &mut Vec<Phone<'p>>, index: usize, input_le
     Ok(Some((output_len, input_len)))
 }
 
-/// Converts rule tokens to the phones that they represent according to choices that have been made
-fn tokens_to_phones<'s: 'p, 'p>(tokens: &[Pattern<'s>], choices: &Choices<'_, 'p>) -> Result<Vec<Phone<'p>>, ApplicationError<'s>> {
+/// Converts patterns to the phones that they represent according to choices that have been made
+fn patterns_to_phones<'s: 'p, 'p>(patterns: &[Pattern<'s>], choices: &Choices<'_, 'p>) -> Result<Vec<Phone<'p>>, ApplicationError<'s>> {
     let mut phones = Vec::new();
 
-    for pattern in tokens {
+    for pattern in patterns {
         match pattern {
             Pattern::Phone(phone) => phones.push(phone.unit_state),
             Pattern::NonBound(CheckBox { unit_state: NonBound{ id: Some(id) }, .. }) => {
@@ -202,7 +202,7 @@ fn tokens_to_phones<'s: 'p, 'p>(tokens: &[Pattern<'s>], choices: &Choices<'_, 'p
             Pattern::Optional(Optional { id: Some(id), option, .. }) => {
                 if let Some(insert) = choices.optional().get(id) {
                     if *insert {
-                        for phone in tokens_to_phones(option.inner(), choices)? {
+                        for phone in patterns_to_phones(option.inner(), choices)? {
                             phones.push(phone);
                         }
                     }
@@ -213,7 +213,7 @@ fn tokens_to_phones<'s: 'p, 'p>(tokens: &[Pattern<'s>], choices: &Choices<'_, 'p
             Pattern::Selection(Selection { id: Some(id), options, .. }) => {
                 if let Some(choice) = choices.selection().get(id) {
                     if let Some(content) = options.get(*choice) {
-                        for phone in tokens_to_phones(content.inner(), choices)? {
+                        for phone in patterns_to_phones(content.inner(), choices)? {
                             phones.push(phone);
                         }
                     } else {
