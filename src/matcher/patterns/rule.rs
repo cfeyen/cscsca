@@ -47,7 +47,7 @@ impl<'s> RulePattern<'s> {
         }
 
         if conds.is_empty() {
-            conds = vec![CondPattern::default()]
+            conds = vec![CondPattern::default()];
         }
 
         Ok(Self {
