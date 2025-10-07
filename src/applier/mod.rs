@@ -83,7 +83,7 @@ fn next_position(rule: &SoundChangeRule, input_len: usize, replace_len: usize, p
         // prevents repeat application on zero-sized inputs
         _ if input_len == 0 && replace_len == 0 => dir.change_by_one(phone_index),
         (Direction::Ltr, ShiftType::Move) => dir.change_by(phone_index, replace_len),
-            // ensures removing a phone does not take the phone index out of the phone list ending the rule early
+        // ensures removing a phone does not take the phone index out of the phone list ending the rule early
         (Direction::Rtl, _) if phone_index >= phones.len() => phones.len().wrapping_sub(1),
         (Direction::Rtl, ShiftType::Move) => dir.change_by(phone_index, input_len),
         _ => phone_index,
