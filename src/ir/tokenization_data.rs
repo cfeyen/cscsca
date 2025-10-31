@@ -52,7 +52,7 @@ impl<'s> TokenizationData<'s> {
 
                 lazy_expansions.push(name);
                 
-                for token in tokenize_line(&definition, self, lazy_expansions)?.0 {
+                for token in tokenize_line(definition, self, lazy_expansions)?.0 {
                     tokens.push(token);
                 }
 

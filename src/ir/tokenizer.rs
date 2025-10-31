@@ -4,7 +4,7 @@ use crate::{
     escaped_strings::check_escapes,
     executor::io_events::{GetType, IoEvent, RuntimeIoEvent, TokenizerIoEvent},
     ir::{prefix::Prefix, tokenization_data::TokenizationData, tokens::{Break, IrToken}, IrError, IrLine},
-    keywords::{is_isolation_bound, is_special_char, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX},
+    keywords::{is_special_char, is_special_str, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX},
     phones::Phone,
     sub_string::SubString,
     tokens::{AndType, CondType, Direction, ScopeType, Shift, ShiftType},
@@ -16,8 +16,10 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
         // handles comments
         IrLine::Empty
     } else if let Some(definition_content) = line.strip_prefix(LAZY_DEFINITION_LINE_START) {
-        if let Some((name, content)) = definition_content.trim().split_once(is_isolation_bound) {
-            tokenization_data.set_lazy_definition(name, content);
+        // handles lazy definitions
+        let definition_content = definition_content.trim();
+        if let Some(name) = get_first_phone(definition_content) {
+            tokenization_data.set_lazy_definition(name, &definition_content[name.len()..]);
             IrLine::Empty
         } else {
             return Err(IrError::EmptyDefinition);
@@ -282,4 +284,28 @@ fn check_reserved(input: &str) -> Result<(), IrError<'_>> {
     }
 
     Ok(())
+}
+
+/// Gets a valid phone string from the start of a string
+fn get_first_phone(s: &str) -> Option<&str> {
+    let mut sub_string = SubString::new(s);
+    let mut escaped = false;
+
+    for c in s.chars() {
+        match c {
+            ESCAPE_CHAR => escaped = !escaped,
+            _ if c.is_whitespace() || (is_special_char(c) && !escaped) => break,
+            _ => escaped = false,
+        }
+
+        sub_string.grow(c);
+    }
+
+    let phone = sub_string.take_slice();
+
+    if escaped || phone.is_empty() || is_special_str(phone) {
+        None
+    } else {
+        Some(phone)
+    }
 }
