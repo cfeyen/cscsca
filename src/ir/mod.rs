@@ -42,6 +42,7 @@ impl IrLine<'_> {
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
 pub enum IrError<'s> {
+    RecursiveLazyDefiniton(&'s str),
     EmptyPrefix(Prefix),
     UndefinedDefinition(&'s str),
     UndefinedVariable(&'s str),
@@ -57,6 +58,7 @@ impl std::error::Error for IrError<'_> {}
 impl std::fmt::Display for IrError<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::RecursiveLazyDefiniton(name) => write!(f, "Lazy definition '{DEFINITION_PREFIX}{name}' is recursive"),
             Self::EmptyPrefix(prefix) => write!(f, "Found prefix '{prefix}' without a following identifier"),
             Self::UndefinedDefinition(name) => write!(f, "Undefined definiton '{DEFINITION_PREFIX}{name}'"),
             Self::UndefinedVariable(name) => write!(f, "Undefined variable '{VARIABLE_PREFIX}{name}'"),

@@ -133,6 +133,7 @@ pub(crate) fn is_isolation_bound(c: char) -> bool {
 
 // Strings that are only special at the start of a line
 pub const DEFINITION_LINE_START: &str = "DEFINE";
+pub const LAZY_DEFINITION_LINE_START: &str = "DEFINE_LAZY";
 pub const PRINT_LINE_START: &str = "PRINT";
 pub const GET_LINE_START: &str = "GET";
 pub const GET_AS_CODE_LINE_START: &str = "GET_AS_CODE";
