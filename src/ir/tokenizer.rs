@@ -287,7 +287,7 @@ fn check_reserved(input: &str) -> Result<(), IrError<'_>> {
 }
 
 /// Gets a valid phone string from the start of a string
-fn get_first_phone(s: &str) -> Option<&str> {
+pub(super) fn get_first_phone(s: &str) -> Option<&str> {
     let mut sub_string = SubString::new(s);
     let mut escaped = false;
 
