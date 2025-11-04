@@ -155,13 +155,17 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
             IrToken::ScopeStart(ScopeType::Optional) => {
                 let id = optional_id(default_scope_ids, parent_scope.cloned());
 
-                Pattern::new_optional(ir_tokens_to_patterns(ir, default_scope_ids, id.as_ref(), Some(ScopeType::Optional))?, id)
+                let child_ids = default_scope_ids.map(|_| RefCell::default());
+
+                Pattern::new_optional(ir_tokens_to_patterns(ir, child_ids.as_ref(), id.as_ref(), Some(ScopeType::Optional))?, id)
             },
             // starts a default labeled selection scope
             IrToken::ScopeStart(ScopeType::Selection) => {
                 let id = selection_id(default_scope_ids, parent_scope.cloned());
 
-                Pattern::new_selection(selection_contents_to_patterns(ir, default_scope_ids, id.as_ref())?, id)
+                let child_ids = default_scope_ids.map(|_| RefCell::default());
+
+                Pattern::new_selection(selection_contents_to_patterns(ir, child_ids.as_ref(), id.as_ref())?, id)
             },
             // ensures a label is proceeding a labelable token then creates that token with the label
             IrToken::Label(name) => {
@@ -169,9 +173,11 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
                 let id = Some(ScopeId::Name(name));
 
                 if let Some(IrToken::ScopeStart(kind)) = next {
+                    let child_ids = Some(&RefCell::default());
+
                     match kind {
-                        ScopeType::Optional => Pattern::new_optional(ir_tokens_to_patterns(ir, default_scope_ids, id.as_ref(), Some(ScopeType::Optional))?, id),
-                        ScopeType::Selection => Pattern::new_selection(selection_contents_to_patterns(ir, default_scope_ids, id.as_ref())?, id),
+                        ScopeType::Optional => Pattern::new_optional(ir_tokens_to_patterns(ir, child_ids, id.as_ref(), Some(ScopeType::Optional))?, id),
+                        ScopeType::Selection => Pattern::new_selection(selection_contents_to_patterns(ir, child_ids, id.as_ref())?, id),
                     }
                 } else if let Some(IrToken::Any) = next {
                     Pattern::new_any(id)

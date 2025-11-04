@@ -993,3 +993,77 @@ fn double_and() {
         ], lines: ONE })
     )
 }
+
+#[test]
+fn selection_sequence() {
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
+
+    let outer_scope_1 = ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Selection), parent: None };
+    let outer_scope_2 = ScopeId::Name("label");
+    let outer_scope_3 = ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Selection), parent: None };
+
+    let expected = RuleLine::Rule { rule: SoundChangeRule {
+        kind: shift,
+        output: Vec::new(),
+        pattern: RefCell::new(RulePattern::new(
+            PatternList::new(vec![
+                Pattern::new_selection(vec![
+                    vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("a"))]], Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Selection), parent: Some(Rc::new(outer_scope_1.clone())) }))],
+                    vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("b"))]], Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Selection), parent: Some(Rc::new(outer_scope_1.clone())) }))],
+                ], Some(outer_scope_1)),
+
+                Pattern::new_selection(vec![
+                    vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("c"))]], Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Selection), parent: Some(Rc::new(outer_scope_2.clone())) }))],
+                    vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("d"))]], Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Selection), parent: Some(Rc::new(outer_scope_2.clone())) }))],
+                ], Some(outer_scope_2)),
+
+                Pattern::new_selection(vec![
+                    vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("e"))]], Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Scope(ScopeType::Selection), parent: Some(Rc::new(outer_scope_3.clone())) }))],
+                    vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("f"))]], Some(ScopeId::IOUnlabeled { id_num: 1, label_type: LabelType::Scope(ScopeType::Selection), parent: Some(Rc::new(outer_scope_3.clone())) }))],
+                ], Some(outer_scope_3)),
+            ]),
+            vec![CondPattern::default()],
+            Vec::new(),
+        ).expect("pattern construction should be valid"))
+    }, lines: ONE };
+
+    let actual = build_rule(IrLine::Ir { tokens: vec![
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::Phone(Phone::Symbol("a")),
+        IrToken::ScopeEnd(ScopeType::Selection),
+        IrToken::ArgSep,
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::Phone(Phone::Symbol("b")),
+        IrToken::ScopeEnd(ScopeType::Selection),
+        IrToken::ScopeEnd(ScopeType::Selection),
+
+        IrToken::Label("label"),
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::Phone(Phone::Symbol("c")),
+        IrToken::ScopeEnd(ScopeType::Selection),
+        IrToken::ArgSep,
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::Phone(Phone::Symbol("d")),
+        IrToken::ScopeEnd(ScopeType::Selection),
+        IrToken::ScopeEnd(ScopeType::Selection),
+
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::Phone(Phone::Symbol("e")),
+        IrToken::ScopeEnd(ScopeType::Selection),
+        IrToken::ArgSep,
+        IrToken::ScopeStart(ScopeType::Selection),
+        IrToken::Phone(Phone::Symbol("f")),
+        IrToken::ScopeEnd(ScopeType::Selection),
+        IrToken::ScopeEnd(ScopeType::Selection),
+
+        IrToken::Break(Break::Shift(shift)),
+    ], lines: ONE });
+
+    assert_eq!(
+        Ok(expected),
+        actual
+    )
+}
