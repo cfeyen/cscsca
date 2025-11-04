@@ -121,6 +121,11 @@ pub(crate) fn is_special_char(c: char) -> bool {
     SPECIAL_CHARS.contains(&c) || UNUSED_CHARS.contains(&c)
 }
 
+/// Checks if a str is a special token
+pub(crate) fn is_special_str(s: &str) -> bool {
+    SPECIAL_STRS.contains(&s)
+}
+
 /// Checks if a char can/should be escaped when isolated
 pub(crate) fn is_isolated_char(c: char) -> bool {
     ISOLATED_CHARS.contains(&c)
@@ -133,6 +138,7 @@ pub(crate) fn is_isolation_bound(c: char) -> bool {
 
 // Strings that are only special at the start of a line
 pub const DEFINITION_LINE_START: &str = "DEFINE";
+pub const LAZY_DEFINITION_LINE_START: &str = "DEFINE_LAZY";
 pub const PRINT_LINE_START: &str = "PRINT";
 pub const GET_LINE_START: &str = "GET";
 pub const GET_AS_CODE_LINE_START: &str = "GET_AS_CODE";

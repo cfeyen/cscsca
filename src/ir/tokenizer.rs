@@ -4,10 +4,10 @@ use crate::{
     escaped_strings::check_escapes,
     executor::io_events::{GetType, IoEvent, RuntimeIoEvent, TokenizerIoEvent},
     ir::{prefix::Prefix, tokenization_data::TokenizationData, tokens::{Break, IrToken}, IrError, IrLine},
-    keywords::{is_special_char, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX},
+    keywords::{is_special_char, is_special_str, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX},
     phones::Phone,
     sub_string::SubString,
-    tokens::{Direction, ScopeType, Shift, ShiftType, CondType, AndType},
+    tokens::{AndType, CondType, Direction, ScopeType, Shift, ShiftType},
 };
 
 /// Converts source code into intermediate representation tokens
@@ -15,12 +15,21 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
     let ir_line = if line.starts_with(COMMENT_LINE_START) {
         // handles comments
         IrLine::Empty
+    } else if let Some(definition_content) = line.strip_prefix(LAZY_DEFINITION_LINE_START) {
+        // handles lazy definitions
+        let definition_content = definition_content.trim();
+        if let Some(name) = get_first_phone(definition_content) {
+            tokenization_data.set_lazy_definition(name, &definition_content[name.len()..]);
+            IrLine::Empty
+        } else {
+            return Err(IrError::EmptyDefinition);
+        }
     } else if let Some(definition_content) = line.strip_prefix(DEFINITION_LINE_START) {
         // handles definitions
-        let (mut ir, mut continues_on_next_line) = tokenize_line(definition_content, tokenization_data)?;
+        let (mut ir, mut continues_on_next_line) = tokenize_line(definition_content, tokenization_data, &mut Vec::new())?;
 
         while continues_on_next_line && let Some(next_line) = rem_lines.next() {
-            let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data)?;
+            let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data, &mut Vec::new())?;
             ir.append(&mut next_ir);
             continues_on_next_line = continue_again;
         }
@@ -58,12 +67,12 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
         }
     } else {
         // handles rules
-        let (mut ir, mut continues_on_next_line) = tokenize_line(line, tokenization_data)?;
+        let (mut ir, mut continues_on_next_line) = tokenize_line(line, tokenization_data, &mut Vec::new())?;
 
         let mut line_count = 1;
 
         while continues_on_next_line && let Some(next_line) = rem_lines.next() {
-                let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data)?;
+                let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data, &mut Vec::new())?;
                 ir.append(&mut next_ir);
                 continues_on_next_line = continue_again;
                 line_count += 1;
@@ -87,7 +96,7 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
 }
 
 /// Converts a line to tokens
-pub fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>) -> Result<(Vec<IrToken<'s>>, bool), IrError<'s>> {
+pub fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>, lazy_expansions: &mut Vec<&'s str>) -> Result<(Vec<IrToken<'s>>, bool), IrError<'s>> {
     let chars = line.chars().peekable();
     let mut tokens = Vec::new();
     let mut prefix = None;
@@ -95,20 +104,20 @@ pub fn tokenize_line<'s>(line: &'s str, tokenization_data: &TokenizationData<'s>
     let mut escape = false;
 
     for c in chars {
-        parse_character(c, &mut tokens, &mut prefix, &mut slice, &mut escape, tokenization_data)?;
+        parse_character(c, &mut tokens, &mut prefix, &mut slice, &mut escape, tokenization_data, lazy_expansions)?;
     }
 
     if escape {
         _ = slice.shrink(ESCAPE_CHAR);
     }
 
-    push_phone(&mut tokens, &mut slice, &mut prefix, tokenization_data)?;
+    push_phone(&mut tokens, &mut slice, &mut prefix, tokenization_data, lazy_expansions)?;
 
     Ok((tokens, escape))
 }
 
 /// Handles a signle character
-fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Option<Prefix>, slice: &mut SubString<'s>, escape: &mut bool, tokenization_data: &TokenizationData<'s>) -> Result<(), IrError<'s>> {
+fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Option<Prefix>, slice: &mut SubString<'s>, escape: &mut bool, tokenization_data: &TokenizationData<'s>, lazy_expansions: &mut Vec<&'s str>) -> Result<(), IrError<'s>> {
     match c {
         // handles escapes
         _ if *escape => {
@@ -120,16 +129,16 @@ fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Opti
             *escape = true;
         },
         // handles prefixes
-        DEFINITION_PREFIX => start_prefix(Prefix::Definition, tokens, slice, prefix, tokenization_data)?,
-        LABEL_PREFIX => start_prefix(Prefix::Label, tokens, slice, prefix, tokenization_data)?,
-        VARIABLE_PREFIX => start_prefix(Prefix::Variable, tokens, slice, prefix, tokenization_data)?,
+        DEFINITION_PREFIX => start_prefix(Prefix::Definition, tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        LABEL_PREFIX => start_prefix(Prefix::Label, tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        VARIABLE_PREFIX => start_prefix(Prefix::Variable, tokens, slice, prefix, tokenization_data, lazy_expansions)?,
         // handles scope bounds
-        OPTIONAL_START_CHAR => push_phone_and(c, IrToken::ScopeStart(ScopeType::Optional), tokens, slice, prefix, tokenization_data)?,
-        OPTIONAL_END_CHAR => push_phone_and(c, IrToken::ScopeEnd(ScopeType::Optional), tokens, slice, prefix, tokenization_data)?,
-        SELECTION_START_CHAR => push_phone_and(c, IrToken::ScopeStart(ScopeType::Selection), tokens, slice, prefix, tokenization_data)?,
-        SELECTION_END_CHAR => push_phone_and(c, IrToken::ScopeEnd(ScopeType::Selection), tokens, slice, prefix, tokenization_data)?,
+        OPTIONAL_START_CHAR => push_phone_and(c, IrToken::ScopeStart(ScopeType::Optional), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        OPTIONAL_END_CHAR => push_phone_and(c, IrToken::ScopeEnd(ScopeType::Optional), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        SELECTION_START_CHAR => push_phone_and(c, IrToken::ScopeStart(ScopeType::Selection), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        SELECTION_END_CHAR => push_phone_and(c, IrToken::ScopeEnd(ScopeType::Selection), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
         // handles simple one-to-one char to token pushes
-        AND_CHAR => push_phone_and(c, IrToken::Break(Break::And(AndType::And)), tokens, slice, prefix, tokenization_data)?,
+        AND_CHAR => push_phone_and(c, IrToken::Break(Break::And(AndType::And)), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
         NOT_CHAR => {
             let token = match tokens.last() {
                 Some(IrToken::Break(Break::And(AndType::And))) => {
@@ -143,12 +152,12 @@ fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Opti
                 _ => return Err(IrError::UnexpectedNot),
             };
 
-            push_phone_and(c, token, tokens, slice, prefix, tokenization_data)?;
+            push_phone_and(c, token, tokens, slice, prefix, tokenization_data, lazy_expansions)?;
         }
-        ANY_CHAR => push_phone_and(c, IrToken::Any, tokens, slice, prefix, tokenization_data)?,
-        ARG_SEP_CHAR => push_phone_and(c, IrToken::ArgSep, tokens, slice, prefix, tokenization_data)?,
-        BOUND_CHAR => push_phone_and(c, IrToken::Phone(Phone::Bound), tokens, slice, prefix, tokenization_data)?,
-        MATCH_CHAR => push_phone_and(c, IrToken::CondType(CondType::Match), tokens, slice, prefix, tokenization_data)?,
+        ANY_CHAR => push_phone_and(c, IrToken::Any, tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        ARG_SEP_CHAR => push_phone_and(c, IrToken::ArgSep, tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        BOUND_CHAR => push_phone_and(c, IrToken::Phone(Phone::Bound), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        MATCH_CHAR => push_phone_and(c, IrToken::CondType(CondType::Match), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
         // handles compound char to token pushes
         LTR_CHAR => {
             let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind: ShiftType::Stay }))) = tokens.last() {
@@ -158,7 +167,7 @@ fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Opti
                 ShiftType::Stay
             };
 
-            push_phone_and(c, IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind })), tokens, slice, prefix, tokenization_data)?;
+            push_phone_and(c, IrToken::Break(Break::Shift(Shift { dir: Direction::Ltr, kind })), tokens, slice, prefix, tokenization_data, lazy_expansions)?;
         },
         RTL_CHAR => {
             let kind = if let Some(IrToken::Break(Break::Shift(Shift { dir: Direction::Rtl, kind: ShiftType::Stay }))) = tokens.last() {
@@ -168,7 +177,7 @@ fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Opti
                 ShiftType::Stay
             };
 
-            push_phone_and(c, IrToken::Break(Break::Shift(Shift { dir: Direction::Rtl, kind })), tokens, slice, prefix, tokenization_data)?;
+            push_phone_and(c, IrToken::Break(Break::Shift(Shift { dir: Direction::Rtl, kind })), tokens, slice, prefix, tokenization_data, lazy_expansions)?;
         },
         COND_CHAR => {
             let cond_type = if let Some(IrToken::Break(Break::Cond)) = tokens.last() {
@@ -178,11 +187,11 @@ fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Opti
                 Break::Cond
             };
 
-            push_phone_and(c, IrToken::Break(cond_type), tokens, slice, prefix, tokenization_data)?;
+            push_phone_and(c, IrToken::Break(cond_type), tokens, slice, prefix, tokenization_data, lazy_expansions)?;
         },
         // whitespace
         _ if c.is_whitespace() => {
-            push_phone(tokens, slice, prefix, tokenization_data)?;
+            push_phone(tokens, slice, prefix, tokenization_data, lazy_expansions)?;
             slice.skip(c);
         },
         // other chars
@@ -195,13 +204,13 @@ fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Opti
 
 /// Pushes the slice according to `push_phone`, then sets the prefix
 /// and moves the slice over an extra character to account for the prefix character
-fn start_prefix<'s>(new_prefix: Prefix, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, tokenization_data: &TokenizationData<'s>) -> Result<(), IrError<'s>> {
+fn start_prefix<'s>(new_prefix: Prefix, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, tokenization_data: &TokenizationData<'s>, lazy_expansions: &mut Vec<&'s str>) -> Result<(), IrError<'s>> {
     match prefix {
         Some(prefix) if slice.is_empty() => {
             Err(IrError::EmptyPrefix(*prefix))
         }
         _ => {
-            push_phone(tokens, slice, prefix, tokenization_data)?;
+            push_phone(tokens, slice, prefix, tokenization_data, lazy_expansions)?;
             slice.skip(new_prefix.char());
 
             *prefix = Some(new_prefix);
@@ -212,8 +221,8 @@ fn start_prefix<'s>(new_prefix: Prefix, tokens: &mut Vec<IrToken<'s>>, slice: &m
 
 /// Pushes the slice according to `push_phone`, then pushes the provided token
 /// and moves the slice over an extra character to account for that token
-fn push_phone_and<'s>(c: char, token: IrToken<'s>, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, tokenization_data: &TokenizationData<'s>) -> Result<(), IrError<'s>> {
-    push_phone(tokens, slice, prefix, tokenization_data)?;
+fn push_phone_and<'s>(c: char, token: IrToken<'s>, tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, tokenization_data: &TokenizationData<'s>, lazy_expansions: &mut Vec<&'s str>) -> Result<(), IrError<'s>> {
+    push_phone(tokens, slice, prefix, tokenization_data, lazy_expansions)?;
     slice.skip(c);
     tokens.push(token);
     Ok(())
@@ -230,7 +239,7 @@ fn push_phone_and<'s>(c: char, token: IrToken<'s>, tokens: &mut Vec<IrToken<'s>>
 /// 
 /// If the slice is the input pattern and there is no prefix,
 /// an input token is pushed instead of a phone
-fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, tokenization_data: &TokenizationData<'s>) -> Result<(), IrError<'s>> {
+fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, prefix: &mut Option<Prefix>, tokenization_data: &TokenizationData<'s>, lazy_expansions: &mut Vec<&'s str>) -> Result<(), IrError<'s>> {
     let literal = slice.take_slice();
     slice.move_after();
 
@@ -242,13 +251,7 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
         (None, GAP_STR) => tokens.push(IrToken::Gap),
         (None, "") => (),
         (None, _) => tokens.push(IrToken::Phone(Phone::Symbol(literal))),
-        (Some(Prefix::Definition), _) => {
-            let content = tokenization_data.get_definition(literal)?;
-
-            for token in content {
-                tokens.push(*token);
-            }
-        },
+        (Some(Prefix::Definition), _) => tokenization_data.get_definition(literal, tokens, lazy_expansions)?,
         (Some(Prefix::Label), _) => tokens.push(IrToken::Label(literal)),
         (Some(Prefix::Variable), _) => {
             let content = tokenization_data.get_variable(literal)?;
@@ -281,4 +284,28 @@ fn check_reserved(input: &str) -> Result<(), IrError<'_>> {
     }
 
     Ok(())
+}
+
+/// Gets a valid phone string from the start of a string
+pub(super) fn get_first_phone(s: &str) -> Option<&str> {
+    let mut sub_string = SubString::new(s);
+    let mut escaped = false;
+
+    for c in s.chars() {
+        match c {
+            ESCAPE_CHAR => escaped = !escaped,
+            _ if c.is_whitespace() || (is_special_char(c) && !escaped) => break,
+            _ => escaped = false,
+        }
+
+        sub_string.grow(c);
+    }
+
+    let phone = sub_string.take_slice();
+
+    if escaped || phone.is_empty() || is_special_str(phone) {
+        None
+    } else {
+        Some(phone)
+    }
 }

@@ -121,6 +121,33 @@ DEFINE intervocalic @V _ @V
 @Pv- >> @Pv+ / @intervocalic / @N _
 ```
 
+**`DEFINE`** evaluates the *Defintion* contents when defining it. To create a *Definition* that is evaluated every time it is used, replace **`DEFINE`** with **`DEFINE_LAZY`** (**`DEFINE_LAZY`** defined *Definitions* update with their contents)
+
+Example:
+```cscsca
+DEFINE_LAZY C { @N, @P, @F, @A }
+
+## using @C causes an error
+
+DEFINE N {m, n}
+DEFINE P {p, t, k}
+DEFINE F {f, s, x}
+DEFINE A {l, r}
+
+## @C is now any consonant
+
+{t, s} >> {c, ç} / _ i
+
+## @C does not account for the new palatal consonants
+
+DEFINE P {p, t, c, k}
+DEFINE F {f, s, ç, x}
+
+## @C now uses the new definitions of @P and @F accounts for all consonants again
+```
+
+**Note**: escaping the newline at the end of a lazy *Definition* has no effect and does not include the next line in its contents, it also does not escape a newline or special character after the *Definition*'s usage
+
 ### Special Characters
 - **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
 - **`..`**: a gap of zero or more non-boundary phones. (**Notes**: **`..`** must have a space on both sides and is only allowed in conditions). A gap may be preceded by a label to limit gap length to less than or equal to the length of the first gap with the same label

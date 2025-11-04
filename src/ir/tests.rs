@@ -1,9 +1,9 @@
 
 use crate::{
     executor::io_events::RuntimeIoEvent,
-    ir::{tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command, tokens::Break},
+    ir::{tokenization_data::TokenizationData, tokenizer::{get_first_phone, tokenize_line_or_create_command}, tokens::Break},
     phones::Phone,
-    tokens::{Direction, ScopeType, Shift, ShiftType, CondType},
+    tokens::{CondType, Direction, ScopeType, Shift, ShiftType},
     ONE,
 };
 
@@ -109,6 +109,55 @@ fn tokenize_late_def() {
 #[test]
 fn tokenize_undef() {
     assert_eq!(Err((IrError::UndefinedDefinition("a"), 1)), tokenize("@a\nDEFINE a a b c"));
+}
+
+#[test]
+fn tokenize_lazy_def() {
+    assert_eq!(Ok(vec![
+        IrLine::Empty,
+        IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("b")), IrToken::Phone(Phone::Symbol("c"))], lines: ONE }
+    ]), tokenize("DEFINE_LAZY a b c\n@a"));
+}
+
+#[test]
+fn tokenize_lazy_def_before_content_def() {
+    assert_eq!(Ok(vec![
+        IrLine::Empty,
+        IrLine::Empty,
+        IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("c"))], lines: ONE }
+    ]), tokenize("DEFINE_LAZY a @b\nDEFINE b c\n@a"));
+}
+
+
+
+#[test]
+fn tokenize_recursive_lazy_def() {
+    assert_eq!(Err((IrError::RecursiveLazyDefiniton("a"), 3)), tokenize("DEFINE_LAZY a @b\nDEFINE_LAZY b @a\n@a"));
+}
+
+#[test]
+fn tokenize_lazy_def_redef() {
+    assert_eq!(Ok(vec![
+        IrLine::Empty,
+        IrLine::Empty,
+        IrLine::Empty,
+        IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("c"))], lines: ONE }
+    ]), tokenize("DEFINE b z\nDEFINE_LAZY a @b\nDEFINE b c\n@a"));
+}
+
+#[test]
+fn get_lazy_def_name() {
+    assert_eq!(Some("a"), get_first_phone("a"));
+    assert_eq!(Some("ab"), get_first_phone("ab"));
+    assert_eq!(Some("a"), get_first_phone("a b"));
+    assert_eq!(Some("a"), get_first_phone("a/"));
+    assert_eq!(Some("a"), get_first_phone("a.."));
+    assert_eq!(None, get_first_phone(".. a"));
+    assert_eq!(None, get_first_phone("_"));
+    assert_eq!(None, get_first_phone("/"));
+    assert_eq!(Some("\\/"), get_first_phone("\\/"));
+    assert_eq!(Some("\\\\"), get_first_phone("\\\\"));
+    assert_eq!(Some("\\\\"), get_first_phone("\\\\/"));
 }
 
 #[test]

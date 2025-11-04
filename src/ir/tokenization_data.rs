@@ -19,10 +19,16 @@ use super::{tokens::IrToken, tokenizer::tokenize_line, IrError};
 /// a memory leak will occur
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct TokenizationData<'s> {
-    definitions: HashMap<&'s str, Vec<IrToken<'s>>>,
+    definitions: HashMap<&'s str, Definition<'s>>,
     variables: HashMap<&'s str, Vec<IrToken<'s>>>,
     /// A list of pointers to all strs leaked
     sources: Vec<*const str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Definition<'s> {
+    Lazy(&'s str),
+    Eager(Vec<IrToken<'s>>),
 }
 
 impl<'s> TokenizationData<'s> {
@@ -31,16 +37,41 @@ impl<'s> TokenizationData<'s> {
         Self::default()
     }
 
-    /// Fetches the tokens associated with a definition's name
+    /// Fetches the tokens associated with a definition's name and appends them to a given lsit
     /// 
     /// Returns an error if there is no definition of the given name
-    pub fn get_definition<'a>(&self, name: &'a str) -> Result<&Vec<IrToken<'s>>, IrError<'a>> {
-        self.definitions.get(name).ok_or(IrError::UndefinedDefinition(name))
+    pub fn get_definition(&self, name: &'s str, tokens: &mut Vec<IrToken<'s>>, lazy_expansions: &mut Vec<&'s str>) -> Result<(), IrError<'s>> {
+        match self.definitions.get(name) {
+            Some(Definition::Eager(def_tokens)) => for token in def_tokens {
+                tokens.push(*token);
+            },
+            Some(Definition::Lazy(definition)) => {
+                if lazy_expansions.contains(&name) {
+                    return Err(IrError::RecursiveLazyDefiniton(name));
+                }
+
+                lazy_expansions.push(name);
+                
+                for token in tokenize_line(definition, self, lazy_expansions)?.0 {
+                    tokens.push(token);
+                }
+
+                lazy_expansions.pop();
+            }
+            None => return Err(IrError::UndefinedDefinition(name)),
+        }
+
+        Ok(())
     }
 
     /// Sets a definition
     pub fn set_definition(&mut self, name: &'s str, content: Vec<IrToken<'s>>) {
-        self.definitions.insert(name, content);
+        self.definitions.insert(name, Definition::Eager(content));
+    }
+
+    /// Sets a lazy definition
+    pub fn set_lazy_definition(&mut self, name: &'s str, content: &'s str) {
+        self.definitions.insert(name, Definition::Lazy(content));
     }
 
     /// Fetches the tokens associated with a variable's name
@@ -60,7 +91,7 @@ impl<'s> TokenizationData<'s> {
     pub fn set_variable_as_ir(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
         let source = self.add_source_string(source);
 
-        let (tokens, escaped_end) = tokenize_line(source, self)?;
+        let (tokens, escaped_end) = tokenize_line(source, self, &mut Vec::new())?;
 
         if escaped_end {
             return Err(IrError::BadEscape(None));
