@@ -357,7 +357,7 @@ impl std::fmt::Display for RuleStructureError<'_> {
             Self::UnopendScope(kind) => write!(f, "Found unopened '{}'", kind.fmt_end()),
             Self::UnclosedScope(kind) => write!(f, "Found unclosed '{}'", kind.fmt_start()),
             Self::MismatchedScopeBounds(start, end)
-                => write!(f, "Found mismatched scope bounds '{}'..'{}'", start.fmt_start(), end.fmt_end()),
+                => write!(f, "Found mismatched scope bounds '{}'...'{}'", start.fmt_start(), end.fmt_end()),
             Self::UnexpectedToken(ir_token) => write!(f, "Found unexpected token '{ir_token}'"),
             Self::NoConditionFocus => write!(f, "Found condition without an input patern ('{}') or equality ('{}')", CondType::Pattern, CondType::Match),
             Self::AndDoesNotFollowCond(and_type) => write!(f, "Found '{and_type}' outside of a condition"),
