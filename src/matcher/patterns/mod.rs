@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::{
     matcher::{
         choices::{Choices, OwnedChoices},
@@ -31,6 +33,7 @@ pub enum Pattern<'s> {
     Gap(Gap<'s>),
     Optional(Optional<'s>),
     Selection(Selection<'s>),
+    List(PatternList<'s>),
 }
 
 impl<'s> Pattern<'s> {
@@ -42,8 +45,14 @@ impl<'s> Pattern<'s> {
         Self::NonBound(CheckBox::new(NonBound { id }))
     }
 
-    pub const fn new_gap(id: Option<&'s str>) -> Self {
-        Self::Gap(Gap { len: 0, checked_at_zero: false, id })
+    pub fn new_gap(id: Option<&'s str>, inclusive: PatternList<'s>, exclusive: Option<PatternList<'s>>) -> Self {
+        Self::Gap(Gap {
+            checked_at_zero: false,
+            inclusive, exclusive: exclusive.map(RefCell::new),
+            included: PatternList::default(),
+            len: 0,
+            id,
+        })
     }
 
     pub const fn new_optional(content: Vec<Pattern<'s>>, id: Option<ScopeId<'s>>) -> Self {
@@ -79,6 +88,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Gap(gap) => gap.matches(phones, choices),
             Self::Optional(option) => option.matches(phones, choices),
             Self::Selection(selection) => selection.matches(phones, choices),
+            Self::List(list) => list.matches(phones, choices),
         }
     }
 
@@ -89,6 +99,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Gap(gap) => gap.next_match(phones, choices),
             Self::Optional(option) => option.next_match(phones, choices),
             Self::Selection(selection) => selection.next_match(phones, choices),
+            Self::List(list) => list.next_match(phones, choices),
         }
     }
 
@@ -99,6 +110,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Gap(gap) => gap.len(),
             Self::Optional(option) => option.len(),
             Self::Selection(selection) => selection.len(),
+            Self::List(list) => list.len(),
         }
     }
 
@@ -109,6 +121,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Gap(gap) => gap.reset(),
             Self::Optional(option) => option.reset(),
             Self::Selection(selection) => selection.reset(),
+            Self::List(list) => list.reset(),
         }
     }
 }
@@ -121,6 +134,7 @@ impl std::fmt::Display for Pattern<'_> {
             Self::Gap(gap) => write!(f, "{gap}"),
             Self::Optional(option) => write!(f, "{option}"),
             Self::Selection(selection) => write!(f, "{selection}"),
+            Self::List(list) => write!(f, "{list}"),
         }
     }
 }

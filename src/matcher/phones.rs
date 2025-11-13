@@ -1,9 +1,7 @@
 use crate::{phones::Phone, tokens::Direction};
 
 /// A directional `Iterator` over a list of phones
-/// 
-/// Note: does not implement `Copy` to avoid confusion with implicit copies via the `Iterator` trait
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Phones<'b, 'p> {
     phone_list: &'b [Phone<'p>],
     /// the index of the next phone LTR,
@@ -30,6 +28,18 @@ impl<'p, 's> Phones<'p, 's> {
                 None
             },
             direction,
+        }
+    }
+
+    // gets the number of phones left in the iterator
+    pub fn rem_len(&self) -> usize {
+        if let Some(index) = self.index {
+            1 + match self.direction {
+                Direction::Ltr => self.phone_list.len() - index,
+                Direction::Rtl => index,
+            }
+        } else {
+            0
         }
     }
 

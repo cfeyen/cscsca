@@ -30,6 +30,10 @@ impl<'s> PatternList<'s> {
         &self.patterns
     }
 
+    pub fn push(&mut self, pat: Pattern<'s>) {
+        self.patterns.push(pat);
+    }
+
     /// Sets the flag marking the list as checked at its current position to `false`
     pub const fn checked_flag_reset(&mut self) {
         self.checked_at_initial = false;
@@ -102,7 +106,7 @@ impl<'s> PatternList<'s> {
             new_choices.take_owned(pat_choices);
 
             // creates the phones for the remaining patterns
-            let mut next_phones = phones.clone();
+            let mut next_phones = *phones;
             next_phones.skip(pat.len());
 
             if let Some(next_choices) = self.next_sub_match(index + 1, &next_phones, &new_choices) {

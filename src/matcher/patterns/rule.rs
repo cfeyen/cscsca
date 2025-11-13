@@ -83,7 +83,7 @@ impl<'s> RulePattern<'s> {
             new_choices.take_owned(input_choices);
 
             // prepares to create condition phones
-            let mut after_input_phones = phones.clone();
+            let mut after_input_phones = *phones;
             after_input_phones.skip(self.input.len());
 
             // creates the phone iterators for the conditions

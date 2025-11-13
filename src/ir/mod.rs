@@ -2,7 +2,7 @@ use std::num::NonZero;
 
 use crate::{
     executor::io_events::{GetType, IoEvent},
-    keywords::{AND_CHAR, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, NOT_CHAR, VARIABLE_PREFIX},
+    keywords::{DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, VARIABLE_PREFIX},
     ONE,
 };
 
@@ -49,7 +49,6 @@ pub enum IrError<'s> {
     EmptyDefinition,
     BadEscape(Option<char>),
     ReservedCharacter(char),
-    UnexpectedNot,
     InvalidGetFormat(GetType),
 }
 
@@ -66,7 +65,6 @@ impl std::fmt::Display for IrError<'_> {
             Self::BadEscape(None) => write!(f, "Found '{ESCAPE_CHAR}' with no following character"),
             Self::BadEscape(Some(c)) => write!(f, "Escaped normal character '{c}' ({ESCAPE_CHAR}{c})"),
             Self::ReservedCharacter(c) => write!(f, "Found reserved character '{c}' consider escaping it ('{ESCAPE_CHAR}{c}')"),
-            Self::UnexpectedNot => write!(f, "Found '{NOT_CHAR}' not after '{COND_CHAR}' or '{AND_CHAR}'"),
             Self::InvalidGetFormat(get_type) => write!(f, "Invalid format after '{get_type}', expected variable name and message"),
         }
     }

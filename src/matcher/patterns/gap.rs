@@ -1,47 +1,105 @@
-use crate::{keywords::GAP_STR, matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, phones::Phones}};
+use std::cell::RefCell;
 
-/// A pattern that represents some non-negative number (possibly zero) of non-boundary phones
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+use crate::{keywords::{GAP_END_CHAR, GAP_START_CHAR, NOT_CHAR}, matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, patterns::{Pattern, list::PatternList}, phones::Phones}};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Gap<'s> {
-    pub(super) len: usize,
     pub(super) checked_at_zero: bool,
+    pub(super) inclusive: PatternList<'s>,
+    pub(super) exclusive: Option<RefCell<PatternList<'s>>>,
+    pub(super) included: PatternList<'s>,
+    pub(super) len: usize,
     pub(super) id: Option<&'s str>,
 }
 
 impl<'s> MatchState<'s> for Gap<'s> {
     fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
-        for _ in 0..self.len() {
-            if phones.next().is_bound() {
-                // returns `None` if a bound is crossed
-                return None;
-            }
-        }
+        if let Some(mut exclusive) = self.exclusive.as_ref().map(RefCell::borrow_mut) {
+            let mut phones2 = *phones;
 
-        let mut new_choices = choices.partial_clone();
-
-        if let Some(id) = self.id {
-            if let Some(max_len) = choices.gap.get(id).copied() {
-                if self.len > max_len {
-                    // if the max len is exceeded the match fails and the gap should exaust
+            let len = self.id.as_ref()
+                .and_then(|id| choices.gap.get(id))
+                .copied()
+                .unwrap_or(self.len);
+            
+            for _ in 0..len {
+                if exclusive.next_match(&phones2, choices).is_some() {
+                    exclusive.reset();
                     return None;
                 }
-            } else {
-                // sets the choice if it is the first gap with the id
-                new_choices.gap.to_mut().insert(id, self.len);
+
+                phones2.next();
             }
+
+            exclusive.reset();
         }
 
-        Some(new_choices.owned_choices())
+        if self.included.len() == self.len && let Some(new_choices) = self.included.matches(phones, choices) {
+            Some(new_choices)
+        } else {
+            None
+        }
     }
 
     fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
-        if self.checked_at_zero {
-            self.len += 1;
+        if self.checked_at_zero || self.id.as_ref().map(|id| choices.gap.contains_key(id)).is_some_and(|exists| exists) {
+            let mut new_choices = choices.partial_clone();
+
+            let mut max_len = phones.rem_len();
+
+            if let Some(id) = &self.id && let Some(max) = choices.gap.get(id).copied() {
+                max_len = max.max(max_len);
+            }
+
+            loop {
+                loop {
+                    if let Some(indcluded_choices) = self.included.next_match(phones, &new_choices) {
+                        let mut choices = new_choices.partial_clone();
+                        choices.take_owned(indcluded_choices);
+
+                        if let Some(match_choices) = self.matches(&mut phones.clone(), &choices) {
+                            choices.take_owned(match_choices);
+
+                            if let Some(id) = &self.id && !choices.gap.contains_key(id) {
+                                choices.gap.to_mut().insert(id, self.len);
+                            }
+
+                            new_choices.take_owned(choices.owned_choices());
+
+                            return Some(new_choices.owned_choices());
+                        }
+                    } else {
+                        if self.included.inner().len() > max_len {
+                            break;
+                        }
+                        
+                        self.included.push(Pattern::List(self.inclusive.clone()));
+                    }
+                }
+
+                if self.len > max_len {
+                    break;
+                }
+
+                self.len += 1;
+                self.included = PatternList::default();
+            }
+
+            None
         } else {
             self.checked_at_zero = true;
+            self.len = 0;
+            self.included = PatternList::default();
+
+            if let Some(id) = self.id {
+                let mut new_choices = choices.partial_clone();
+                new_choices.gap.to_mut().insert(id, self.len);
+                
+                Some(new_choices.owned_choices())
+            } else {
+                Some(OwnedChoices::default())
+            }
         }
-        
-        self.matches(&mut phones.clone(), choices)
     }
 
     fn len(&self) -> usize {
@@ -49,17 +107,24 @@ impl<'s> MatchState<'s> for Gap<'s> {
     }
 
     fn reset(&mut self) {
-        self.len = 0;
         self.checked_at_zero = false;
+        self.len = 0;
+        self.included = PatternList::default();
     }
 }
 
 impl std::fmt::Display for Gap<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Some(id) = self.id {
+        if let Some(id) = &self.id {
             write!(f, "{id}")?;
         }
 
-        write!(f, " {GAP_STR} ")
+        write!(f, "{GAP_START_CHAR} {} ", self.inclusive)?;
+
+        if let Some(exclusive) = &self.exclusive {
+            write!(f, "{NOT_CHAR} {} ", exclusive.borrow())?;
+        }
+
+        write!(f, "{GAP_END_CHAR}")
     }
 }
