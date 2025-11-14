@@ -116,7 +116,6 @@ fn escape_input(input: &str) -> String {
 fn niche_escapes() {
     assert_eq!("\\_\\/".to_string(), escape_input("_/"));
     assert_eq!("\\_a".to_string(), escape_input("_a"));
-    assert_eq!("\\. \\.\\. \\.\\.\\.".to_string(), escape_input(". .. ..."));
 
     // isolated only escapes
     assert!(check_escapes("\\_a").is_err());

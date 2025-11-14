@@ -72,10 +72,10 @@ const_list! {
     SELECTION_START_CHAR = '{';
     /// the end of an selection scope
     SELECTION_END_CHAR = '}';
-    /// the start of a gap scope
-    GAP_START_CHAR = '[';
-    /// the end of a gap scope
-    GAP_END_CHAR = ']';
+    /// the start of a repetition scope
+    REPETITION_START_CHAR = '[';
+    /// the end of a repetition scope
+    REPETITION_END_CHAR = ']';
 
     // Cond foci
     /// The seperator in a match condition

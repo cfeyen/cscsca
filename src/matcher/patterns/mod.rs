@@ -4,7 +4,7 @@ use crate::{
     matcher::{
         choices::{Choices, OwnedChoices},
         match_state::MatchState,
-        patterns::{check_box::CheckBox, gap::Gap, list::PatternList, non_bound::NonBound, optional::Optional, selection::Selection},
+        patterns::{check_box::CheckBox, repetition::Repetition, list::PatternList, non_bound::NonBound, optional::Optional, selection::Selection},
         phones::Phones
     },
     phones::Phone,
@@ -15,7 +15,7 @@ pub mod list;
 pub mod cond;
 pub mod rule;
 pub mod non_bound;
-pub mod gap;
+pub mod repetition;
 pub mod optional;
 pub mod selection;
 pub mod check_box;
@@ -30,7 +30,7 @@ mod tests;
 pub enum Pattern<'s> {
     Phone(CheckBox<'s, Phone<'s>>),
     NonBound(CheckBox<'s, NonBound<'s>>),
-    Gap(Gap<'s>),
+    Repetition(Repetition<'s>),
     Optional(Optional<'s>),
     Selection(Selection<'s>),
     List(PatternList<'s>),
@@ -45,8 +45,8 @@ impl<'s> Pattern<'s> {
         Self::NonBound(CheckBox::new(NonBound { id }))
     }
 
-    pub fn new_gap(id: Option<&'s str>, inclusive: PatternList<'s>, exclusive: Option<PatternList<'s>>) -> Self {
-        Self::Gap(Gap {
+    pub fn new_repetition(id: Option<&'s str>, inclusive: PatternList<'s>, exclusive: Option<PatternList<'s>>) -> Self {
+        Self::Repetition(Repetition {
             checked_at_zero: false,
             inclusive, exclusive: exclusive.map(RefCell::new),
             included: PatternList::default(),
@@ -85,7 +85,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
         match self {
             Self::Phone(phone) => phone.matches(phones, choices),
             Self::NonBound(any) => any.matches(phones, choices),
-            Self::Gap(gap) => gap.matches(phones, choices),
+            Self::Repetition(repetition) => repetition.matches(phones, choices),
             Self::Optional(option) => option.matches(phones, choices),
             Self::Selection(selection) => selection.matches(phones, choices),
             Self::List(list) => list.matches(phones, choices),
@@ -96,7 +96,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
         match self {
             Self::Phone(phone) => phone.next_match(phones, choices),
             Self::NonBound(any) => any.next_match(phones, choices),
-            Self::Gap(gap) => gap.next_match(phones, choices),
+            Self::Repetition(repetition) => repetition.next_match(phones, choices),
             Self::Optional(option) => option.next_match(phones, choices),
             Self::Selection(selection) => selection.next_match(phones, choices),
             Self::List(list) => list.next_match(phones, choices),
@@ -107,7 +107,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
         match self {
             Self::Phone(phone) => phone.len(),
             Self::NonBound(any) => any.len(),
-            Self::Gap(gap) => gap.len(),
+            Self::Repetition(repetition) => repetition.len(),
             Self::Optional(option) => option.len(),
             Self::Selection(selection) => selection.len(),
             Self::List(list) => list.len(),
@@ -118,7 +118,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
         match self {
             Self::Phone(phone) => phone.reset(),
             Self::NonBound(any) => any.reset(),
-            Self::Gap(gap) => gap.reset(),
+            Self::Repetition(repetition) => repetition.reset(),
             Self::Optional(option) => option.reset(),
             Self::Selection(selection) => selection.reset(),
             Self::List(list) => list.reset(),
@@ -131,7 +131,7 @@ impl std::fmt::Display for Pattern<'_> {
         match self {
             Self::Phone(phone) => write!(f, "{}", phone.unit_state.as_symbol()),
             Self::NonBound(any) => write!(f, "{}", any.unit_state),
-            Self::Gap(gap) => write!(f, "{gap}"),
+            Self::Repetition(repetition) => write!(f, "{repetition}"),
             Self::Optional(option) => write!(f, "{option}"),
             Self::Selection(selection) => write!(f, "{selection}"),
             Self::List(list) => write!(f, "{list}"),

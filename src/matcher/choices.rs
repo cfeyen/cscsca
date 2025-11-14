@@ -7,7 +7,7 @@ use crate::{phones::Phone, tokens::ScopeId};
 pub struct Choices<'c, 's> {
     pub(super) selection: Cow<'c, HashMap<ScopeId<'s>, usize>>,
     pub(super) optional: Cow<'c, HashMap<ScopeId<'s>, bool>>,
-    pub(super) gap: Cow<'c, HashMap<&'s str, usize>>,
+    pub(super) repetition: Cow<'c, HashMap<&'s str, usize>>,
     pub(super) any: Cow<'c, HashMap<ScopeId<'s>, Phone<'s>>>,
 }
 
@@ -22,9 +22,9 @@ impl<'c, 's> Choices<'c, 's> {
         &self.optional
     }
 
-    /// Gets the gap choices
-    pub fn gap(&self) -> &HashMap<&'s str, usize> {
-        &self.gap
+    /// Gets the repetition choices
+    pub fn repetition(&self) -> &HashMap<&'s str, usize> {
+        &self.repetition
     }
 
     /// Gets the any phone choices
@@ -37,7 +37,7 @@ impl<'c, 's> Choices<'c, 's> {
         Self {
             selection: Cow::Borrowed(&*self.selection),
             optional: Cow::Borrowed(&*self.optional),
-            gap: Cow::Borrowed(&*self.gap),
+            repetition: Cow::Borrowed(&*self.repetition),
             any: Cow::Borrowed(&*self.any),
         }
     }
@@ -47,7 +47,7 @@ impl<'c, 's> Choices<'c, 's> {
         OwnedChoices {
             selection: take_owned_from_cow(self.selection),
             optional: take_owned_from_cow(self.optional),
-            gap: take_owned_from_cow(self.gap),
+            repetition: take_owned_from_cow(self.repetition),
             any: take_owned_from_cow(self.any),
         }
     }
@@ -62,8 +62,8 @@ impl<'c, 's> Choices<'c, 's> {
             self.optional = Cow::Owned(optional);
         }
 
-        if let Some(gap) = owned.gap {
-            self.gap = Cow::Owned(gap);
+        if let Some(repetition) = owned.repetition {
+            self.repetition = Cow::Owned(repetition);
         }
 
         if let Some(any) = owned.any {
@@ -79,7 +79,7 @@ impl<'c, 's> Choices<'c, 's> {
 pub struct OwnedChoices<'s> {
     selection: Option<HashMap<ScopeId<'s>, usize>>,
     optional: Option<HashMap<ScopeId<'s>, bool>>,
-    gap: Option<HashMap<&'s str, usize>>,
+    repetition: Option<HashMap<&'s str, usize>>,
     any: Option<HashMap<ScopeId<'s>, Phone<'s>>>,
 }
 

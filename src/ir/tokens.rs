@@ -25,7 +25,7 @@ pub enum IrToken<'s> {
     ScopeStart(ScopeType),
     /// The end of a scope
     ScopeEnd(ScopeType),
-    // gap negator
+    /// Repetition negator
     Negative,
 }
 

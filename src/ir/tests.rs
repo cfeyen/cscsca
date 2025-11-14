@@ -151,8 +151,7 @@ fn get_lazy_def_name() {
     assert_eq!(Some("ab"), get_first_phone("ab"));
     assert_eq!(Some("a"), get_first_phone("a b"));
     assert_eq!(Some("a"), get_first_phone("a/"));
-    assert_eq!(Some("a"), get_first_phone("a.."));
-    assert_eq!(None, get_first_phone(".. a"));
+    assert_eq!(Some("a.."), get_first_phone("a.."));
     assert_eq!(None, get_first_phone("_"));
     assert_eq!(None, get_first_phone("/"));
     assert_eq!(Some("\\/"), get_first_phone("\\/"));
@@ -290,31 +289,32 @@ fn tokenize_scope_bounds_with_suroundings() {
 
 
 #[test]
-fn tokenize_gap() {
-    assert_eq!(Ok(vec![IrLine::Ir { tokens: vec![IrToken::Gap], lines: ONE}]), tokenize(".."));
+fn tokenize_repetition() {
+    assert_eq!(Ok(vec![IrLine::Ir { tokens: vec![
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::ScopeEnd(ScopeType::Repetition),
+    ], lines: ONE}]), tokenize("[*]"));
+
+
+    assert_eq!(Ok(vec![IrLine::Ir { tokens: vec![
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::Negative,
+        IrToken::Phone(Phone::Symbol("w")),
+        IrToken::ScopeEnd(ScopeType::Repetition),
+    ], lines: ONE}]), tokenize("[* ! w]"));
 }
 
 #[test]
-fn tokenize_gap_with_suroundings() {
-    assert_eq!(Ok(vec![IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Gap, IrToken::Phone(Phone::Symbol("b")),], lines: ONE}]), tokenize("a .. b"));
-}
-
-#[test]
-fn tokenize_dot_with_suroundings() {
-    assert_eq!(
-        tokenize("a..b"),
-        Err((IrError::ReservedCharacter('.'), 1))
-    );
-
-    assert_eq!(
-        tokenize("a.b"),
-        Err((IrError::ReservedCharacter('.'), 1))
-    );
-
-    assert_eq!(
-        tokenize("a\\.b"),
-        Ok(vec![IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("a\\.b"))], lines: ONE}])
-    );
+fn tokenize_repetition_with_suroundings() {
+    assert_eq!(Ok(vec![IrLine::Ir { tokens: vec![
+        IrToken::Phone(Phone::Symbol("a")),
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::ScopeEnd(ScopeType::Repetition),
+        IrToken::Phone(Phone::Symbol("b")),
+    ], lines: ONE}]), tokenize("a [*] b"));
 }
 
 #[test]

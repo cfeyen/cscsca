@@ -3,7 +3,7 @@ use crate::{
     matcher::{
         choices::{Choices, OwnedChoices},
         match_state::MatchState,
-        patterns::{check_box::CheckBox, gap::Gap, non_bound::NonBound, optional::Optional, selection::Selection, Pattern},
+        patterns::{check_box::CheckBox, repetition::Repetition, non_bound::NonBound, optional::Optional, selection::Selection, Pattern},
         phones::Phones
     },
     phones::Phone,
@@ -54,8 +54,8 @@ impl<'s> PatternList<'s> {
                     return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
                 },
 
-                Pattern::Gap(Gap { id: Some(id), .. }) =>
-                match choices.gap.get(id) {
+                Pattern::Repetition(Repetition { id: Some(id), .. }) =>
+                match choices.repetition.get(id) {
                     Some(0) => (),
                     _ => return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone())),
                 }

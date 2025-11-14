@@ -552,8 +552,10 @@ fn three_conds_and_anti_conds() {
     ], lines: ONE }));
 }
 
+// todo: test exclusives, exclusive failures (both in tokenization and application)
+
 #[test]
-fn shift_cond_gap_input() {
+fn shift_cond_repetition_input() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
@@ -564,7 +566,7 @@ fn shift_cond_gap_input() {
                 PatternList::default(),
                 vec![CondPattern::new(
                     CondType::Pattern,
-                    PatternList::new(vec![Pattern::new_gap(None)]),
+                    PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), None)]),
                     PatternList::default(),
                 )],
                 Vec::new(),
@@ -573,13 +575,15 @@ fn shift_cond_gap_input() {
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
-        IrToken::Gap,
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::ScopeEnd(ScopeType::Repetition),
         IrToken::CondType(CondType::Pattern),
     ], lines: ONE }));
 }
 
 #[test]
-fn shift_anti_cond_gap_input() {
+fn shift_anti_cond_repetition_input() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
@@ -591,7 +595,7 @@ fn shift_anti_cond_gap_input() {
                 Vec::new(),
                 vec![CondPattern::new(
                     CondType::Pattern,
-                    PatternList::new(vec![Pattern::new_gap(None)]),
+                    PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), None)]),
                     PatternList::default(),
                 )],
             ).expect("pattern construction should be valid")
@@ -599,13 +603,15 @@ fn shift_anti_cond_gap_input() {
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::AntiCond),
-        IrToken::Gap,
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::ScopeEnd(ScopeType::Repetition),
         IrToken::CondType(CondType::Pattern),
     ], lines: ONE }));
 }
 
 #[test]
-fn shift_cond_label_gap_input() {
+fn shift_cond_label_repetition_input() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
     assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
@@ -616,7 +622,7 @@ fn shift_cond_label_gap_input() {
                 PatternList::default(),
                 vec![CondPattern::new(
                     CondType::Pattern,
-                    PatternList::new(vec![Pattern::new_gap(Some("label"))]),
+                    PatternList::new(vec![Pattern::new_repetition(Some("label"), PatternList::new(vec![Pattern::new_any(None)]), None)]),
                     PatternList::default(),
                 )],
                 Vec::new(),
@@ -626,7 +632,9 @@ fn shift_cond_label_gap_input() {
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
         IrToken::Label("label"),
-        IrToken::Gap,
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::ScopeEnd(ScopeType::Repetition),
         IrToken::CondType(CondType::Pattern),
     ], lines: ONE }));
 }

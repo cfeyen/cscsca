@@ -223,7 +223,7 @@ fn patterns_to_phones<'s: 'p, 'p>(patterns: &[Pattern<'s>], choices: &Choices<'_
                     return Err(ApplicationError::UnmatchedTokenInOutput(pattern.clone()));
                 }
             },
-            Pattern::Gap { .. } => return Err(ApplicationError::GapOutOfCond),
+            Pattern::Repetition { .. } => return Err(ApplicationError::RepetitionOutOfCond),
             _ => return Err(ApplicationError::UnmatchedTokenInOutput(pattern.clone()))
         }
     }
@@ -238,7 +238,7 @@ pub enum ApplicationError<'s> {
     UnmatchedTokenInOutput(Pattern<'s>),
     InvalidSelectionAccess(Pattern<'s>, usize),
     ExceededLimit(LimitCondition),
-    GapOutOfCond,
+    RepetitionOutOfCond,
     PatternCannotBeConvertedToPhones(Pattern<'s>),
 }
 
@@ -257,7 +257,7 @@ impl std::fmt::Display for ApplicationError<'_> {
                 LimitCondition::Time(_) => "Could not apply changes in allotted time",
                 LimitCondition::Count { attempts: _, max: _ } => "Could not apply changes with the allotted application attempts",
             }),
-            Self::GapOutOfCond => write!(f, "{}", RuleStructureError::GapOutOfCond),
+            Self::RepetitionOutOfCond => write!(f, "{}", RuleStructureError::RepetitionOutOfCond),
             Self::PatternCannotBeConvertedToPhones(pattern) => write!(f, "'{pattern}' cannot be converted to a phone or list of phones"),
         }
     }

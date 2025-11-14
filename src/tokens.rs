@@ -1,4 +1,4 @@
-use crate::{ir::tokens::IrToken, keywords::{AND_CHAR, ANY_CHAR, GAP_END_CHAR, GAP_START_CHAR, INPUT_PATTERN_STR, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}};
+use crate::{ir::tokens::IrToken, keywords::{AND_CHAR, ANY_CHAR, REPETITION_END_CHAR, REPETITION_START_CHAR, INPUT_PATTERN_STR, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}};
 
 use std::{fmt::Display, rc::Rc};
 
@@ -78,8 +78,8 @@ pub enum ScopeType {
     Optional,
     /// A scope that adds one of its items to the phone list
     Selection,
-    /// A scope that represents a gap between phoens
-    Gap,
+    /// A scope that represents a repetition of phones
+    Repetition,
 }
 
 impl ScopeType {
@@ -87,7 +87,7 @@ impl ScopeType {
         match self {
             ScopeType::Optional => OPTIONAL_START_CHAR,
             ScopeType::Selection => SELECTION_START_CHAR,
-            ScopeType::Gap => GAP_START_CHAR,
+            ScopeType::Repetition => REPETITION_START_CHAR,
         }
     }
 
@@ -95,7 +95,7 @@ impl ScopeType {
         match self {
             ScopeType::Optional => OPTIONAL_END_CHAR,
             ScopeType::Selection => SELECTION_END_CHAR,
-            ScopeType::Gap => GAP_END_CHAR,
+            ScopeType::Repetition => REPETITION_END_CHAR,
         }
     }
 }

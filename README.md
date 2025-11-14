@@ -8,7 +8,7 @@ A sound change applier based on linguistic sound change notation.
 - Expansive conditions and anti-conditions
 - Definitions that can be inserted anywhere in a rule
 - Automatic and manual matching for lists of phones
-- Gaps of arbitrary phones in conditions (useful for harmony)
+- Arbitrary length sections of repeated phones
 - Can get information to use in conditions at runtime (variables)
 - Reasonably minimalist and simple, but also highly expressive and versatile
 - Usable as a crate that can be adapted to fit many mediums beyond CLI

@@ -27,12 +27,12 @@ pub struct RulePattern<'s> {
     anti_conds: Vec<CondPattern<'s>>,
 }
 
-fn contains_gap(tokens: &PatternList<'_>) -> bool {
+fn contains_repetition(tokens: &PatternList<'_>) -> bool {
     for token in tokens.inner() {
         match token {
-            Pattern::Gap { .. } => return true,
-            Pattern::Optional(Optional { option, ..}) if contains_gap(option) => return true,
-            Pattern::Selection(Selection { options, .. }) if options.iter().any(|tokens| contains_gap(tokens)) => return true,
+            Pattern::Repetition { .. } => return true,
+            Pattern::Optional(Optional { option, ..}) if contains_repetition(option) => return true,
+            Pattern::Selection(Selection { options, .. }) if options.iter().any(|tokens| contains_repetition(tokens)) => return true,
             _ => (),
         }
     }
@@ -42,8 +42,8 @@ fn contains_gap(tokens: &PatternList<'_>) -> bool {
 
 impl<'s> RulePattern<'s> {
     pub fn new(input: PatternList<'s>, mut conds: Vec<CondPattern<'s>>, anti_conds: Vec<CondPattern<'s>>) -> Result<Self, RuleStructureError<'s>> {
-        if contains_gap(&input) {
-            return Err(RuleStructureError::GapOutOfCond);
+        if contains_repetition(&input) {
+            return Err(RuleStructureError::RepetitionOutOfCond);
         }
 
         if conds.is_empty() {

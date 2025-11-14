@@ -73,12 +73,7 @@ fn escape() {
 
 #[io_test(pollster::block_on)]
 fn input_escape() {
-    assert_eq!("bb", await_io! { apply("..", "\\. >> b") });
-}
-
-#[io_test(pollster::block_on)]
-fn reserved_chars() {
-    assert!(await_io! { apply_fallible("..", ". >> b") }.is_err());
+    assert_eq!("bb", await_io! { apply("//", "\\/ >> b") });
 }
 
 #[io_test(pollster::block_on)]

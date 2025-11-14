@@ -158,9 +158,9 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
 
                 Pattern::new_selection(selection_contents_to_patterns(ir, child_ids.as_ref(), id.as_ref())?, id)
             },
-            IrToken::ScopeStart(ScopeType::Gap) => {
-                let(inclusive, exclusive) = ir_to_gap(ir)?;
-                Pattern::new_gap(None, inclusive, exclusive)
+            IrToken::ScopeStart(ScopeType::Repetition) => {
+                let(inclusive, exclusive) = ir_to_repetition(ir)?;
+                Pattern::new_repetition(None, inclusive, exclusive)
             },
             // ensures a label is proceeding a labelable token then creates that token with the label
             IrToken::Label(name) => {
@@ -173,9 +173,9 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
                     match kind {
                         ScopeType::Optional => Pattern::new_optional(ir_tokens_to_patterns(ir, child_ids, id.as_ref(), Some(ScopeType::Optional))?, id),
                         ScopeType::Selection => Pattern::new_selection(selection_contents_to_patterns(ir, child_ids, id.as_ref())?, id),
-                        ScopeType::Gap => {
-                            let(inclusive, exclusive) = ir_to_gap(ir)?;
-                            Pattern::new_gap(Some(*name), inclusive, exclusive)
+                        ScopeType::Repetition => {
+                            let(inclusive, exclusive) = ir_to_repetition(ir)?;
+                            Pattern::new_repetition(Some(*name), inclusive, exclusive)
                         },
                     }
                 } else if let Some(IrToken::Any) = next {
@@ -194,7 +194,7 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
             },
             IrToken::ArgSep => return Err(RuleStructureError::ArgSepOutOfSelection),
             IrToken::CondType(r#type) => return Err(RuleStructureError::UnexpectedCondType(*r#type)),
-            IrToken::Negative if end_at == Some(ScopeType::Gap) => {
+            IrToken::Negative if end_at == Some(ScopeType::Repetition) => {
                 patterns.push(Pattern::List(PatternList::default())); // signals negative
                 return Ok(patterns);
             }
@@ -208,19 +208,19 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
     Ok(patterns)
 }
 
-fn ir_to_gap<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>) -> Result<(PatternList<'s>, Option<PatternList<'s>>), RuleStructureError<'s>> {
+fn ir_to_repetition<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>) -> Result<(PatternList<'s>, Option<PatternList<'s>>), RuleStructureError<'s>> {
     let followed_by_exclusive = |pat: &Pattern<'_>| pat == &Pattern::List(PatternList::default());
 
-    let mut inclusive_patterns = ir_tokens_to_patterns(ir, None, None, Some(ScopeType::Gap))?;
+    let mut inclusive_patterns = ir_tokens_to_patterns(ir, None, None, Some(ScopeType::Repetition))?;
 
     let has_exclusive = inclusive_patterns.pop_if(|pat| followed_by_exclusive(pat)).is_some();
 
     if inclusive_patterns.is_empty() {
-        return Err(RuleStructureError::EmptyGap);
+        return Err(RuleStructureError::EmptyRepetition);
     }
 
     let exclusive = if has_exclusive {
-        let exclusive_patterns = ir_tokens_to_patterns(ir, None, None, Some(ScopeType::Gap))?;
+        let exclusive_patterns = ir_tokens_to_patterns(ir, None, None, Some(ScopeType::Repetition))?;
 
         match exclusive_patterns.last() {
             None => return Err(RuleStructureError::EmptyExclusion),
@@ -370,8 +370,8 @@ pub enum RuleStructureError<'s> {
     AndDoesNotFollowCond(AndType),
     SecondShift(Shift),
     UnexpectedCondType(CondType),
-    GapOutOfCond,
-    EmptyGap,
+    RepetitionOutOfCond,
+    EmptyRepetition,
     EmptyExclusion,
 }
 
@@ -398,9 +398,9 @@ impl std::fmt::Display for RuleStructureError<'_> {
                 => write!(f, "Found a second shift token '{shift}' after the first"),
             Self::UnexpectedCondType(r#type)
                 => write!(f, "Found '{type}' either outside of a condition or after '{}' or '{}'", CondType::Pattern, CondType::Match),
-            Self::GapOutOfCond => write!(f, "Gaps ('{}...{}') are not allowed outside of conditions and anti-conditions", ScopeType::Gap.fmt_start(), ScopeType::Gap.fmt_end()),
-            Self::EmptyGap => write!(f, "A gap must contain some inclusive pattern"),
-            Self::EmptyExclusion => write!(f, "A gap exclusion must contain some pattern"),
+            Self::RepetitionOutOfCond => write!(f, "Repetitions ('{}...{}') are not allowed outside of conditions and anti-conditions", ScopeType::Repetition.fmt_start(), ScopeType::Repetition.fmt_end()),
+            Self::EmptyRepetition => write!(f, "A repetition must contain some inclusive pattern"),
+            Self::EmptyExclusion => write!(f, "A repetition exclusion must contain some pattern"),
         }
     }
 }

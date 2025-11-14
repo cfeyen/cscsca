@@ -147,22 +147,22 @@ fn agreeing_non_bounds() {
 }
 
 #[test]
-fn unbounded_gap() {
+fn unbounded_repetition() {
     let choices = Choices::default();
 
-    let pattern = Pattern::new_gap(None);
+    let pattern = Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), None);
     let mut match_phones = Phones::new(&[], 0, Direction::Ltr);
 
     assert!(pattern.matches(&mut match_phones, &choices).is_some());
 }
 
 #[test]
-fn bounded_gap() {
+fn bounded_repetition() {
     let choices = Choices::default();
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_gap(None),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("b")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Ltr);
@@ -171,7 +171,7 @@ fn bounded_gap() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_gap(None),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("b")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("b")], 0, Direction::Ltr);
@@ -180,7 +180,7 @@ fn bounded_gap() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_gap(None),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("b")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("-"), Phone::Symbol("-"), Phone::Symbol("b")], 0, Direction::Ltr);
@@ -189,7 +189,7 @@ fn bounded_gap() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_gap(None),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("b")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Bound, Phone::Symbol("b")], 0, Direction::Ltr);
@@ -198,16 +198,16 @@ fn bounded_gap() {
 }
 
 #[test]
-fn agreeing_gaps() {
+fn agreeing_repetitions() {
     let choices = Choices::default();
 
     let label = "label";
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_gap(Some(label)),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("b")),
-        Pattern::new_gap(Some(label)),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("c")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("b"), Phone::Symbol("c"),], 0, Direction::Ltr);
@@ -217,9 +217,9 @@ fn agreeing_gaps() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_gap(Some(label)),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("b")),
-        Pattern::new_gap(Some(label)),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("c")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("b"), Phone::Symbol("-"), Phone::Symbol("c"),], 0, Direction::Ltr);
@@ -229,9 +229,9 @@ fn agreeing_gaps() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_gap(Some(label)),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("b")),
-        Pattern::new_gap(Some(label)),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), None),
         Pattern::new_phone(Phone::Symbol("c")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("b"), Phone::Symbol("-"), Phone::Symbol("-"), Phone::Symbol("c"),], 0, Direction::Ltr);
