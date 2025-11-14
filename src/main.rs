@@ -151,7 +151,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     if let Some(path) = output_data.write_path()
         && fs::write(path, full_output).is_err()
     {
-        Err(CliError::CouldNotWrite(path.to_string()))
+        Err(CliError::CouldNotWrite(path.clone()))
     } else {
         Ok(())
     }
