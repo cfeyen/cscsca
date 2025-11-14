@@ -95,9 +95,6 @@ const_list! {
 const_list! {
     /// Special characters that are not used by themselves
     UNUSED_CHARS: [pub char];
-
-    /// Used when duplicated for a gap
-    DOT_CHAR = '.';
 }
 
 const_list! {
