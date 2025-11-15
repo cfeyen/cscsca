@@ -198,6 +198,44 @@ fn bounded_repetition() {
 }
 
 #[test]
+fn bounded_repetition_with_exclusion() {
+    let choices = Choices::default();
+
+    let mut patterns = PatternList::new(vec![
+        Pattern::new_phone(Phone::Symbol("a")),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), Some(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]))),
+        Pattern::new_phone(Phone::Symbol("b")),
+    ]);
+    let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 1, Direction::Rtl);
+
+    assert!(patterns.next_match(&mut match_phones, &choices).is_some());
+
+    patterns.reset();
+
+    let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("b")], 2, Direction::Rtl);
+
+    assert!(patterns.next_match(&mut match_phones, &choices).is_none());
+
+    patterns.reset();
+
+    let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("z"), Phone::Symbol("b")], 3, Direction::Rtl);
+
+    assert!(patterns.next_match(&mut match_phones, &choices).is_none());
+
+    patterns.reset();
+
+    let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("z"), Phone::Symbol("c"), Phone::Symbol("b")], 3, Direction::Rtl);
+
+    assert!(patterns.next_match(&mut match_phones, &choices).is_none());
+
+    patterns.reset();
+
+    let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("z"), Phone::Symbol("b")], 2, Direction::Rtl);
+
+    assert!(patterns.next_match(&mut match_phones, &choices).is_some());
+}
+
+#[test]
 fn agreeing_repetitions() {
     let choices = Choices::default();
 

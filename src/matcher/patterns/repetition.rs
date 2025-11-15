@@ -28,10 +28,9 @@ impl<'s> MatchState<'s> for Repetition<'s> {
                     return None;
                 }
 
+                exclusive.reset();
                 phones2.next();
             }
-
-            exclusive.reset();
         }
 
         if self.included.len() == self.len && let Some(new_choices) = self.included.matches(phones, choices) {
