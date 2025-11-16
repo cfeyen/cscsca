@@ -15,10 +15,10 @@ fn time_out_of_infinte_loop() {
 }
 
 #[io_test(pollster::block_on)]
-fn gap_out_of_cond() {
-    assert!(await_io! { apply_fallible("abc", "a .. >> b / _ #") }.is_err());
-    assert!(await_io! { apply_fallible("a", "a >> b .. c") }.is_err());
-    assert!(await_io! { apply_fallible("a", "a $gap .. # >> b $gap .. c") }.is_err());
+fn repetition_out_of_cond() {
+    assert!(await_io! { apply_fallible("abc", "a [*] >> b / _ #") }.is_err());
+    assert!(await_io! { apply_fallible("a", "a >> b [*] c") }.is_err());
+    assert!(await_io! { apply_fallible("a", "a $rep [*] # >> b $rep [*] c") }.is_err());
 }
 
 #[io_test(pollster::block_on)]

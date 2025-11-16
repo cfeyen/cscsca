@@ -1,17 +1,9 @@
 use std::{cell::RefCell, num::NonZero, rc::Rc};
 
 use crate::{
-    executor::io_events::{IoEvent, RuntimeIoEvent},
-    ir::{tokens::{Break, IrToken}, IrLine},
-    keywords::GAP_STR,
-    matcher::patterns::{
-        cond::CondPattern,
-        list::PatternList,
-        rule::{RulePattern, SoundChangeRule},
-        Pattern,
-    },
-    tokens::{ScopeType, Shift, CondType, AndType, ScopeId, LabelType},
-    ONE,
+    ONE, executor::io_events::{IoEvent, RuntimeIoEvent}, ir::{IrLine, tokens::{Break, IrToken}}, matcher::patterns::{
+        Pattern, cond::CondPattern, list::PatternList, rule::{RulePattern, SoundChangeRule}
+    }, tokens::{AndType, CondType, LabelType, ScopeId, ScopeType, Shift}
 };
 
 #[cfg(test)]
@@ -150,7 +142,6 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
         let pattern = match ir_token {
             IrToken::Phone(phone) => Pattern::new_phone(*phone),
             IrToken::Any => Pattern::new_any(any_id(default_scope_ids, parent_scope.cloned())),
-            IrToken::Gap => Pattern::new_gap(None),
             // starts a default labeled option scope
             IrToken::ScopeStart(ScopeType::Optional) => {
                 let id = optional_id(default_scope_ids, parent_scope.cloned());
@@ -167,6 +158,10 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
 
                 Pattern::new_selection(selection_contents_to_patterns(ir, child_ids.as_ref(), id.as_ref())?, id)
             },
+            IrToken::ScopeStart(ScopeType::Repetition) => {
+                let(inclusive, exclusive) = ir_to_repetition(ir)?;
+                Pattern::new_repetition(None, inclusive, exclusive)
+            },
             // ensures a label is proceeding a labelable token then creates that token with the label
             IrToken::Label(name) => {
                 let next = ir.next();
@@ -178,11 +173,13 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
                     match kind {
                         ScopeType::Optional => Pattern::new_optional(ir_tokens_to_patterns(ir, child_ids, id.as_ref(), Some(ScopeType::Optional))?, id),
                         ScopeType::Selection => Pattern::new_selection(selection_contents_to_patterns(ir, child_ids, id.as_ref())?, id),
+                        ScopeType::Repetition => {
+                            let(inclusive, exclusive) = ir_to_repetition(ir)?;
+                            Pattern::new_repetition(Some(*name), inclusive, exclusive)
+                        },
                     }
                 } else if let Some(IrToken::Any) = next {
                     Pattern::new_any(id)
-                } else if let Some(IrToken::Gap) = next {
-                    Pattern::new_gap(Some(name))
                 } else {
                     return Err(RuleStructureError::LabelNotFollowedByScope(name));
                 }
@@ -197,6 +194,10 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
             },
             IrToken::ArgSep => return Err(RuleStructureError::ArgSepOutOfSelection),
             IrToken::CondType(r#type) => return Err(RuleStructureError::UnexpectedCondType(*r#type)),
+            IrToken::Negative if end_at == Some(ScopeType::Repetition) => {
+                patterns.push(Pattern::List(PatternList::default())); // signals negative
+                return Ok(patterns);
+            }
             // these tokens should be removed in checking
             _ => return Err(RuleStructureError::UnexpectedToken(*ir_token)),
         };
@@ -205,6 +206,36 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
     }
 
     Ok(patterns)
+}
+
+fn ir_to_repetition<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>) -> Result<(PatternList<'s>, Option<PatternList<'s>>), RuleStructureError<'s>> {
+    let followed_by_exclusive = |pat: &Pattern<'_>| pat == &Pattern::List(PatternList::default());
+
+    let mut inclusive_patterns = ir_tokens_to_patterns(ir, None, None, Some(ScopeType::Repetition))?;
+
+    let has_exclusive = inclusive_patterns.pop_if(|pat| followed_by_exclusive(pat)).is_some();
+
+    if inclusive_patterns.is_empty() {
+        return Err(RuleStructureError::EmptyRepetition);
+    }
+
+    let exclusive = if has_exclusive {
+        let exclusive_patterns = ir_tokens_to_patterns(ir, None, None, Some(ScopeType::Repetition))?;
+
+        match exclusive_patterns.last() {
+            None => return Err(RuleStructureError::EmptyExclusion),
+            Some(pat) if followed_by_exclusive(pat) => return Err(RuleStructureError::UnexpectedToken(IrToken::Negative)),
+            _ => (),
+        }
+
+        Some(PatternList::new(exclusive_patterns))
+    } else {
+        None
+    };
+
+    let inclusive = PatternList::new(inclusive_patterns);
+
+    Ok((inclusive, exclusive))
 }
 
 /// Converts the ir tokens in a selection scope to a list of pattern lists
@@ -339,7 +370,9 @@ pub enum RuleStructureError<'s> {
     AndDoesNotFollowCond(AndType),
     SecondShift(Shift),
     UnexpectedCondType(CondType),
-    GapOutOfCond,
+    RepetitionOutOfCond,
+    EmptyRepetition,
+    EmptyExclusion,
 }
 
 impl std::error::Error for RuleStructureError<'_> {}
@@ -365,7 +398,9 @@ impl std::fmt::Display for RuleStructureError<'_> {
                 => write!(f, "Found a second shift token '{shift}' after the first"),
             Self::UnexpectedCondType(r#type)
                 => write!(f, "Found '{type}' either outside of a condition or after '{}' or '{}'", CondType::Pattern, CondType::Match),
-            Self::GapOutOfCond => write!(f, "Gaps ('{GAP_STR}') are not allowed outside of conditions and anti-conditions"),
+            Self::RepetitionOutOfCond => write!(f, "Repetitions ('{}...{}') are not allowed outside of conditions and anti-conditions", ScopeType::Repetition.fmt_start(), ScopeType::Repetition.fmt_end()),
+            Self::EmptyRepetition => write!(f, "A repetition must contain some inclusive pattern"),
+            Self::EmptyExclusion => write!(f, "A repetition exclusion must contain some pattern"),
         }
     }
 }

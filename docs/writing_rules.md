@@ -38,9 +38,13 @@ h >>
 
 ### Scopes
 Scopes are a way to dynamically determine which phone, group of phones, or lack thereof exists in a rule.
-There are two types of scopes
+There are three types of scopes
 - optional **`(`**...**`)`**: a phone or group of phones that is optional
 - selection **`{`**...**`,`**...**`}`**: a list of comma-separated phones or a group of phones that selects one phone or group of phones in that list
+- repetition **`[`**...**`]`**: a phone or group of phones repeated 0 or more times. If a **`!`** is added in the scope, the scope represents the phone or group of phones before the **`!`** repeated 0 or more times, if it does not contain the phone or group of phones after the **`!`**
+
+
+**Note**: repetition scopes are only allowed in conditions/anti-conditions (see: Conditions and Anti-Conditions)
 
 Examples:
 ```cscsca
@@ -52,12 +56,20 @@ l (j) >> j
 
 ## `p` and `b` become `f` and `v` respectively
 {p, b} >> {f, v}
+
+## `u` becomes `y` when after `i` in a word (see: Conditions and Anti-Conditions)
+u >> y / i [*] _
+
+## `u` becomes `y` when after `i` in a word, unless a `w` is between the two (see: Conditions and Anti-Conditions)
+u >> y / i [* ! w] _
 ```
 
 ### Labels
 As seen in the example above, corresponding scopes in the input and output try to agree on what they choose. However, there are times when we want this behavior to be different than the default or expanded to conditions
 
 To force scopes to agree on what they choose, we can use labels. A label has a name that starts with **`$`** and precedes a scope
+
+**Note**: repetition scopes agree not in phones, but in phone count, causing agreeing repetition scopes to be the same length or shorter than the one that sets the agreement
 
 Examples:
 ```cscsca
@@ -150,15 +162,8 @@ DEFINE F {f, s, ç, x}
 
 ### Special Characters
 - **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
-- **`..`**: a gap of zero or more non-boundary phones. (**Notes**: **`..`** must have a space on both sides and is only allowed in conditions). A gap may be preceded by a label to limit gap length to less than or equal to the length of the first gap with the same label
 - **`#`**: a word boundary
 - **`\`**: escapes the effects of the following character, may be used at the end of a line to continue the rule on the next line
-
-### Reserved Characters
-Characters that do nothing, but need to be escaped
-- **`.`**
-- **`[`**
-- **`]`**
 
 ### IO and Variables
 To print the current phonetic form, type **`PRINT`** at the start of a line, followed by the message you would like to print with it

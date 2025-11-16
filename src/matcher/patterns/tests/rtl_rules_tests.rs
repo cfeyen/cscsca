@@ -485,4 +485,4 @@ fn zero_input() {
     assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_none());
 }
 
-// todo: conds, anti-conds, &, &!, with gaps, non phone conds
+// todo: conds, anti-conds, &, &!, with repetitions, non phone conds

@@ -42,4 +42,4 @@ DEFINE Pv- { p, t, k }
 DEFINE Pv+ { b, d, g }
 
 ## u is fronted if an i exists before it in the same word without a w between them 
-u >> y / i $gap .. _ // w $gap .. _
+u >> y / i [* ! w] _

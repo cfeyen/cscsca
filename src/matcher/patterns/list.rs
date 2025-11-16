@@ -3,7 +3,7 @@ use crate::{
     matcher::{
         choices::{Choices, OwnedChoices},
         match_state::MatchState,
-        patterns::{check_box::CheckBox, gap::Gap, non_bound::NonBound, optional::Optional, selection::Selection, Pattern},
+        patterns::{check_box::CheckBox, repetition::Repetition, non_bound::NonBound, optional::Optional, selection::Selection, Pattern},
         phones::Phones
     },
     phones::Phone,
@@ -30,6 +30,10 @@ impl<'s> PatternList<'s> {
         &self.patterns
     }
 
+    pub fn push(&mut self, pat: Pattern<'s>) {
+        self.patterns.push(pat);
+    }
+
     /// Sets the flag marking the list as checked at its current position to `false`
     pub const fn checked_flag_reset(&mut self) {
         self.checked_at_initial = false;
@@ -50,8 +54,8 @@ impl<'s> PatternList<'s> {
                     return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
                 },
 
-                Pattern::Gap(Gap { id: Some(id), .. }) =>
-                match choices.gap.get(id) {
+                Pattern::Repetition(Repetition { id: Some(id), .. }) =>
+                match choices.repetition.get(id) {
                     Some(0) => (),
                     _ => return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone())),
                 }
@@ -102,7 +106,7 @@ impl<'s> PatternList<'s> {
             new_choices.take_owned(pat_choices);
 
             // creates the phones for the remaining patterns
-            let mut next_phones = phones.clone();
+            let mut next_phones = *phones;
             next_phones.skip(pat.len());
 
             if let Some(next_choices) = self.next_sub_match(index + 1, &next_phones, &new_choices) {

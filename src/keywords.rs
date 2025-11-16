@@ -72,6 +72,10 @@ const_list! {
     SELECTION_START_CHAR = '{';
     /// the end of an selection scope
     SELECTION_END_CHAR = '}';
+    /// the start of a repetition scope
+    REPETITION_START_CHAR = '[';
+    /// the end of a repetition scope
+    REPETITION_END_CHAR = ']';
 
     // Cond foci
     /// The seperator in a match condition
@@ -91,11 +95,6 @@ const_list! {
 const_list! {
     /// Special characters that are not used by themselves
     UNUSED_CHARS: [pub char];
-
-    /// Used when duplicated for a gap
-    DOT_CHAR = '.';
-    SQUARE_START_CHAR = '[';
-    SQUARE_END_CHAR = ']';
 }
 
 const_list! {
@@ -110,8 +109,6 @@ const_list! {
     /// Strings that act like special characters when isolated
     pub(crate) SPECIAL_STRS: [pub &str];
 
-    /// A gap
-    GAP_STR = "..";
     /// The input in a pattern condition
     INPUT_PATTERN_STR = "_";
 }

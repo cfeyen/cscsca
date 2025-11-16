@@ -3,8 +3,8 @@ use std::num::NonZero;
 use crate::{
     escaped_strings::check_escapes,
     executor::io_events::{GetType, IoEvent, RuntimeIoEvent, TokenizerIoEvent},
-    ir::{prefix::Prefix, tokenization_data::TokenizationData, tokens::{Break, IrToken}, IrError, IrLine},
-    keywords::{is_special_char, is_special_str, AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GAP_STR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX},
+    ir::{IrError, IrLine, prefix::Prefix, tokenization_data::TokenizationData, tokens::{Break, IrToken}},
+    keywords::{AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, REPETITION_END_CHAR, REPETITION_START_CHAR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX, is_special_char, is_special_str},
     phones::Phone,
     sub_string::SubString,
     tokens::{AndType, CondType, Direction, ScopeType, Shift, ShiftType},
@@ -137,6 +137,8 @@ fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Opti
         OPTIONAL_END_CHAR => push_phone_and(c, IrToken::ScopeEnd(ScopeType::Optional), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
         SELECTION_START_CHAR => push_phone_and(c, IrToken::ScopeStart(ScopeType::Selection), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
         SELECTION_END_CHAR => push_phone_and(c, IrToken::ScopeEnd(ScopeType::Selection), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        REPETITION_START_CHAR => push_phone_and(c, IrToken::ScopeStart(ScopeType::Repetition), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
+        REPETITION_END_CHAR => push_phone_and(c, IrToken::ScopeEnd(ScopeType::Repetition), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
         // handles simple one-to-one char to token pushes
         AND_CHAR => push_phone_and(c, IrToken::Break(Break::And(AndType::And)), tokens, slice, prefix, tokenization_data, lazy_expansions)?,
         NOT_CHAR => {
@@ -149,7 +151,7 @@ fn parse_character<'s>(c: char, tokens: &mut Vec<IrToken<'s>>, prefix: &mut Opti
                     tokens.pop();
                     IrToken::Break(Break::AntiCond)
                 },
-                _ => return Err(IrError::UnexpectedNot),
+                _ => IrToken::Negative,
             };
 
             push_phone_and(c, token, tokens, slice, prefix, tokenization_data, lazy_expansions)?;
@@ -230,7 +232,7 @@ fn push_phone_and<'s>(c: char, token: IrToken<'s>, tokens: &mut Vec<IrToken<'s>>
 
 /// Pushes the slice as a phone and prepares it to start the next slice
 /// 
-/// Handles escape validity and input pattern and gap generation
+/// Handles escape validity and input pattern generation
 /// 
 /// If there is a prefix, it either expands the phone as a definition or
 /// inserts a selection token and resets the prefix to None
@@ -248,7 +250,6 @@ fn push_phone<'s>(tokens: &mut Vec<IrToken<'s>>, slice: &mut SubString<'s>, pref
 
     match (&prefix, literal) {
         (None, INPUT_PATTERN_STR) => tokens.push(IrToken::CondType(CondType::Pattern)),
-        (None, GAP_STR) => tokens.push(IrToken::Gap),
         (None, "") => (),
         (None, _) => tokens.push(IrToken::Phone(Phone::Symbol(literal))),
         (Some(Prefix::Definition), _) => tokenization_data.get_definition(literal, tokens, lazy_expansions)?,

@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
 use crate::{
-    keywords::{ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, GAP_STR, LABEL_PREFIX},
+    keywords::{ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, LABEL_PREFIX, NOT_CHAR},
     phones::Phone,
-    tokens::{ScopeType, Shift, CondType, AndType}
+    tokens::{AndType, CondType, ScopeType, Shift}
 };
 
 /// Tokens that make up the intermediate representation of sound shifts
@@ -19,14 +19,14 @@ pub enum IrToken<'s> {
     Any,
     /// An item seperator for selection scopes
     ArgSep,
-    /// A gap of size 0 or greater that does not contain a word boundery
-    Gap,
     /// The main focus and type of a condition or anti-condition
     CondType(CondType),
     /// The start of a scope
     ScopeStart(ScopeType),
     /// The end of a scope
     ScopeEnd(ScopeType),
+    /// Repetition negator
+    Negative,
 }
 
 impl Display for IrToken<'_> {
@@ -35,12 +35,12 @@ impl Display for IrToken<'_> {
             Self::Any => write!(f, "{ANY_CHAR}"),
             Self::ArgSep => write!(f, "{ARG_SEP_CHAR}"),
             Self::Break(r#break) => write!(f, "{break}"),
-            Self::Gap => write!(f, "{GAP_STR}"),
             Self::CondType(focus) => write!(f, "{focus}"),
             Self::Phone(phone) => write!(f, "{phone}"),
             Self::ScopeEnd(kind) => write!(f, "{}", kind.fmt_end()),
             Self::ScopeStart(kind) => write!(f, "{}", kind.fmt_start()),
             Self::Label(name) => write!(f, "{LABEL_PREFIX}{name}"),
+            Self::Negative => write!(f, "{NOT_CHAR}"),
         }
     }
 }
