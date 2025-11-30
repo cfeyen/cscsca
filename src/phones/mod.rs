@@ -77,6 +77,8 @@ impl<'s> UnitState<'s> for Phone<'s> {
     }
 
     fn len(&self) -> usize { 1 }
+
+    fn max_len(&self) -> usize { 1 }
 }
 
 impl std::fmt::Display for Phone<'_> {

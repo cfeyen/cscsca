@@ -50,6 +50,7 @@ impl<'s> Pattern<'s> {
             checked_at_zero: false,
             inclusive, exclusive: exclusive.map(RefCell::new),
             included: PatternList::default(),
+            inclusions: 0,
             len: 0,
             id,
         })
@@ -111,6 +112,17 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Optional(option) => option.len(),
             Self::Selection(selection) => selection.len(),
             Self::List(list) => list.len(),
+        }
+    }
+
+    fn max_len(&self) -> usize {
+        match self {
+            Self::Phone(phone) => phone.max_len(),
+            Self::NonBound(any) => any.max_len(),
+            Self::Repetition(repetition) => repetition.max_len(),
+            Self::Optional(option) => option.max_len(),
+            Self::Selection(selection) => selection.max_len(),
+            Self::List(list) => list.max_len(),
         }
     }
 

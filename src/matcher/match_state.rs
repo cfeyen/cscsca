@@ -8,8 +8,11 @@ pub trait MatchState<'s> {
     /// Resets to a default state
     fn reset(&mut self);
 
-    /// gets the number of phones in the state
+    /// Gets the number of phones in the state
     fn len(&self) -> usize;
+
+    /// Gets the minumum garenteeable maximum number of phones in the state
+    fn max_len(&self) -> usize;
 
     /// Advances a state to the next valid match and returns the choices made to get there
     /// 
@@ -22,6 +25,9 @@ pub trait UnitState<'s> {
     /// Determines if a state matches phones
     fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p;
 
-    /// gets the number of phones in the state
+    /// Gets the number of phones in the state
     fn len(&self) -> usize;
+
+    /// Gets the minumum garenteeable maximum number of phones in the state
+    fn max_len(&self) -> usize;
 }

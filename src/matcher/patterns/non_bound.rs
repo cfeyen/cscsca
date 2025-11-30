@@ -42,6 +42,8 @@ impl<'s> UnitState<'s> for NonBound<'s> {
     }
 
     fn len(&self) -> usize { 1 }
+
+    fn max_len(&self) -> usize { 1 }
 }
 
 impl std::fmt::Display for NonBound<'_> {

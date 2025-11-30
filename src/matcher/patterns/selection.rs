@@ -79,6 +79,10 @@ impl<'s> MatchState<'s>  for Selection<'s> {
         self.options.get(self.selected_index).map(MatchState::len).unwrap_or_default()
     }
 
+    fn max_len(&self) -> usize {
+        self.options.iter().fold(0, |max, opt| max.max(opt.max_len()))
+    }
+
     fn reset(&mut self) {
         self.selected_index = 0;
         self.options.iter_mut().for_each(MatchState::reset);

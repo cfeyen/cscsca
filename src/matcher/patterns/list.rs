@@ -10,8 +10,6 @@ use crate::{
     tokens::Direction,
 };
 
-
-
 /// A list of matchable `Pattern`s
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PatternList<'s> {
@@ -161,7 +159,11 @@ impl<'s> MatchState<'s> for PatternList<'s> {
     }
 
     fn len(&self) -> usize {
-        self.patterns.iter().fold(0, |acc, pat| acc + pat.len())
+        self.patterns.iter().fold(0, |len, pat| len + pat.len())
+    }
+
+    fn max_len(&self) -> usize {
+        self.patterns.iter().fold(0, |max, pat| max.max(pat.max_len()))
     }
 
     fn reset(&mut self) {
