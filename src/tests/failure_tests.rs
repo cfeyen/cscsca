@@ -85,7 +85,8 @@ fn multi_line_errors() {
 
 #[io_test(pollster::block_on)]
 fn error_on_correct_line_after_escaped_newline_in_definition() {
-    let rules = build_rules("DEFINE def $a{\\\r\n}\r\n{a, b} >> {c}", &mut NoGet).expect("Should Build");
+    let rules = await_io! { build_rules("DEFINE def $a{\\\r\n}\r\n{a, b} >> {c}", &mut NoGet) }
+        .expect("Should Build");
 
     assert_eq!(
         3,
