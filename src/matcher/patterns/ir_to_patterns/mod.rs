@@ -18,14 +18,15 @@ pub enum RuleLine<'s> {
         lines: NonZero<usize>,
     },
     IoEvent(RuntimeIoEvent<'s>),
-    Empty,
+    Empty { lines: NonZero<usize> },
 }
 
 impl RuleLine<'_> {
     pub const fn lines(&self) -> NonZero<usize> {
         match self {
+            Self::Empty { lines } => *lines,
             Self::Rule { lines, .. } => *lines,
-            _ => ONE,
+            Self::IoEvent(_) => ONE,
         }
     }
 }
@@ -46,9 +47,10 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
     let line_count = line.lines();
 
     let line = match line {
-        IrLine::Empty | IrLine::IoEvent(IoEvent::Tokenizer(_)) => return Ok(RuleLine::Empty),
+        IrLine::Empty { lines } => return Ok(RuleLine::Empty { lines }),
+        IrLine::IoEvent(IoEvent::Tokenizer(_)) => return Ok(RuleLine::Empty { lines: ONE }),
         IrLine::IoEvent(IoEvent::Runtime(cmd)) => return Ok(RuleLine::IoEvent(cmd)),
-        IrLine::Ir { tokens, .. } if tokens.is_empty() => return Ok(RuleLine::Empty),
+        IrLine::Ir { tokens, .. } if tokens.is_empty() => return Ok(RuleLine::Empty { lines: ONE }),
         IrLine::Ir { tokens, .. } => tokens
     };
 

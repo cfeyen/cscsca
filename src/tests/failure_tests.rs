@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use crate::build_rules;
 use crate::executor::{LineByLineExecuter, runtime::LineApplicationLimit};
 use crate::io_macros::{await_io, io_test};
 use crate::tests::{apply_fallible, NoGet, NoLog};
@@ -79,4 +80,18 @@ fn multi_line_errors() {
     let e = await_io! { apply_fallible("", "DEFINE def h >> \\\n kh \n @a") }.expect_err("should error");
     assert_eq!(e.line_num.get(), 3);
     assert_eq!(e.line_count.get(), 1);
+}
+
+
+#[io_test(pollster::block_on)]
+fn error_on_correct_line_after_escaped_newline_in_definition() {
+    let rules = build_rules("DEFINE def $a{\\\r\n}\r\n{a, b} >> {c}", &mut NoGet).expect("Should Build");
+
+    assert_eq!(
+        3,
+        await_io! { rules.apply_fallible("b", &mut NoLog::default()) }
+            .expect_err("Should Error")
+            .line_number()
+            .get()
+    );
 }

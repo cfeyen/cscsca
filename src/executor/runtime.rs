@@ -66,7 +66,7 @@ pub(super) trait RuntimeApplier: Runtime {
     #[io_fn]
     fn apply_line<'s: 'p, 'p>(&mut self, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'p>>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
         match rule_line {
-            RuleLine::Empty => Ok(()),
+            RuleLine::Empty { lines: _ } => Ok(()),
             RuleLine::IoEvent(cmd) => await_io! {
                 self.execute_runtime_command(cmd, phones, line_num)
             },

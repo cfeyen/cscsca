@@ -171,11 +171,11 @@ impl<'s> TokenizationData<'s> {
 
     /// Takes the sources from another `TokenizationData`
     /// 
-    /// # Warning
+    /// # Safety
     /// There may still be data referencing taken sources in `other`
     /// 
     /// `other` must be dropped before the sources are freed
-    pub fn take_sources_from(&mut self, other: &mut Self) {
+    pub unsafe fn take_sources_from(&mut self, other: &mut Self) {
         self.sources.append(&mut other.sources);
     }
 

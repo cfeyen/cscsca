@@ -23,8 +23,8 @@ fn no_rule() {
 
 #[test]
 fn empty_line() {
-    assert_eq!(Ok(RuleLine::Empty), build_rule(IrLine::Empty));
-    assert_eq!(Ok(RuleLine::Empty), build_rule(IrLine::Ir { tokens: Vec::new(), lines: ONE }));
+    assert_eq!(Ok(RuleLine::Empty { lines: ONE }), build_rule(IrLine::Empty { lines: ONE }));
+    assert_eq!(Ok(RuleLine::Empty { lines: ONE }), build_rule(IrLine::Ir { tokens: Vec::new(), lines: ONE }));
 }
 
 #[test]

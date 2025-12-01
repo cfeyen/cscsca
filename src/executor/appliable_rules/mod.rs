@@ -114,7 +114,7 @@ impl<'s> AppliableRules<'s> {
                 return Err(e.into_sca_error(self.lines.iter().copied()));
             }
 
-            line_num = unsafe { NonZero::new_unchecked(line_num.get() + rule_line.lines().get()) };
+            line_num = line_num.saturating_add(rule_line.lines().get());
         }
 
         // signals to the runtime that execution is complete
@@ -141,10 +141,11 @@ impl<'s> AppliableRules<'s> {
         self.lines.append(&mut new_appliable.lines);
         self.rules.append(&mut new_appliable.rules);
         std::mem::swap(&mut self.tokenization_data, &mut new_appliable.tokenization_data);
-        self.tokenization_data.take_sources_from(&mut new_appliable.tokenization_data);
 
         // Saftey: it is safe to drop `new_appliable`
         // because all of its sources have been moved to `self`
+        // `new_appliable` is dropped before `self`
+        unsafe { self.tokenization_data.take_sources_from(&mut new_appliable.tokenization_data) };
 
         Ok(())
     }

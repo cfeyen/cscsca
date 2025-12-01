@@ -1,34 +1,28 @@
-use std::num::NonZero;
-
 use crate::{
-    escaped_strings::check_escapes,
-    executor::io_events::{GetType, IoEvent, RuntimeIoEvent, TokenizerIoEvent},
-    ir::{IrError, IrLine, prefix::Prefix, tokenization_data::TokenizationData, tokens::{Break, IrToken}},
-    keywords::{AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, REPETITION_END_CHAR, REPETITION_START_CHAR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX, is_special_char, is_special_str},
-    phones::Phone,
-    sub_string::SubString,
-    tokens::{AndType, CondType, Direction, ScopeType, Shift, ShiftType},
+    ONE, escaped_strings::check_escapes, executor::io_events::{GetType, IoEvent, RuntimeIoEvent, TokenizerIoEvent}, ir::{IrError, IrLine, prefix::Prefix, tokenization_data::TokenizationData, tokens::{Break, IrToken}}, keywords::{AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, REPETITION_END_CHAR, REPETITION_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, SPECIAL_STRS, VARIABLE_PREFIX, is_special_char, is_special_str}, phones::Phone, sub_string::SubString, tokens::{AndType, CondType, Direction, ScopeType, Shift, ShiftType}
 };
 
 /// Converts source code into intermediate representation tokens
 pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl Iterator<Item = &'s str>, tokenization_data: &mut TokenizationData<'s>) -> Result<IrLine<'s>, IrError<'s>> {
     let ir_line = if line.starts_with(COMMENT_LINE_START) {
         // handles comments
-        IrLine::Empty
+        IrLine::Empty { lines: ONE }
     } else if let Some(definition_content) = line.strip_prefix(LAZY_DEFINITION_LINE_START) {
         // handles lazy definitions
         let definition_content = definition_content.trim();
         if let Some(name) = get_first_phone(definition_content) {
             tokenization_data.set_lazy_definition(name, &definition_content[name.len()..]);
-            IrLine::Empty
+            IrLine::Empty { lines: ONE }
         } else {
             return Err(IrError::EmptyDefinition);
         }
     } else if let Some(definition_content) = line.strip_prefix(DEFINITION_LINE_START) {
         // handles definitions
         let (mut ir, mut continues_on_next_line) = tokenize_line(definition_content, tokenization_data, &mut Vec::new())?;
+        let mut lines = ONE;
 
         while continues_on_next_line && let Some(next_line) = rem_lines.next() {
+            lines = lines.saturating_add(1);
             let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data, &mut Vec::new())?;
             ir.append(&mut next_ir);
             continues_on_next_line = continue_again;
@@ -36,7 +30,7 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
 
         if let Some(IrToken::Phone(name)) = ir.first() {
             tokenization_data.set_definition(name.as_str(), ir[1..].into());
-            IrLine::Empty
+            IrLine::Empty { lines }
         } else {
             return Err(IrError::EmptyDefinition);
         }
@@ -69,24 +63,23 @@ pub fn tokenize_line_or_create_command<'s>(line: &'s str, rem_lines: &mut impl I
         // handles rules
         let (mut ir, mut continues_on_next_line) = tokenize_line(line, tokenization_data, &mut Vec::new())?;
 
-        let mut line_count = 1;
+        let mut line_count = ONE;
 
         while continues_on_next_line && let Some(next_line) = rem_lines.next() {
                 let (mut next_ir, continue_again) = tokenize_line(next_line, tokenization_data, &mut Vec::new())?;
                 ir.append(&mut next_ir);
                 continues_on_next_line = continue_again;
-                line_count += 1;
+                line_count = line_count.saturating_add(1);
         }
 
         let mut ir_line = IrLine::Ir {
             tokens: ir,
-            // Safety: `line_count` starts at one and is only incremented
-            lines: unsafe { NonZero::new_unchecked(line_count) }
+            lines: line_count,
         };
         
         // converts empty rules to the empty varient
         if let IrLine::Ir { tokens, lines } = &ir_line && tokens.is_empty() && lines.get() == 1 {
-            ir_line = IrLine::Empty;
+            ir_line = IrLine::Empty { lines: *lines };
         }
 
         ir_line

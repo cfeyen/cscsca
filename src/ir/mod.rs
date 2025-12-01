@@ -26,7 +26,7 @@ pub enum IrLine<'s> {
         lines: NonZero<usize>,
     },
     IoEvent(IoEvent<'s>),
-    Empty,
+    Empty { lines: NonZero<usize> },
 }
 
 impl IrLine<'_> {

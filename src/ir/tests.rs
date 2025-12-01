@@ -58,7 +58,7 @@ fn tokenize_lines_of_phones() {
 fn tokenize_lines_of_phones_and_nothing() {
     assert_eq!(Ok(vec![
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Phone(Phone::Symbol("def"))], lines: ONE},
-        IrLine::Empty,
+        IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("fed")), IrToken::Phone(Phone::Symbol("cb")), IrToken::Phone(Phone::Symbol("a"))], lines: ONE},
     ]), tokenize("a bc def\n\nfed cb a"));
 }
@@ -67,7 +67,7 @@ fn tokenize_lines_of_phones_and_nothing() {
 fn tokenize_lines_of_phones_and_comment() {
     assert_eq!(Ok(vec![
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("a")), IrToken::Phone(Phone::Symbol("bc")), IrToken::Phone(Phone::Symbol("def"))], lines: ONE},
-        IrLine::Empty,
+        IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("fed")), IrToken::Phone(Phone::Symbol("cb")), IrToken::Phone(Phone::Symbol("a"))], lines: ONE},
     ]), tokenize("a bc def\n## this is a comment\nfed cb a"));
 }
@@ -75,7 +75,7 @@ fn tokenize_lines_of_phones_and_comment() {
 #[test]
 fn tokenize_with_def() {
     assert_eq!(
-        Ok(vec![IrLine::Empty, IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("b")), IrToken::Phone(Phone::Symbol("cd")), IrToken::Phone(Phone::Symbol("e"))], lines: ONE,}]),
+        Ok(vec![IrLine::Empty { lines: ONE }, IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("b")), IrToken::Phone(Phone::Symbol("cd")), IrToken::Phone(Phone::Symbol("e"))], lines: ONE,}]),
         tokenize("DEFINE a b cd e\n@a")
     );
 }
@@ -83,9 +83,9 @@ fn tokenize_with_def() {
 #[test]
 fn tokenize_with_redef() {
     assert_eq!(Ok(vec![
-        IrLine::Empty,
+        IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("b")), IrToken::Phone(Phone::Symbol("cd")), IrToken::Phone(Phone::Symbol("e"))], lines: ONE},
-        IrLine::Empty,
+        IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("new")), IrToken::Phone(Phone::Symbol("content"))], lines: ONE},
     ]), tokenize("DEFINE a b cd e\n@a\nDEFINE a new content\n@a"));
 }
@@ -114,7 +114,7 @@ fn tokenize_undef() {
 #[test]
 fn tokenize_lazy_def() {
     assert_eq!(Ok(vec![
-        IrLine::Empty,
+        IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("b")), IrToken::Phone(Phone::Symbol("c"))], lines: ONE }
     ]), tokenize("DEFINE_LAZY a b c\n@a"));
 }
@@ -122,8 +122,8 @@ fn tokenize_lazy_def() {
 #[test]
 fn tokenize_lazy_def_before_content_def() {
     assert_eq!(Ok(vec![
-        IrLine::Empty,
-        IrLine::Empty,
+        IrLine::Empty { lines: ONE },
+        IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("c"))], lines: ONE }
     ]), tokenize("DEFINE_LAZY a @b\nDEFINE b c\n@a"));
 }
@@ -138,9 +138,9 @@ fn tokenize_recursive_lazy_def() {
 #[test]
 fn tokenize_lazy_def_redef() {
     assert_eq!(Ok(vec![
-        IrLine::Empty,
-        IrLine::Empty,
-        IrLine::Empty,
+        IrLine::Empty { lines: ONE },
+        IrLine::Empty { lines: ONE },
+        IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("c"))], lines: ONE }
     ]), tokenize("DEFINE b z\nDEFINE_LAZY a @b\nDEFINE b c\n@a"));
 }
@@ -406,9 +406,9 @@ fn tokenize_simple() {
     let tokens = tokenize("##this is a comment\nDEFINE V { i, e, a, u, o }\n\n$stops{p, t, k} >> $stops{b, d, g} / @V _ @V / _ {l, r} // h _");
 
     assert_eq!(Ok(vec![
-        IrLine::Empty,
-        IrLine::Empty,
-        IrLine::Empty,
+        IrLine::Empty { lines: ONE },
+        IrLine::Empty { lines: ONE },
+        IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![
             IrToken::Label("stops"),
             IrToken::ScopeStart(ScopeType::Selection),

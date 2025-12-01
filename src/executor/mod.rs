@@ -133,7 +133,7 @@ fn build_line<'s, G: IoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item
     let mut line_count = ONE;
 
     let ir_line = tokenize_line_or_create_command(line, &mut rem_lines.map(|(_, line)| {
-        line_count = unsafe { NonZero::new_unchecked(line_count.get() + 1) };
+        line_count = line_count.saturating_add(1);
         line
     }), tokenization_data)
         .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Parse, line_num, line_count))?;
@@ -141,7 +141,7 @@ fn build_line<'s, G: IoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item
     match ir_line {
         IrLine::IoEvent(IoEvent::Tokenizer(cmd)) => {
             await_io! { getter.run_build_time_command(&cmd, tokenization_data, line_num) }?;
-            Ok(RuleLine::Empty)
+            Ok(RuleLine::Empty { lines: line_count })
         },
         // builds a rule from ir
         ir_line =>
