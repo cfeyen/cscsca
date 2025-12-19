@@ -16,33 +16,46 @@ pub struct Repetition<'s> {
     pub(super) id: Option<&'s str>,
 }
 
-impl<'s> MatchState<'s> for Repetition<'s> {
-    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
+impl<'s> Repetition<'s> {
+    fn get_max_len(&self, choices: &Choices<'_, '_>) -> Option<usize> {
+        self.id.and_then(|id| choices.repetition.get(id)).copied()
+    }
+
+    fn exclusive_matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> bool where 's: 'p {
+        let max_ex_len = self.get_max_len(choices).unwrap_or(self.len);
+
         if let Some(mut exclusive) = self.exclusive.as_ref().map(RefCell::borrow_mut) {
-            let mut phones2 = *phones;
-
-            let len = self.id.as_ref()
-                .and_then(|id| choices.repetition.get(id))
-                .copied()
-                .unwrap_or(self.len);
-            
-            // checks of the exclusive pattern is contained
-            for _ in 0..len {
-                if exclusive.next_match(&phones2, choices).is_some() {
-                    exclusive.reset();
-                    return None;
+            for i in 0..self.len {
+                while exclusive.next_match(phones, choices).is_some() {
+                    if i + exclusive.len() <= max_ex_len {
+                        exclusive.reset();
+                        return true
+                    }
                 }
-
+                
                 exclusive.reset();
-                phones2.next();
+                _ = phones.next();
             }
         }
 
-        // checks if the included patterns match
+        return false;
+    }
+
+    fn included_matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if self.included.len() == self.len && let Some(new_choices) = self.included.matches(phones, choices) {
             Some(new_choices)
         } else {
             None
+        }
+    }
+}
+
+impl<'s> MatchState<'s> for Repetition<'s> {
+    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
+        if self.exclusive_matches(phones, choices) {
+            None
+        } else {
+            self.included_matches(phones, choices)
         }
     }
 
@@ -58,11 +71,15 @@ impl<'s> MatchState<'s> for Repetition<'s> {
 
             // checks each varient up to the maximum length 
             loop {
+                if self.exclusive_matches(&mut phones.clone(), choices) {
+                    return None;
+                }
+
                 if let Some(included_choices) = self.included.next_match(phones, &new_choices) {
                     let mut choices = new_choices.partial_clone();
                     choices.take_owned(included_choices);
 
-                    if let Some(match_choices) = self.matches(&mut phones.clone(), &choices) {
+                    if let Some(match_choices) = self.included_matches(&mut phones.clone(), &choices) {
                         choices.take_owned(match_choices);
 
                         if let Some(id) = &self.id && !choices.repetition.contains_key(id) {
@@ -83,17 +100,10 @@ impl<'s> MatchState<'s> for Repetition<'s> {
                     if self.inclusions > max_len {
                         self.len += 1;
                         self.included = PatternList::default();
+                        self.inclusions = 0;
 
                         if self.len > max_len {
                             break;
-                        }
-
-                        let inclusive_max_len = self.inclusive.max_len();
-                        self.inclusions = if inclusive_max_len > 0 { self.len / inclusive_max_len } else { 0 };
-                        for _ in 0..self.inclusions {
-                            for pat in self.inclusive.inner() {
-                                self.included.push(pat.clone());
-                            }
                         }
                     }
                 }
@@ -122,13 +132,17 @@ impl<'s> MatchState<'s> for Repetition<'s> {
         self.len
     }
 
-    fn max_len(&self) -> usize { 0 }
-
     fn reset(&mut self) {
         self.checked_at_zero = false;
         self.len = 0;
         self.included = PatternList::default();
         self.inclusions = 0;
+    }
+
+    fn advance_once(&mut self) {
+        if !self.checked_at_zero {
+            self.checked_at_zero = true;
+        }
     }
 }
 

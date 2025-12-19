@@ -28,6 +28,7 @@ impl<'s> PatternList<'s> {
         &self.patterns
     }
 
+    /// Adds a pattern to the end of the list
     pub fn push(&mut self, pat: Pattern<'s>) {
         self.patterns.push(pat);
     }
@@ -149,6 +150,7 @@ impl<'s> MatchState<'s> for PatternList<'s> {
         if !self.checked_at_initial {
             self.checked_at_initial = true;
             if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
+                self.advance_once();
                 return Some(new_choices);
             }
         } else if self.patterns.is_empty() {
@@ -162,13 +164,17 @@ impl<'s> MatchState<'s> for PatternList<'s> {
         self.patterns.iter().fold(0, |len, pat| len + pat.len())
     }
 
-    fn max_len(&self) -> usize {
-        self.patterns.iter().fold(0, |max, pat| max.max(pat.max_len()))
-    }
-
     fn reset(&mut self) {
         self.checked_at_initial = false;
         self.patterns.iter_mut().for_each(MatchState::reset);
+    }
+
+    fn advance_once(&mut self) {
+        if self.checked_at_initial {
+            self.patterns.first_mut().map(MatchState::advance_once);
+        } else {
+            self.checked_at_initial = false;
+        }
     }
 }
 

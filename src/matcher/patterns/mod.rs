@@ -115,17 +115,6 @@ impl<'s> MatchState<'s> for Pattern<'s> {
         }
     }
 
-    fn max_len(&self) -> usize {
-        match self {
-            Self::Phone(phone) => phone.max_len(),
-            Self::NonBound(any) => any.max_len(),
-            Self::Repetition(repetition) => repetition.max_len(),
-            Self::Optional(option) => option.max_len(),
-            Self::Selection(selection) => selection.max_len(),
-            Self::List(list) => list.max_len(),
-        }
-    }
-
     fn reset(&mut self) {
         match self {
             Self::Phone(phone) => phone.reset(),
@@ -134,6 +123,17 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Optional(option) => option.reset(),
             Self::Selection(selection) => selection.reset(),
             Self::List(list) => list.reset(),
+        }
+    }
+
+    fn advance_once(&mut self) {
+        match self {
+            Self::Phone(phone) => phone.advance_once(),
+            Self::NonBound(any) => any.advance_once(),
+            Self::Repetition(repetition) => repetition.advance_once(),
+            Self::Optional(option) => option.advance_once(),
+            Self::Selection(selection) => selection.advance_once(),
+            Self::List(list) => list.advance_once(),
         }
     }
 }

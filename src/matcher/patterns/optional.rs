@@ -86,13 +86,13 @@ impl<'s> MatchState<'s> for Optional<'s> {
         }
     }
 
-    fn max_len(&self) -> usize {
-        self.option.max_len()
-    }
-
     fn reset(&mut self) {
         self.selected = true;
         self.option.reset();
+    }
+
+    fn advance_once(&mut self) {
+        self.option.advance_once();
     }
 }
 

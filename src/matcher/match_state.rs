@@ -11,13 +11,13 @@ pub trait MatchState<'s> {
     /// Gets the number of phones in the state
     fn len(&self) -> usize;
 
-    /// Gets the minumum garenteeable maximum number of phones in the state
-    fn max_len(&self) -> usize;
-
     /// Advances a state to the next valid match and returns the choices made to get there
     /// 
     /// If there is no remaining valid match, `None` is returned
     fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p;
+
+    /// Advances a state by up to one check
+    fn advance_once(&mut self);
 }
 
 /// A signle-state varient of `MatchState`
@@ -27,7 +27,4 @@ pub trait UnitState<'s> {
 
     /// Gets the number of phones in the state
     fn len(&self) -> usize;
-
-    /// Gets the minumum garenteeable maximum number of phones in the state
-    fn max_len(&self) -> usize;
 }

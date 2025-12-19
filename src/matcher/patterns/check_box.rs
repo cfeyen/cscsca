@@ -38,12 +38,13 @@ impl<'s, T: UnitState<'s>> MatchState<'s> for CheckBox<'s, T> {
     fn len(&self) -> usize {
         self.unit_state.len()
     }
-    fn max_len(&self) -> usize {
-        self.unit_state.max_len()
-    }
 
     fn reset(&mut self) {
         self.checked = false;
+    }
+
+    fn advance_once(&mut self) {
+        self.checked = true;
     }
 }
 
