@@ -170,11 +170,11 @@ impl<'s> MatchState<'s> for PatternList<'s> {
     }
 
     fn advance_once(&mut self) {
-        if self.checked_at_initial {
-            self.patterns.first_mut().map(MatchState::advance_once);
-        } else {
-            self.checked_at_initial = false;
+        if !self.checked_at_initial {
+            self.checked_at_initial = true;
         }
+        
+        self.patterns.first_mut().map(MatchState::advance_once);
     }
 }
 

@@ -409,3 +409,20 @@ fn agreeing_selection() {
 
     assert!(patterns.next_match(&mut match_phones, &choices).is_none());
 }
+
+#[test]
+fn advancement() {
+    let choices = Choices::default();
+
+    let mut patterns = PatternList::new(vec![
+        Pattern::new_phone(Phone::Symbol("a")),
+    ]);
+
+    let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Bound], 0, Direction::Ltr);
+
+    assert!(patterns.matches(&mut match_phones.clone(), &choices).is_some());
+    
+    patterns.advance_once();
+
+    assert!(patterns.matches(&mut match_phones, &choices).is_some());
+}

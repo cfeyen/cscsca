@@ -16,7 +16,7 @@ pub trait MatchState<'s> {
     /// If there is no remaining valid match, `None` is returned
     fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p;
 
-    /// Advances a state by up to one check
+    /// Advances a state by up to one check such that the phones represented are not changed
     fn advance_once(&mut self);
 }
 
