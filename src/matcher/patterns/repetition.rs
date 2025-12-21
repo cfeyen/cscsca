@@ -52,7 +52,7 @@ impl<'s> Repetition<'s> {
 
 impl<'s> MatchState<'s> for Repetition<'s> {
     fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
-        if self.exclusive_matches(phones, choices) {
+        if self.exclusive_matches(&mut phones.clone(), choices) {
             None
         } else {
             self.included_matches(phones, choices)
