@@ -43,10 +43,15 @@ impl ToTokens for IoTest {
 
     #[cfg(not(feature = "async_io"))]
     fn to_tokens(&self, tokens: &mut TokenStream2) {
-
-        let Self { attrs, signature, body, poller: _ } = self;
+        let Self { attrs, signature, body, poller } = self;
 
         let attrs = attrs.into_iter();
+
+        if poller.is_none() {
+            return tokens.extend(quote! {
+                compile_error!("#[io_test] expected function that will block until a future is polled to completion, try #[io_test(`path`)]")
+            });
+        };
 
         tokens.extend(quote! {
             #[test]
