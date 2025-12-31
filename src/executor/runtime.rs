@@ -120,11 +120,7 @@ impl LogRuntime {
     /// Returns the logs and replaces them with empty logs
     #[inline]
     pub fn flush_logs(&mut self) -> Vec<(String, String)> {
-        let mut log_replacement = Vec::new();
-
-        std::mem::swap(&mut log_replacement, &mut self.logs);
-
-        log_replacement
+        std::mem::replace(&mut self.logs, Vec::new())
     }
 }
 
