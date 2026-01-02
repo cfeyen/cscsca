@@ -18,7 +18,7 @@ use getter::{IoGetter, ComptimeCommandExecuter};
 /// An executer that contains both an `IoGetter` and a `Runtime`
 /// 
 /// Builds then applies one line at a time
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct LineByLineExecuter<R: Runtime, G: IoGetter> {
     runtime: R,
     getter: G,
