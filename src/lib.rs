@@ -22,10 +22,14 @@ pub use crate::{
         },
         runtime::{
             Runtime,
+            ContextRuntime,
             LineApplicationLimit,
             LogRuntime,
         },
-        getter::IoGetter,
+        getter::{
+            IoGetter,
+            ContextIoGetter,
+        },
     },
 };
 
