@@ -173,11 +173,18 @@ impl RulelessScaError {
         }
     }
 
-    /// Builds a new `ScaError` from any error,
+    /// Builds a new `RulelessScaError` from any error,
     /// with the line and line number it occurred on
+    #[inline]
     fn from_error<E: Error + ?Sized>(e: &E, error_type: ScaErrorType, line_num: NonZero<usize>, line_count: NonZero<usize>) -> Self {
+        Self::from_error_message(e.to_string(), error_type, line_num, line_count)
+    }
+
+    /// Builds a new `RulelessScaError` from an error string,
+    /// with the line and line number it occurred on
+    fn from_error_message(msg: String, error_type: ScaErrorType, line_num: NonZero<usize>, line_count: NonZero<usize>) -> Self {
         Self {
-            err: e.to_string(),
+            err: msg,
             line_num,
             line_count,
             error_type,

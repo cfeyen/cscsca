@@ -10,7 +10,7 @@ struct SingleGetter(&'static str);
 
 impl IoGetter for SingleGetter {
     #[io_fn(impl)]
-    fn get_io(&mut self, _: &str) -> Result<String, Box<dyn std::error::Error>> {
+    fn get_io(&mut self, _: &str) -> Result<String, String> {
         Ok(self.0.to_string())
     }
 }

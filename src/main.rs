@@ -307,7 +307,7 @@ impl cscsca::Runtime for AppRuntime {
         Some(cscsca::LineApplicationLimit::default())
     }
 
-    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), String> {
         match self {
             Self::Quiet(logger) => logger.put_io(msg, phones),
             Self::Loud(logger) => logger.put_io(msg, phones),

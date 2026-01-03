@@ -24,16 +24,8 @@ pub struct NoGet;
 
 impl IoGetter for NoGet {
     #[io_fn(impl)]
-    fn get_io(&mut self, _: &str) -> Result<String, Box<dyn std::error::Error>> {
-        return Err(Box::new(Self) as Box<dyn std::error::Error>);
-    }
-}
-
-impl std::error::Error for NoGet {}
-
-impl std::fmt::Display for NoGet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "`GET` and `GET_AS_CODE` not implemented")
+    fn get_io(&mut self, _: &str) -> Result<String, String> {
+        return Err("`GET` and `GET_AS_CODE` not implemented".to_string());
     }
 }
 
@@ -52,7 +44,7 @@ impl Runtime for NoLog {
     }
 
     #[io_fn(impl)]
-    fn put_io(&mut self, _: &str, _:String) -> Result<(), Box<dyn std::error::Error>> {
+    fn put_io(&mut self, _: &str, _:String) -> Result<(), String> {
         Ok(())
     }
 }
@@ -86,7 +78,7 @@ struct SingleInputGetter(&'static str);
 
 impl IoGetter for SingleInputGetter {
     #[io_fn(impl)]
-    fn get_io(&mut self, _: &str) -> Result<String, Box<dyn std::error::Error>> {
+    fn get_io(&mut self, _: &str) -> Result<String, String> {
         Ok(self.0.to_string())
     }
 }

@@ -16,11 +16,11 @@ use cscsca::{
 pub struct CliGetter;
 
 impl IoGetter for CliGetter {
-    fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn std::error::Error>> {
+    fn get_io(&mut self, msg: &str) -> Result<String, String> {
         print!("{msg} {MAGENTA}");
         let mut buffer = String::new();
         _ = io::stdout().flush();
-        io::stdin().read_line(&mut buffer)?;
+        io::stdin().read_line(&mut buffer).map_err(|e| e.to_string())?;
         print!("{RESET}");
         Ok(buffer.trim().to_string())
     }
@@ -44,7 +44,7 @@ impl Runtime for LogAndPrintRuntime {
         self.0.line_application_limit()
     }
     
-    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn std::error::Error>> {
+    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), String> {
         println!("{msg} '{BLUE}{phones}{RESET}'");
         self.0.put_io(msg, phones)
     }

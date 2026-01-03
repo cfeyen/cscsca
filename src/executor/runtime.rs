@@ -1,4 +1,4 @@
-use std::{error::Error, num::NonZero, time::Duration};
+use std::{num::NonZero, time::Duration};
 
 use crate::{
     applier::apply, await_io, io_fn, matcher::patterns::ir_to_patterns::RuleLine, phones::{phone_list_to_string, Phone}, RulelessScaError, ScaErrorType, ONE
@@ -37,7 +37,7 @@ pub trait ContextRuntime {
     /// # Note
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
-    fn put_io(&mut self, context: &mut Self::OutputContext, msg: &str, phones: String) -> Result<(), Box<dyn Error>>;
+    fn put_io(&mut self, context: &mut Self::OutputContext, msg: &str, phones: String) -> Result<(), String>;
 
     /// Called before applying a set of rules
     /// 
@@ -63,7 +63,7 @@ impl<T: Runtime> ContextRuntime for T {
 
     #[io_fn(impl)]
     #[inline]
-    fn put_io(&mut self, (): &mut Self::OutputContext, msg: &str, phones:String) -> Result<(), Box<dyn Error>> {
+    fn put_io(&mut self, (): &mut Self::OutputContext, msg: &str, phones: String) -> Result<(), String> {
         await_io! { Runtime::put_io(self, msg, phones) }
     }
 
@@ -95,7 +95,7 @@ pub trait Runtime {
     /// # Note
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
-    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>>;
+    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), String>;
 
     /// Called before applying a set of rules
     /// 
@@ -143,7 +143,7 @@ pub(super) trait RuntimeApplier: ContextRuntime {
             RuntimeIoEvent::Print { msg } => {
                 await_io! {
                     self.put_io(cxt, msg, phone_list_to_string(phones))
-                }.map_err(|e| RulelessScaError::from_error(&*e, ScaErrorType::Output, line_num, ONE))
+                }.map_err(|e| RulelessScaError::from_error_message(e, ScaErrorType::Output, line_num, ONE))
             }
         }
     }
@@ -187,7 +187,7 @@ impl LogRuntime {
 
 impl Runtime for LogRuntime {
     #[io_fn(impl)]
-    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), Box<dyn Error>> {
+    fn put_io(&mut self, msg: &str, phones: String) -> Result<(), String> {
         self.logs.push((msg.to_string(), phones));
         Ok(())
     }

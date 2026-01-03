@@ -18,7 +18,7 @@ pub trait ContextIoGetter {
     /// # Note
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
-    fn get_io(&mut self, context: &mut Self::InputContext, msg: &str) -> Result<String, Box<dyn std::error::Error>>;
+    fn get_io(&mut self, context: &mut Self::InputContext, msg: &str) -> Result<String, String>;
 
     /// Called before building a set of rules
     /// 
@@ -38,7 +38,7 @@ impl<T: IoGetter> ContextIoGetter for T {
 
     #[io_fn(impl)]
     #[inline]
-    fn get_io(&mut self, (): &mut Self::InputContext, msg: &str) -> Result<String, Box<dyn std::error::Error>> {
+    fn get_io<'e>(&'e mut self, (): &'e mut Self::InputContext, msg: &str) -> Result<String, String> {
         await_io! { IoGetter::get_io(self, msg) }
     }
 
@@ -65,7 +65,7 @@ pub trait IoGetter {
     /// # Note
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
-    fn get_io(&mut self, msg: &str) -> Result<String, Box<dyn std::error::Error>>;
+    fn get_io(&mut self, msg: &str) -> Result<String, String>;
 
     /// Called before building a set of rules
     /// 
@@ -94,7 +94,7 @@ pub(super) trait ComptimeCommandExecuter: ContextIoGetter {
             TokenizerIoEvent::Get { get_type, var, msg } => {
                 let input = await_io! {
                     self.get_io(cxt, msg)
-                }.map_err(|e| RulelessScaError::from_error(&*e, ScaErrorType::Input, line_num, ONE))?;
+                }.map_err(|e| RulelessScaError::from_error_message(e, ScaErrorType::Input, line_num, ONE))?;
 
                 match get_type {
                     GetType::Phones => tokenization_data.set_variable(var, &input),
