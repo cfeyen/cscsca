@@ -24,8 +24,7 @@ pub enum RuleLine<'s> {
 impl RuleLine<'_> {
     pub const fn lines(&self) -> NonZero<usize> {
         match self {
-            Self::Empty { lines } => *lines,
-            Self::Rule { lines, .. } => *lines,
+            Self::Empty { lines } | Self::Rule { lines, .. } => *lines,
             Self::IoEvent(_) => ONE,
         }
     }

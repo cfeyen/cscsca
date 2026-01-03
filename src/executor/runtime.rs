@@ -63,7 +63,7 @@ impl<T: Runtime> ContextRuntime for T {
 
     #[io_fn(impl)]
     #[inline]
-    fn put_io(&mut self, _: &mut Self::OutputContext, msg: &str, phones:String) -> Result<(), Box<dyn Error>> {
+    fn put_io(&mut self, (): &mut Self::OutputContext, msg: &str, phones:String) -> Result<(), Box<dyn Error>> {
         await_io! { Runtime::put_io(self, msg, phones) }
     }
 
@@ -181,7 +181,7 @@ impl LogRuntime {
     /// Returns the logs and replaces them with empty logs
     #[inline]
     pub fn flush_logs(&mut self) -> Vec<(String, String)> {
-        std::mem::replace(&mut self.logs, Vec::new())
+        std::mem::take(&mut self.logs)
     }
 }
 

@@ -7,6 +7,7 @@ use super::io_events::{TokenizerIoEvent, GetType};
 
 /// A trait that controls how input is fetched when building rules with a given context
 pub trait ContextIoGetter {
+    /// A context that can be passed to the getter when fetching input
     type InputContext;
 
     /// Gets input
@@ -37,7 +38,7 @@ impl<T: IoGetter> ContextIoGetter for T {
 
     #[io_fn(impl)]
     #[inline]
-    fn get_io(&mut self, _: &mut Self::InputContext, msg: &str) -> Result<String, Box<dyn std::error::Error>> {
+    fn get_io(&mut self, (): &mut Self::InputContext, msg: &str) -> Result<String, Box<dyn std::error::Error>> {
         await_io! { IoGetter::get_io(self, msg) }
     }
 

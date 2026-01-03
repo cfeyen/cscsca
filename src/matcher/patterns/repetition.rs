@@ -38,7 +38,7 @@ impl<'s> Repetition<'s> {
             }
         }
 
-        return false;
+        false
     }
 
     fn included_matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
