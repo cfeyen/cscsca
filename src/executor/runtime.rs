@@ -24,9 +24,70 @@ impl Default for LineApplicationLimit {
     }
 }
 
+/// A trait that controls the runtime opperations of appying rules and IO with a given context
+pub trait ContextRuntime {
+    /// A context that can be passed to the runtime when outputting
+    type OutputContext;
+
+    /// Outputs a message
+    /// 
+    /// # Errors
+    /// Should only error on failed io
+    /// 
+    /// # Note
+    /// This method should *not* be called outside of the `cscsca` crate
+    #[io_fn]
+    fn put_io(&mut self, context: &mut Self::OutputContext, msg: &str, phones: String) -> Result<(), Box<dyn Error>>;
+
+    /// Called before applying a set of rules
+    /// 
+    /// Does nothing by default
+    #[inline]
+    fn on_start(&mut self) {}
+
+    /// Called once applying a set of rules is complete
+    /// 
+    /// Does nothing by default
+    #[inline]
+    fn on_end(&mut self) {}
+
+    /// The maximum limit for applying changes to a line
+    #[inline]
+    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
+        Some(DEFAULT_LINE_APPLICATION_LIMIT)
+    }
+}
+
+impl<T: Runtime> ContextRuntime for T {
+    type OutputContext = ();
+
+    #[io_fn(impl)]
+    #[inline]
+    fn put_io(&mut self, _: &mut Self::OutputContext, msg: &str, phones:String) -> Result<(), Box<dyn Error>> {
+        await_io! { Runtime::put_io(self, msg, phones) }
+    }
+
+    #[inline]
+    fn on_start(&mut self) {
+        Runtime::on_start(self);
+    }
+
+    #[inline]
+    fn on_end(&mut self) {
+        Runtime::on_end(self);
+    }
+
+    #[inline]
+    fn line_application_limit(&self) -> Option<LineApplicationLimit> {
+        Runtime::line_application_limit(self)
+    }
+}
+
 /// A trait that controls the runtime opperations of appying rules and IO
+/// 
+/// Auto-implements `ContextRuntime`<`OutputContext`=`()`>
 pub trait Runtime {
-    /// Prints a message
+    /// Outputs a message
     /// 
     /// # Errors
     /// Should only error on failed io
@@ -61,14 +122,14 @@ pub trait Runtime {
 /// 
 /// # Note
 /// Default methods should not be overridden
-pub(super) trait RuntimeApplier: Runtime {
+pub(super) trait RuntimeApplier: ContextRuntime {
     /// Applies changes for a single `RuleLine`
     #[io_fn]
-    fn apply_line<'s: 'p, 'p>(&mut self, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'p>>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
+    fn apply_line<'s: 'p, 'p>(&mut self, cxt: &mut Self::OutputContext, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'p>>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
         match rule_line {
             RuleLine::Empty { lines: _ } => Ok(()),
             RuleLine::IoEvent(cmd) => await_io! {
-                self.execute_runtime_command(cmd, phones, line_num)
+                self.execute_runtime_command(cxt, cmd, phones, line_num)
             },
             RuleLine::Rule { rule, lines } => apply(rule, phones, self.line_application_limit())
                 .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Application, line_num, *lines))
@@ -77,18 +138,18 @@ pub(super) trait RuntimeApplier: Runtime {
 
     /// Executes a command at runtime
     #[io_fn]
-    fn execute_runtime_command(&mut self, cmd: &RuntimeIoEvent<'_>, phones: &[Phone<'_>], line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
+    fn execute_runtime_command(&mut self, cxt: &mut Self::OutputContext, cmd: &RuntimeIoEvent<'_>, phones: &[Phone<'_>], line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
         match cmd {
             RuntimeIoEvent::Print { msg } => {
                 await_io! {
-                    self.put_io(msg, phone_list_to_string(phones))
+                    self.put_io(cxt, msg, phone_list_to_string(phones))
                 }.map_err(|e| RulelessScaError::from_error(&*e, ScaErrorType::Output, line_num, ONE))
             }
         }
     }
 }
 
-impl<T: Runtime> RuntimeApplier for T {}
+impl<T: ContextRuntime> RuntimeApplier for T {}
 
 /// A basic `Runtime` that logs outputs to itself
 /// 

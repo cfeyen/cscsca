@@ -9,8 +9,14 @@ mod tests;
 use std::num::NonZero;
 
 use crate::{
-    await_io, escaped_strings::EscapedString, io_fn, ir::{tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command, IrLine}, matcher::patterns::ir_to_patterns::{build_rule, RuleLine}, phones::{build_phone_list, phone_list_to_string}, RulelessScaError, ScaError, ScaErrorType, ONE
+    ONE, RulelessScaError, ScaError, ScaErrorType, await_io, escaped_strings::EscapedString,
+    executor::{getter::ContextIoGetter, runtime::ContextRuntime},
+    io_fn,
+    ir::{IrLine, tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command},
+    matcher::patterns::ir_to_patterns::{RuleLine, build_rule},
+    phones::{build_phone_list, phone_list_to_string}
 };
+
 use io_events::IoEvent;
 use runtime::{Runtime, RuntimeApplier};
 use getter::{IoGetter, ComptimeCommandExecuter};
@@ -19,12 +25,35 @@ use getter::{IoGetter, ComptimeCommandExecuter};
 /// 
 /// Builds then applies one line at a time
 #[derive(Debug, Clone, Copy, Default)]
-pub struct LineByLineExecuter<R: Runtime, G: IoGetter> {
+pub struct LineByLineExecuter<R: ContextRuntime, G: ContextIoGetter> {
     runtime: R,
     getter: G,
 }
 
+
 impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
+/// Applies the rules to the input, all errors are a formatted string
+    #[inline]
+    #[io_fn]
+    pub fn apply(&mut self, input: &str, rules: &str) -> String {
+        await_io! {
+            self.apply_with_contexts(input, rules, &mut (), &mut ())
+        }
+    }
+
+    /// Applies the rules to the input
+    /// 
+    /// # Errors
+    /// Errors on invalid rules, application that takes too long, and failed io
+    #[io_fn]
+    pub fn apply_fallible(&mut self, input: &str, rules: &str) -> Result<String, ScaError> {
+        await_io! {
+            self.apply_fallible_with_contexts(input, rules, &mut (), &mut ())
+        }
+    }
+}
+
+impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
     /// Creates a new `LineByLineExecuter`
     #[inline]
     pub const fn new(runtime: R, getter: G) -> Self {
@@ -58,21 +87,21 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
         &mut self.getter
     }
 
-    /// Applies the rules to the input, all errors are a formatted string
+    /// Applies the rules to the input within the given contexts, all errors are a formatted string
     #[inline]
     #[io_fn]
-    pub fn apply(&mut self, input: &str, rules: &str) -> String {
+    pub fn apply_with_contexts(&mut self, input: &str, rules: &str, ocxt: &mut R::OutputContext, icxt: &mut G::InputContext) -> String {
         await_io! {
-            self.apply_fallible(input, rules)
+            self.apply_fallible_with_contexts(input, rules, ocxt, icxt)
         }.unwrap_or_else(|e| e.to_string())
     }
 
-    /// Applies the rules to the input
+    /// Applies the rules to the input within the given contexts
     /// 
     /// # Errors
     /// Errors on invalid rules, application that takes too long, and failed io
     #[io_fn]
-    pub fn apply_fallible(&mut self, input: &str, rules: &str) -> Result<String, ScaError> {
+    pub fn apply_fallible_with_contexts(&mut self, input: &str, rules: &str, ocxt: &mut R::OutputContext, icxt: &mut G::InputContext) -> Result<String, ScaError> {
         let escaped = EscapedString::from(input);
         let mut phones = build_phone_list(escaped.as_escaped_str());
 
@@ -87,10 +116,10 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
         while let Some((line_num, line)) = lines.next() {
             // builds and attempts to apply the rules
             let application_result = match await_io! {
-                build_line(line, &mut lines, line_num, &mut tokenization_data, &mut self.getter)
+                build_line(line, &mut lines, line_num, &mut tokenization_data, &mut self.getter, icxt)
             } {
                 Ok(rule_line) => Ok(await_io! {
-                    self.runtime.apply_line(&rule_line, &mut phones, line_num)
+                    self.runtime.apply_line(ocxt, &rule_line, &mut phones, line_num)
                 }),
                 Err(e) => Err(e),
             };
@@ -129,7 +158,7 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
 
 /// Builds a line from a string to a `RuleLine`
 #[io_fn]
-fn build_line<'s, G: IoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item = (NonZero<usize>, &'s str)>, line_num: NonZero<usize>, tokenization_data: &mut TokenizationData<'s>, getter: &mut G) -> Result<RuleLine<'s>, RulelessScaError> {
+fn build_line<'s, G: ContextIoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item = (NonZero<usize>, &'s str)>, line_num: NonZero<usize>, tokenization_data: &mut TokenizationData<'s>, getter: &mut G, cxt: &mut G::InputContext) -> Result<RuleLine<'s>, RulelessScaError> {
     let mut line_count = ONE;
 
     let ir_line = tokenize_line_or_create_command(line, &mut rem_lines.map(|(_, line)| {
@@ -140,7 +169,7 @@ fn build_line<'s, G: IoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item
 
     match ir_line {
         IrLine::IoEvent(IoEvent::Tokenizer(cmd)) => {
-            await_io! { getter.run_build_time_command(&cmd, tokenization_data, line_num) }?;
+            await_io! { getter.run_build_time_command(cxt, &cmd, tokenization_data, line_num) }?;
             Ok(RuleLine::Empty { lines: line_count })
         },
         // builds a rule from ir
