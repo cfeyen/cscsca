@@ -149,8 +149,11 @@ impl<'s> TokenizationData<'s> {
     /// # Safety
     /// There should be no references remaining to any string in the sources buffer
     pub unsafe fn free_sources(self) {
-        for ptr in self.sources {
-            unsafe { ptr.cast_mut().drop_in_place() };
+        for source in self.sources {
+            let ptr = source.cast_mut();
+            unsafe {
+                std::alloc::dealloc(ptr.cast(), std::alloc::Layout::for_value(&*ptr));
+            }
         }
     }
 

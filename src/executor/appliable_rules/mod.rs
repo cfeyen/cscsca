@@ -209,7 +209,10 @@ impl Drop for AppliableRules<'_> {
             // Safety: `AppliableRules` should never be cloned
             // or leak references to the IO sources
             // ! this must be invarient and maintained within the `AppliableRules` API
-            unsafe { source.cast_mut().drop_in_place() };
+            let ptr = source.cast_mut();
+            unsafe {
+                std::alloc::dealloc(ptr.cast(), std::alloc::Layout::for_value(&*ptr));
+            }
         }
     }
 }
