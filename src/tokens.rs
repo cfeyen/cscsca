@@ -127,7 +127,7 @@ pub enum CondType {
     /// The input in a pattern based condition or anti-condition
     #[default]
     Pattern,
-    /// A deliminator for a match between to groups of tokens
+    /// A deliminator for a match between two groups of tokens
     Match,
 }
 

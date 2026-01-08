@@ -38,11 +38,11 @@ struct DefaultScopeIds {
     any: usize,
 }
 
-/// Builds a sound change rule out of a line of ir tokens
+/// Builds a sound change rule out of a line of ir tokens along with the number of lines taken up on error
 /// 
 /// # Warning:
 /// Built time commands should be handled before this function is called
-pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
+pub fn build_rule(line: IrLine) -> Result<RuleLine, (RuleStructureError, NonZero<usize>)> {
     let line_count = line.lines();
 
     let line = match line {
@@ -56,12 +56,14 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
     let (input_region, other_regions) = regionize_ir(&line);
     let mut other_regions = other_regions.into_iter();
 
-    let input = ir_to_input_output(&input_region)?;
+    let input = ir_to_input_output(&input_region)
+        .map_err(|e| (e, line_count))?;
 
     let (shift, output) = match other_regions.next() {
-        Some((Break::Shift(shift), output)) =>  (shift, ir_to_input_output(&output)?),
-        Some((r#break, _)) => return Err(RuleStructureError::BreakWithoutShift(r#break)),
-        None => return Err(RuleStructureError::NoShift),
+        Some((Break::Shift(shift), output)) =>
+            (shift, ir_to_input_output(&output).map_err(|e| (e, line_count))?),
+        Some((r#break, _)) => return Err((RuleStructureError::BreakWithoutShift(r#break), line_count)),
+        None => return Err((RuleStructureError::NoShift, line_count)),
     };
 
     let mut conds = Vec::new();
@@ -70,14 +72,14 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
 
     for (r#break, tokens) in other_regions {
         match r#break {
-            Break::Shift(shift) => return Err(RuleStructureError::SecondShift(shift)),
-            Break::Cond => conds.push(ir_to_cond(&tokens)?),
+            Break::Shift(shift) => return Err((RuleStructureError::SecondShift(shift), line_count)),
+            Break::Cond => conds.push(ir_to_cond(&tokens).map_err(|e| (e, line_count))?),
             Break::AntiCond => {
                 to_anti_conds = true;
-                anti_conds.push(ir_to_cond(&tokens)?);
+                anti_conds.push(ir_to_cond(&tokens).map_err(|e| (e, line_count))?);
             },
             Break::And(and_type) => {
-                let cond = ir_to_cond(&tokens)?;
+                let cond = ir_to_cond(&tokens).map_err(|e| (e, line_count))?;
 
                 let last_cond = if to_anti_conds {
                     &mut anti_conds
@@ -85,7 +87,8 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
                     &mut conds
                 }
                 .last_mut()
-                .ok_or(RuleStructureError::AndDoesNotFollowCond(and_type))?;
+                .ok_or(RuleStructureError::AndDoesNotFollowCond(and_type))
+                .map_err(|e| (e, line_count))?;
 
                 last_cond.add_and(and_type, cond);
             },
@@ -96,7 +99,10 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, RuleStructureError> {
         rule: SoundChangeRule {
             kind: shift,
             output,
-            pattern: RefCell::new(RulePattern::new(PatternList::new(input), conds, anti_conds)?),
+            pattern: RefCell::new(
+                RulePattern::new(PatternList::new(input), conds, anti_conds)
+                    .map_err(|e| (e, line_count))?
+            ),
         },
         lines: line_count,
     })

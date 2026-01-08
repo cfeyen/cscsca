@@ -6,7 +6,7 @@ use crate::{
         match_state::UnitState,
         phones::Phones
     },
-    sub_string::SubString,
+    lexer::substring::Substring,
 };
 
 #[cfg(test)]
@@ -97,16 +97,16 @@ impl Default for &Phone<'_> {
 #[must_use]
 pub fn build_phone_list(input: EscapedStr<'_>) -> Vec<Phone<'_>> {
     let input = input.inner();
-    let mut substring = SubString::new(input);
+    let mut substring = Substring::new(input);
     let mut phones = Vec::new();
 
-    for c in input.chars() {
-        substring.grow(c);
+    while let Some(c) = substring.peek() {
+        substring.grow();
 
         match c {
             ESCAPE_CHAR => (),
             '\n' => {
-                substring.move_after();
+                _ = substring.pass();
                 if !phones.last().is_some_and(Phone::is_bound) {
                     phones.push(Phone::Bound);
                 }
@@ -114,20 +114,17 @@ pub fn build_phone_list(input: EscapedStr<'_>) -> Vec<Phone<'_>> {
                 phones.push(Phone::Bound);
             },
             _ if c.is_whitespace() => {
-                substring.move_after();
+                _ = substring.pass();
                 if !phones.last().is_some_and(Phone::is_bound) {
                     phones.push(Phone::Bound);
                 }
             },
-            _ => {
-                phones.push(Phone::Symbol(substring.take_slice()));
-                substring.move_after();
-            }
+            _ => phones.push(Phone::Symbol(substring.pass())),
         }
     }
 
-    if !substring.take_slice().is_empty() {
-        phones.push(Phone::Symbol(substring.take_slice()));
+    if !substring.str().is_empty() {
+        phones.push(Phone::Symbol(substring.str()));
     }
 
     phones

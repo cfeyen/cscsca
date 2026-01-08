@@ -12,7 +12,7 @@ fn build_rules<'s>(token_lines: Vec<IrLine<'s>>) -> Result<Vec<RuleLine<'s>>, (R
     token_lines
         .into_iter()
         .enumerate()
-        .map(|(num, line)| build_rule(line).map_err(|e| (e, num + 1)))
+        .map(|(num, line)| build_rule(line).map_err(|(e, _)| (e, num + 1)))
         .collect()
 }
 
@@ -641,7 +641,7 @@ fn shift_cond_label_repetition_input() {
 fn repetition_with_exclusive() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
 
-    assert_eq!(Err(RuleStructureError::EmptyRepetition), build_rule(IrLine::Ir { tokens: vec![
+    assert_eq!(Err((RuleStructureError::EmptyRepetition, ONE)), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
         IrToken::ScopeStart(ScopeType::Repetition),
@@ -676,7 +676,7 @@ fn repetition_with_exclusive() {
         IrToken::CondType(CondType::Pattern),
     ], lines: ONE }));
 
-    assert_eq!(Err(RuleStructureError::EmptyExclusion), build_rule(IrLine::Ir { tokens: vec![
+    assert_eq!(Err((RuleStructureError::EmptyExclusion, ONE)), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
         IrToken::ScopeStart(ScopeType::Repetition),
@@ -686,7 +686,7 @@ fn repetition_with_exclusive() {
         IrToken::CondType(CondType::Pattern),
     ], lines: ONE }));
 
-    assert_eq!(Err(RuleStructureError::UnexpectedToken(IrToken::Negative)), build_rule(IrLine::Ir { tokens: vec![
+    assert_eq!(Err((RuleStructureError::UnexpectedToken(IrToken::Negative), ONE)), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
         IrToken::Break(Break::Cond),
         IrToken::ScopeStart(ScopeType::Repetition),

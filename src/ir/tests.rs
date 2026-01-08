@@ -1,26 +1,26 @@
 
 use crate::{
-    executor::io_events::RuntimeIoEvent,
-    ir::{tokenization_data::TokenizationData, tokenizer::{get_first_phone, tokenize_line_or_create_command}, tokens::Break},
-    phones::Phone,
-    tokens::{CondType, Direction, ScopeType, Shift, ShiftType},
-    ONE,
+    ONE, executor::io_events::RuntimeIoEvent, ir::{tokenization_data::TokenizationData, tokens::Break}, lexer::Lexer, phones::Phone, tokens::{CondType, Direction, ScopeType, Shift, ShiftType}
 };
 
 use super::*;
 
 /// Tokenizes rules, returns errors with the line they occur on
 fn tokenize<'s>(rules: &'s str) -> Result<Vec<IrLine<'s>>, (IrError<'s>, usize)> {
-    let mut lines = rules.lines().enumerate().map(|(line_num, line)| (line_num + 1, line));
     let mut ir = Vec::new();
 
     // Note: no IO can be preformed so no memory leaks occur if sources are not dropped
     let mut tokenization_data = TokenizationData::new();
 
-    while let Some((line_num, line)) = lines.next() {
-        let ir_line = tokenize_line_or_create_command(line, &mut (&mut lines).map(|(_, line)| line), &mut tokenization_data)
-            .map_err(|e| (e, line_num))?;
+    let mut sir = Lexer::lex(rules);
+
+    let mut last_line = 0;
+
+    while !sir.is_empty() {
+        let ir_line = ir_line_from_sir(&mut sir, &mut tokenization_data, &mut Vec::new())
+            .map_err(|(e, lines)| (e, last_line + lines.get()))?;
         ir.push(ir_line);
+        last_line = sir.line();
     }
 
     Ok(ir)
@@ -92,7 +92,7 @@ fn tokenize_with_redef() {
 
 #[test]
 fn tokenize_empty_def() {
-    assert_eq!(Err((IrError::EmptyDefinition, 1)), tokenize("DEFINE"));
+    assert_eq!(Err((IrError::UnnamedDefinition, 1)), tokenize("DEFINE"));
 }
 
 #[test]
@@ -143,20 +143,6 @@ fn tokenize_lazy_def_redef() {
         IrLine::Empty { lines: ONE },
         IrLine::Ir { tokens: vec![IrToken::Phone(Phone::Symbol("c"))], lines: ONE }
     ]), tokenize("DEFINE b z\nDEFINE_LAZY a @b\nDEFINE b c\n@a"));
-}
-
-#[test]
-fn get_lazy_def_name() {
-    assert_eq!(Some("a"), get_first_phone("a"));
-    assert_eq!(Some("ab"), get_first_phone("ab"));
-    assert_eq!(Some("a"), get_first_phone("a b"));
-    assert_eq!(Some("a"), get_first_phone("a/"));
-    assert_eq!(Some("a.."), get_first_phone("a.."));
-    assert_eq!(None, get_first_phone("_"));
-    assert_eq!(None, get_first_phone("/"));
-    assert_eq!(Some("\\/"), get_first_phone("\\/"));
-    assert_eq!(Some("\\\\"), get_first_phone("\\\\"));
-    assert_eq!(Some("\\\\"), get_first_phone("\\\\/"));
 }
 
 #[test]
@@ -366,6 +352,7 @@ fn escape() {
     assert_eq!(Err((IrError::BadEscape(Some('P')), 1)), tokenize("\\PRINT >> escaped"));
     assert!(tokenize("\\_ >> escaped").is_ok());
     assert_eq!(Err((IrError::BadEscape(Some('_')), 1)), tokenize("\\_0 >> escaped"));
+    assert_eq!(Err((IrError::BadEscape(Some('_')), 1)), tokenize("0\\_ >> escaped"));
 }
 
 #[test]
@@ -397,7 +384,7 @@ fn tokenize_multi_line() {
 
 #[test]
 fn error_in_multi_line() {
-    assert_eq!(Err((IrError::UndefinedDefinition("a"), 1)), tokenize("h >> \\\n @a"));
+    assert_eq!(Err((IrError::UndefinedDefinition("a"), 2)), tokenize("h >> \\\n @a"));
     assert_eq!(Err((IrError::UndefinedDefinition("a"), 3)), tokenize("h >> \\\n \n @a"));
 }
 

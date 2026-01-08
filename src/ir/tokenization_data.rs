@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    phones::build_phone_list,
-    escaped_strings::{EscapedStr, EscapedString},
+    escaped_strings::{EscapedStr, EscapedString}, ir::{IrLine, sir_expr_to_ir_line, ir_line_from_sir}, lexer::{Sir, Lexer, sir::SirToken}, phones::build_phone_list
 };
 
-use super::{tokens::IrToken, tokenizer::tokenize_line, IrError};
+use super::{tokens::IrToken, IrError};
 
 /// Data that is created in the tokenization process
 /// and lasts longer than the tokenization of a single line
@@ -27,7 +26,7 @@ pub struct TokenizationData<'s> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Definition<'s> {
-    Lazy(&'s str),
+    Lazy(Sir<'s>),
     Eager(Vec<IrToken<'s>>),
 }
 
@@ -40,7 +39,7 @@ impl<'s> TokenizationData<'s> {
     /// Fetches the tokens associated with a definition's name and appends them to a given lsit
     /// 
     /// Returns an error if there is no definition of the given name
-    pub fn get_definition(&self, name: &'s str, tokens: &mut Vec<IrToken<'s>>, lazy_expansions: &mut Vec<&'s str>) -> Result<(), IrError<'s>> {
+    pub fn get_definition(&mut self, name: &'s str, tokens: &mut Vec<IrToken<'s>>, lazy_expansions: &mut Vec<&'s str>) -> Result<(), IrError<'s>> {
         match self.definitions.get(name) {
             Some(Definition::Eager(def_tokens)) => for token in def_tokens {
                 tokens.push(*token);
@@ -51,9 +50,14 @@ impl<'s> TokenizationData<'s> {
                 }
 
                 lazy_expansions.push(name);
-                
-                for token in tokenize_line(definition, self, lazy_expansions)?.0 {
-                    tokens.push(token);
+
+                match ir_line_from_sir(&mut definition.clone(), self, lazy_expansions) {
+                    Ok(IrLine::Empty { .. }) => (),
+                    Ok(IrLine::IoEvent(_)) => return Err(IrError::StatementParseError),
+                    Ok(IrLine::Ir { tokens: new_tokens, .. }) => for token in new_tokens {
+                        tokens.push(token);
+                    },
+                    Err((e, _)) => return Err(e),
                 }
 
                 lazy_expansions.pop();
@@ -70,7 +74,7 @@ impl<'s> TokenizationData<'s> {
     }
 
     /// Sets a lazy definition
-    pub fn set_lazy_definition(&mut self, name: &'s str, content: &'s str) {
+    pub fn set_lazy_definition(&mut self, name: &'s str, content: Sir<'s>) {
         self.definitions.insert(name, Definition::Lazy(content));
     }
 
@@ -91,7 +95,11 @@ impl<'s> TokenizationData<'s> {
     pub fn set_variable_as_ir(&mut self, name: &'s str, source: String) -> Result<(), IrError<'s>> {
         let source = self.add_source_string(source);
 
-        let (tokens, escaped_end) = tokenize_line(source, self, &mut Vec::new())?;
+        let sir: Vec<SirToken> = Lexer::lex(source).collect();
+
+        let escaped_end = sir.last().is_some_and(|token| matches!(token, SirToken::NonPhoneEscape('\n', _)));
+
+        let tokens = sir_expr_to_ir_line(sir, self, &mut Vec::new()).0?;
 
         if escaped_end {
             return Err(IrError::BadEscape(None));
