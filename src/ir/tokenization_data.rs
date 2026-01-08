@@ -139,7 +139,6 @@ impl<'s> TokenizationData<'s> {
         source.shrink_to_fit();
         let source = source.leak();
         self.add_source(source.inner());
-        self.sources.push(std::ptr::from_ref(source.inner()));
             
         source
     }
@@ -151,9 +150,7 @@ impl<'s> TokenizationData<'s> {
     pub unsafe fn free_sources(self) {
         for source in self.sources {
             let ptr = source.cast_mut();
-            unsafe {
-                std::alloc::dealloc(ptr.cast(), std::alloc::Layout::for_value(&*ptr));
-            }
+            unsafe { drop(Box::from_raw(ptr)); }
         }
     }
 

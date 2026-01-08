@@ -210,9 +210,7 @@ impl Drop for AppliableRules<'_> {
             // or leak references to the IO sources
             // ! this must be invarient and maintained within the `AppliableRules` API
             let ptr = source.cast_mut();
-            unsafe {
-                std::alloc::dealloc(ptr.cast(), std::alloc::Layout::for_value(&*ptr));
-            }
+            unsafe { drop(Box::from_raw(ptr)); }
         }
     }
 }
