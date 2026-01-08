@@ -100,6 +100,8 @@ impl<'s> Lexer<'s> {
             lexer.partial_parse_token();
         }
 
+        lexer.push_phone();
+
         Sir::new(lexer.tokens)
     }
 
@@ -253,7 +255,7 @@ impl<'s> Lexer<'s> {
                 // handles other characters
                 _ => self.accumulator.grow(),
             }
-        } else if !self.accumulator.str().is_empty() {
+        } else if !self.accumulator.str().is_empty() || self.prefix.is_some() {
             self.push_phone();
         }
     }
