@@ -81,7 +81,7 @@ The provided `LogRuntime` logs output internally, refreshes the logs before star
 If a time limit is used, it does require a call to fetch system time. In the case of Web Assembly, this causes a panic.
 
 ### Context IO
-`ContextRuntime` and `ContextIoGetter` are more versitile varients of `Runtime` and `IoGetter` that allow them to access a mutable variable when preforming IO operations
+`ContextRuntime` and `ContextIoGetter` are more versitile varients of `Runtime` and `IoGetter` that allow them to access and update context values when preforming IO operations
 
 ### `LineByLineExecuter`
 A `LineByLineExecuter` may be constructed from any `Runtime`-`IoGetter` pair. You may then call the `apply` and `apply_fallible` methods to use the executor to build and then execute each line one at a time

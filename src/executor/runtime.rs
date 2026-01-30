@@ -29,7 +29,7 @@ pub trait ContextRuntime {
     /// A context that can be passed to the runtime when outputting
     type OutputContext;
 
-    /// Outputs a message
+    /// Outputs a message and updates context
     /// 
     /// # Errors
     /// Should only error on failed io
@@ -37,7 +37,7 @@ pub trait ContextRuntime {
     /// # Note
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
-    fn put_io(&mut self, context: &mut Self::OutputContext, msg: &str, phones: String) -> Result<(), String>;
+    fn put_io(&mut self, context: Self::OutputContext, msg: &str, phones: String) -> Result<Self::OutputContext, String>;
 
     /// Called before applying a set of rules
     /// 
@@ -63,7 +63,7 @@ impl<T: Runtime> ContextRuntime for T {
 
     #[io_fn(impl)]
     #[inline]
-    fn put_io(&mut self, (): &mut Self::OutputContext, msg: &str, phones: String) -> Result<(), String> {
+    fn put_io(&mut self, (): Self::OutputContext, msg: &str, phones: String) -> Result<Self::OutputContext, String> {
         await_io! { Runtime::put_io(self, msg, phones) }
     }
 
@@ -125,24 +125,25 @@ pub trait Runtime {
 pub(super) trait RuntimeApplier: ContextRuntime {
     /// Applies changes for a single `RuleLine`
     #[io_fn]
-    fn apply_line<'s: 'p, 'p>(&mut self, cxt: &mut Self::OutputContext, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'p>>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
+    fn apply_line<'s: 'p, 'p>(&mut self, ctx: Self::OutputContext, rule_line: &RuleLine<'s>, phones: &mut Vec<Phone<'p>>, line_num: NonZero<usize>) -> Result<Self::OutputContext, RulelessScaError> {
         match rule_line {
-            RuleLine::Empty { lines: _ } => Ok(()),
+            RuleLine::Empty { lines: _ } => Ok(ctx),
             RuleLine::IoEvent(cmd) => await_io! {
-                self.execute_runtime_command(cxt, cmd, phones, line_num)
+                self.execute_runtime_command(ctx, cmd, phones, line_num)
             },
             RuleLine::Rule { rule, lines } => apply(rule, phones, self.line_application_limit())
+                .map(|_| ctx)
                 .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Application, line_num, *lines))
         }
     }
 
     /// Executes a command at runtime
     #[io_fn]
-    fn execute_runtime_command(&mut self, cxt: &mut Self::OutputContext, cmd: &RuntimeIoEvent<'_>, phones: &[Phone<'_>], line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
+    fn execute_runtime_command(&mut self, ctx: Self::OutputContext, cmd: &RuntimeIoEvent<'_>, phones: &[Phone<'_>], line_num: NonZero<usize>) -> Result<Self::OutputContext, RulelessScaError> {
         match cmd {
             RuntimeIoEvent::Print { msg } => {
                 await_io! {
-                    self.put_io(cxt, msg, phone_list_to_string(phones))
+                    self.put_io(ctx, msg, phone_list_to_string(phones))
                 }.map_err(|e| RulelessScaError::from_error_message(e, ScaErrorType::Output, line_num, ONE))
             }
         }

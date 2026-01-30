@@ -37,7 +37,7 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
     #[io_fn]
     pub fn apply(&mut self, input: &str, rules: &str) -> String {
         await_io! {
-            self.apply_with_contexts(input, rules, &mut (), &mut ())
+            self.apply_with_contexts(input, rules, (), ())
         }
     }
 
@@ -48,7 +48,7 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
     #[io_fn]
     pub fn apply_fallible(&mut self, input: &str, rules: &str) -> Result<String, ScaError> {
         await_io! {
-            self.apply_fallible_with_contexts(input, rules, &mut (), &mut ())
+            self.apply_fallible_with_contexts(input, rules, (), ())
         }
     }
 }
@@ -90,9 +90,9 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
     /// Applies the rules to the input within the given contexts, all errors are a formatted string
     #[inline]
     #[io_fn]
-    pub fn apply_with_contexts(&mut self, input: &str, rules: &str, ocxt: &mut R::OutputContext, icxt: &mut G::InputContext) -> String {
+    pub fn apply_with_contexts(&mut self, input: &str, rules: &str, octx: R::OutputContext, ictx: G::InputContext) -> String {
         await_io! {
-            self.apply_fallible_with_contexts(input, rules, ocxt, icxt)
+            self.apply_fallible_with_contexts(input, rules, octx, ictx)
         }.unwrap_or_else(|e| e.to_string())
     }
 
@@ -101,7 +101,7 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
     /// # Errors
     /// Errors on invalid rules, application that takes too long, and failed io
     #[io_fn]
-    pub fn apply_fallible_with_contexts(&mut self, input: &str, rules: &str, ocxt: &mut R::OutputContext, icxt: &mut G::InputContext) -> Result<String, ScaError> {
+    pub fn apply_fallible_with_contexts(&mut self, input: &str, rules: &str, mut octx: R::OutputContext, mut ictx: G::InputContext) -> Result<String, ScaError> {
         let escaped = EscapedString::from(input);
         let mut phones = build_phone_list(escaped.as_escaped_str());
 
@@ -116,27 +116,45 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
         while let Some((line_num, line)) = lines.next() {
             // builds and attempts to apply the rules
             let application_result = match await_io! {
-                build_line(line, &mut lines, line_num, &mut tokenization_data, &mut self.getter, icxt)
+                build_line(line, &mut lines, line_num, &mut tokenization_data, &mut self.getter, ictx)
             } {
-                Ok(rule_line) => Ok(await_io! {
-                    self.runtime.apply_line(ocxt, &rule_line, &mut phones, line_num)
-                }),
-                Err(e) => Err(e),
+                Ok((rule_line, ic)) => {
+                    ictx = ic;
+
+                    await_io! {
+                        self.runtime.apply_line(octx, &rule_line, &mut phones, line_num)
+                    }
+                },
+                Err(e) => {
+                    // signals to the runtime and getter that execution is complete
+                    self.getter.on_end();
+                    self.runtime.on_end();
+
+                    drop(phones);
+                    // Safety: Since the output is a `ScaError`,
+                    // which owns all of its values, and `phones` is dropped,
+                    // no references remain to the sources buffer in `tokenization_data`
+                    unsafe { tokenization_data.free_sources() };
+
+                    return Err(e.into_sca_error(rules.lines()));
+                },
             };
 
-            // handles errors
-            if let Err(e) | Ok(Err(e)) = application_result {
-                // signals to the runtime and getter that execution is complete
-                self.getter.on_end();
-                self.runtime.on_end();
+            match application_result {
+                Ok(ctx) => octx = ctx,
+                Err(e) => {
+                    // signals to the runtime and getter that execution is complete
+                    self.getter.on_end();
+                    self.runtime.on_end();
 
-                drop(phones);
-                // Safety: Since the output is a `ScaError`,
-                // which owns all of its values, and `phones` is dropped,
-                // no references remain to the sources buffer in `tokenization_data`
-                unsafe { tokenization_data.free_sources() };
+                    drop(phones);
+                    // Safety: Since the output is a `ScaError`,
+                    // which owns all of its values, and `phones` is dropped,
+                    // no references remain to the sources buffer in `tokenization_data`
+                    unsafe { tokenization_data.free_sources() };
 
-                return Err(e.into_sca_error(rules.lines()));
+                    return Err(e.into_sca_error(rules.lines()));
+                }
             }
         }
 
@@ -158,7 +176,7 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
 
 /// Builds a line from a string to a `RuleLine`
 #[io_fn]
-fn build_line<'s, G: ContextIoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item = (NonZero<usize>, &'s str)>, line_num: NonZero<usize>, tokenization_data: &mut TokenizationData<'s>, getter: &mut G, cxt: &mut G::InputContext) -> Result<RuleLine<'s>, RulelessScaError> {
+fn build_line<'s, G: ContextIoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item = (NonZero<usize>, &'s str)>, line_num: NonZero<usize>, tokenization_data: &mut TokenizationData<'s>, getter: &mut G, ctx: G::InputContext) -> Result<(RuleLine<'s>, G::InputContext), RulelessScaError> {
     let mut line_count = ONE;
 
     let ir_line = tokenize_line_or_create_command(line, &mut rem_lines.map(|(_, line)| {
@@ -169,12 +187,13 @@ fn build_line<'s, G: ContextIoGetter>(line: &'s str, rem_lines: &mut impl Iterat
 
     match ir_line {
         IrLine::IoEvent(IoEvent::Tokenizer(cmd)) => {
-            await_io! { getter.run_build_time_command(cxt, &cmd, tokenization_data, line_num) }?;
-            Ok(RuleLine::Empty { lines: line_count })
+            let c = await_io! { getter.run_build_time_command(ctx, &cmd, tokenization_data, line_num) }?;
+            Ok((RuleLine::Empty { lines: line_count }, c))
         },
         // builds a rule from ir
         ir_line =>
             build_rule(ir_line)
+                .map(|r| (r, ctx))
                 .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Parse, line_num, line_count)),
     }
 }

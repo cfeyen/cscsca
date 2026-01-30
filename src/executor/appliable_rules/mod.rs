@@ -14,7 +14,7 @@ use crate::{
 /// # Errors
 /// Errors on invalid rules or failed io
 #[io_fn]
-pub fn build_rules_with_context<'s, G: ContextIoGetter>(rules: &'s str, getter: &mut G, ctx: &mut G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
+pub fn build_rules_with_context<'s, G: ContextIoGetter>(rules: &'s str, getter: &mut G, ctx: G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
     let tokenization_data = TokenizationData::new();
     
     await_io! { build_rules_with_tokenization_data_with_context(rules, tokenization_data, 0, getter, ctx) }
@@ -27,7 +27,7 @@ pub fn build_rules_with_context<'s, G: ContextIoGetter>(rules: &'s str, getter: 
 #[io_fn]
 #[inline]
 pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
-    await_io! { build_rules_with_context(rules, getter, &mut ()) }
+    await_io! { build_rules_with_context(rules, getter, ()) }
 }
 
 /// Builds an `AppliableRules` struct from rules, pre-built tokenization data,
@@ -36,7 +36,7 @@ pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<Ap
 /// # Errors
 /// Errors on invalid rules or failed io
 #[io_fn]
-fn build_rules_with_tokenization_data_with_context<'s, G: ContextIoGetter>(rules: &'s str, mut tokenization_data: TokenizationData<'s>, line_offset: usize, getter: &mut G, ctx: &mut G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
+fn build_rules_with_tokenization_data_with_context<'s, G: ContextIoGetter>(rules: &'s str, mut tokenization_data: TokenizationData<'s>, line_offset: usize, getter: &mut G, mut ctx: G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
     let mut rule_lines = Vec::new();
     let mut lines = rules.lines().enumerate().map(|(line_num, line)| (unsafe { NonZero::new_unchecked(line_num + line_offset + 1) }, line));
 
@@ -46,7 +46,7 @@ fn build_rules_with_tokenization_data_with_context<'s, G: ContextIoGetter>(rules
     // builds each line
     while let Some((line_num, line)) = lines.next() {
         // builds the line and returns any errors
-        let rule_line = match await_io! {
+        let (rule_line, c) = match await_io! {
             build_line(line, &mut lines, line_num, &mut tokenization_data, getter, ctx)
         } {
             Ok(rule_line) => rule_line,
@@ -64,6 +64,7 @@ fn build_rules_with_tokenization_data_with_context<'s, G: ContextIoGetter>(rules
                 return Err(e.into_sca_error(rules.lines()));
             }
         };
+        ctx = c;
         rule_lines.push(rule_line);
     }
 
@@ -93,7 +94,7 @@ impl<'s> AppliableRules<'s> {
     /// Applies all rules to the input using a runtime, errors are formatted as a string within a given context
     #[inline]
     #[io_fn]
-    pub fn apply_with_context<R: ContextRuntime>(&self, input: &str, runtime: &mut R, ctx: &mut R::OutputContext) -> String {
+    pub fn apply_with_context<R: ContextRuntime>(&self, input: &str, runtime: &mut R, ctx: R::OutputContext) -> String {
         await_io! {
             self.apply_fallible_with_context(input, runtime, ctx)
         }.unwrap_or_else(|e| e.to_string())
@@ -104,7 +105,7 @@ impl<'s> AppliableRules<'s> {
     #[inline]
     pub fn apply<R: Runtime>(&self, input: &str, runtime: &mut R) -> String {
         await_io! {
-            self.apply_with_context(input, runtime, &mut ())
+            self.apply_with_context(input, runtime, ())
         }
     }
 
@@ -113,7 +114,7 @@ impl<'s> AppliableRules<'s> {
     /// # Errors
     /// Errors on invalid rules, application that takes too long, and failed io
     #[io_fn]
-    pub fn apply_fallible_with_context<R: ContextRuntime>(&self, input: &str, runtime: &mut R, ctx: &mut R::OutputContext) -> Result<String, ScaError> {
+    pub fn apply_fallible_with_context<R: ContextRuntime>(&self, input: &str, runtime: &mut R, mut ctx: R::OutputContext) -> Result<String, ScaError> {
         let escaped_input = EscapedString::from(input);
         let mut phones = build_phone_list(escaped_input.as_escaped_str());
 
@@ -124,13 +125,14 @@ impl<'s> AppliableRules<'s> {
 
         // applies rules
         for rule_line in &self.rules {
-            if let Err(e) = await_io! {
-                runtime.apply_line(ctx, rule_line, &mut phones, line_num)
-            } {
-                // signals to the runtime that execution is complete
-                runtime.on_end();
+            match await_io! { runtime.apply_line(ctx, rule_line, &mut phones, line_num) } {
+                Ok(c) => ctx = c,
+                Err(e) => {
+                    // signals to the runtime that execution is complete
+                    runtime.on_end();
 
-                return Err(e.into_sca_error(self.lines.iter().copied()));
+                    return Err(e.into_sca_error(self.lines.iter().copied()));
+                }
             }
 
             line_num = line_num.saturating_add(rule_line.lines().get());
@@ -150,7 +152,7 @@ impl<'s> AppliableRules<'s> {
     #[inline]
     pub fn apply_fallible<R: Runtime>(&self, input: &str, runtime: &mut R) -> Result<String, ScaError> {
         await_io! {
-            self.apply_fallible_with_context(input, runtime, &mut ())
+            self.apply_fallible_with_context(input, runtime, ())
         }
     }
 
@@ -162,7 +164,7 @@ impl<'s> AppliableRules<'s> {
     /// 
     /// leaves `self` unchanged on error
     #[io_fn]
-    pub fn extend_with_context<G: ContextIoGetter>(&mut self, next_rules: &'s str, getter: &mut G, ctx: &mut G::InputContext) -> Result<(), ScaError> {
+    pub fn extend_with_context<G: ContextIoGetter>(&mut self, next_rules: &'s str, getter: &mut G, ctx: G::InputContext) -> Result<(), ScaError> {
         let line_offset = self.rules.iter().fold(0, |acc, rule_line| acc + rule_line.lines().get());
         let tokenization_data = self.tokenization_data.with_inserts();
         
@@ -192,7 +194,7 @@ impl<'s> AppliableRules<'s> {
     #[inline]
     pub fn extend<G: IoGetter>(&mut self, next_rules: &'s str, getter: &mut G) -> Result<(), ScaError> {
         await_io! {
-            self.extend_with_context(next_rules, getter, &mut ())
+            self.extend_with_context(next_rules, getter, ())
         }
     }
 

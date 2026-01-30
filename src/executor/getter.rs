@@ -10,7 +10,7 @@ pub trait ContextIoGetter {
     /// A context that can be passed to the getter when fetching input
     type InputContext;
 
-    /// Gets input
+    /// Gets input and updates context
     /// 
     /// # Errors
     /// Should only error on failed io
@@ -18,7 +18,7 @@ pub trait ContextIoGetter {
     /// # Note
     /// This method should *not* be called outside of the `cscsca` crate
     #[io_fn]
-    fn get_io(&mut self, context: &mut Self::InputContext, msg: &str) -> Result<String, String>;
+    fn get_io(&mut self, context: Self::InputContext, msg: &str) -> Result<(String, Self::InputContext), String>;
 
     /// Called before building a set of rules
     /// 
@@ -38,8 +38,8 @@ impl<T: IoGetter> ContextIoGetter for T {
 
     #[io_fn(impl)]
     #[inline]
-    fn get_io(&mut self, (): &mut Self::InputContext, msg: &str) -> Result<String, String> {
-        await_io! { IoGetter::get_io(self, msg) }
+    fn get_io(&mut self, (): Self::InputContext, msg: &str) -> Result<(String, Self::InputContext), String> {
+        await_io! { IoGetter::get_io(self, msg).map(|i| (i, ())) }
     }
 
     #[inline]
@@ -89,11 +89,11 @@ pub trait IoGetter {
 pub(super) trait ComptimeCommandExecuter: ContextIoGetter {
     /// Runs a command at build time
     #[io_fn]
-    fn run_build_time_command<'s>(&mut self, cxt: &mut Self::InputContext, cmd: &TokenizerIoEvent<'s>, tokenization_data: &mut TokenizationData<'s>, line_num: NonZero<usize>) -> Result<(), RulelessScaError> {
+    fn run_build_time_command<'s>(&mut self, ctx: Self::InputContext, cmd: &TokenizerIoEvent<'s>, tokenization_data: &mut TokenizationData<'s>, line_num: NonZero<usize>) -> Result<Self::InputContext, RulelessScaError> {
         match cmd {
             TokenizerIoEvent::Get { get_type, var, msg } => {
-                let input = await_io! {
-                    self.get_io(cxt, msg)
+                let (input, c) = await_io! {
+                    self.get_io(ctx, msg)
                 }.map_err(|e| RulelessScaError::from_error_message(e, ScaErrorType::Input, line_num, ONE))?;
 
                 match get_type {
@@ -102,7 +102,7 @@ pub(super) trait ComptimeCommandExecuter: ContextIoGetter {
                         .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Input, line_num, ONE))?,
                 }
 
-                Ok(())
+                Ok(c)
             }
         }
     }
