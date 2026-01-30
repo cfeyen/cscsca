@@ -78,7 +78,7 @@ Examples:
 ```
 
 ### Conditions and Anti-Conditions
-To apply rules, conditionally add a condition after it
+To apply rules conditionally, add a condition after it
 
 A condition starts with a **`/`** and comes in two flavors: **pattern** and **equality**
 
