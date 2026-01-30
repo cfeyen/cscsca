@@ -39,7 +39,7 @@ impl<T: IoGetter> ContextIoGetter for T {
     #[io_fn(impl)]
     #[inline]
     fn get_io(&mut self, (): Self::InputContext, msg: &str) -> Result<(String, Self::InputContext), String> {
-        await_io! { IoGetter::get_io(self, msg).map(|i| (i, ())) }
+        await_io! { IoGetter::get_io(self, msg) }.map(|i| (i, ()))
     }
 
     #[inline]

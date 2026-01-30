@@ -58,6 +58,7 @@ struct RefContextLogger<'a>(PhantomData<&'a ()>);
 impl<'a> ContextRuntime for RefContextLogger<'a> {
     type OutputContext = &'a mut Vec<(String, String)>;
 
+    #[io_fn(impl)]
     fn put_io(&mut self, context: Self::OutputContext, msg: &str, phones:String) -> Result<Self::OutputContext, String> {
         context.push((msg.to_string(), phones));
         Ok(context)
@@ -69,6 +70,7 @@ struct RcContextLogger;
 impl ContextRuntime for RcContextLogger {
     type OutputContext = Rc<RefCell<Vec<(String, String)>>>;
 
+    #[io_fn(impl)]
     fn put_io(&mut self, context: Self::OutputContext, msg: &str, phones:String) -> Result<Self::OutputContext, String> {
         context.borrow_mut().push((msg.to_string(), phones));
         Ok(context)
@@ -81,7 +83,7 @@ fn context_runtimes() {
     let runtime = RefContextLogger(PhantomData);
 
     let mut executor = LineByLineExecuter::new(runtime, NoGet);
-    executor.apply_with_contexts("pata", "PRINT this is a test:", &mut logs, ());
+    await_io! { executor.apply_with_contexts("pata", "PRINT this is a test:", &mut logs, ()) };
 
     assert_eq!(logs, vec![("this is a test:".to_string(), "pata".to_string())]);
 
@@ -89,8 +91,8 @@ fn context_runtimes() {
     let mut logs = Vec::new();
     let mut runtime = RefContextLogger(PhantomData);
 
-    let appliable_rules = build_rules("PRINT this is a test:", &mut NoGet).expect("should build");
-    appliable_rules.apply_with_context("pata", &mut runtime, &mut logs);
+    let appliable_rules = await_io! { build_rules("PRINT this is a test:", &mut NoGet) }.expect("should build");
+    await_io! { appliable_rules.apply_with_context("pata", &mut runtime, &mut logs) };
 
     assert_eq!(logs, vec![("this is a test:".to_string(), "pata".to_string())]);
 
@@ -99,7 +101,7 @@ fn context_runtimes() {
     let runtime = RcContextLogger;
 
     let mut executor = LineByLineExecuter::new(runtime, NoGet);
-    executor.apply_with_contexts("pata", "PRINT this is a test:", logs.clone(), ());
+    await_io! { executor.apply_with_contexts("pata", "PRINT this is a test:", logs.clone(), ()) };
 
     assert_eq!(logs.borrow().clone(), vec![("this is a test:".to_string(), "pata".to_string())]);
 
@@ -107,8 +109,8 @@ fn context_runtimes() {
     let logs = Rc::new(RefCell::new(Vec::new()));
     let mut runtime = RcContextLogger;
 
-    let appliable_rules = build_rules("PRINT this is a test:", &mut NoGet).expect("should build");
-    appliable_rules.apply_with_context("pata", &mut runtime, logs.clone());
+    let appliable_rules = await_io! { build_rules("PRINT this is a test:", &mut NoGet) }.expect("should build");
+    await_io! { appliable_rules.apply_with_context("pata", &mut runtime, logs.clone()) };
 
     assert_eq!(logs.borrow().clone(), vec![("this is a test:".to_string(), "pata".to_string())]);
 }
@@ -118,6 +120,7 @@ struct RefContextGetter<'a>(PhantomData<&'a ()>);
 impl<'a> ContextIoGetter for RefContextGetter<'a> {
     type InputContext = &'a mut dyn Iterator<Item = String>;
 
+    #[io_fn(impl)]
     fn get_io(&mut self, context: Self::InputContext, msg: &str) -> Result<(String, Self::InputContext), String> {
         context
             .next()
@@ -130,6 +133,7 @@ struct RcContextGetter;
 impl ContextIoGetter for RcContextGetter {
     type InputContext = Rc<RefCell<dyn Iterator<Item = String>>>;
 
+    #[io_fn(impl)]
     fn get_io(&mut self, context: Self::InputContext, msg: &str) -> Result<(String, Self::InputContext), String> {
         let input = context
             .borrow_mut()
@@ -146,7 +150,7 @@ fn context_getters() {
     let getter = RefContextGetter(PhantomData);
 
     let mut executor = LineByLineExecuter::new(NoLog::default(), getter);
-    let res = executor.apply_with_contexts("a", "GET a test:\na >> %a", (), &mut inputs);
+    let res = await_io! { executor.apply_with_contexts("a", "GET a test:\na >> %a", (), &mut inputs) };
 
     assert_eq!(res, "in");
 
@@ -154,8 +158,8 @@ fn context_getters() {
     let mut inputs = ["in".to_string()].into_iter();
     let mut getter = RefContextGetter(PhantomData);
 
-    let appliable_rules = build_rules_with_context("GET a test:\na >> %a", &mut getter, &mut inputs).expect("should build");
-    let res = appliable_rules.apply("a", &mut NoLog::default());
+    let appliable_rules = await_io! { build_rules_with_context("GET a test:\na >> %a", &mut getter, &mut inputs) }.expect("should build");
+    let res = await_io! { appliable_rules.apply("a", &mut NoLog::default()) };
 
     assert_eq!(res, "in");
 
@@ -164,7 +168,7 @@ fn context_getters() {
     let getter = RcContextGetter;
 
     let mut executor = LineByLineExecuter::new(NoLog::default(), getter);
-    let res = executor.apply_with_contexts("a", "GET a test:\na >> %a", (), inputs);
+    let res = await_io! { executor.apply_with_contexts("a", "GET a test:\na >> %a", (), inputs) };
 
     assert_eq!(res, "in");
 
@@ -172,8 +176,8 @@ fn context_getters() {
     let inputs = Rc::new(RefCell::new(["in".to_string()].into_iter()));
     let mut getter = RcContextGetter;
 
-    let appliable_rules = build_rules_with_context("GET a test:\na >> %a", &mut getter, inputs).expect("should build");
-    let res = appliable_rules.apply("a", &mut NoLog::default());
+    let appliable_rules = await_io! { build_rules_with_context("GET a test:\na >> %a", &mut getter, inputs) }.expect("should build");
+    let res = await_io! { appliable_rules.apply("a", &mut NoLog::default()) };
 
     assert_eq!(res, "in");
 }
