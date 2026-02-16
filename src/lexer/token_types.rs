@@ -1,22 +1,41 @@
 /// A struct that contains the information for where in a string a token occurs
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Span {
+    #[cfg(feature = "debug_tokens")]
     index: usize,
+    #[cfg(feature = "debug_tokens")]
     line: usize,
+    #[cfg(feature = "debug_tokens")]
     char: usize,
+    #[cfg(feature = "debug_tokens")]
     len: usize,
 }
 
 impl Span {
+    #[cfg(feature = "debug_tokens")]
     /// Creates a new `Span`
     pub(super) const fn new(line: usize, char: usize, index: usize, len: usize) -> Self {
         Self { index, line, char, len }
+        
     }
 
+    #[cfg(not(feature = "debug_tokens"))]
+    /// Creates a new `Span`
+    #[inline]
+    pub(super) const fn new(_: usize, _: usize, _: usize, _: usize) -> Self {
+        Self { }
+    }
+
+    #[cfg(feature = "debug_tokens")]
     /// Extends the span's length by one
     pub(super) const fn lengthen(&mut self, c: char) {
         self.len += c.len_utf8();
     }
+
+    #[cfg(not(feature = "debug_tokens"))]
+    /// Extends the span's length by one
+    #[inline]
+    pub(super) const fn lengthen(&mut self, _: char) { }
 }
 
 #[cfg(feature = "debug_tokens")]
@@ -49,7 +68,7 @@ impl<'s> PhoneValidStr<'s> {
     pub(super) const fn new_with_len(s: &'s str, line: usize, char: usize, index: usize, len: usize) -> Self {
         Self {
             str: s,
-            span: Span { index, line, char, len }
+            span: Span::new(line, char, index, len),
         }
     }
     

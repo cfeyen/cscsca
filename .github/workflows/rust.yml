@@ -20,7 +20,7 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
-    - name: Run tests with debug tokens
+    - name: Run tests with debug_tokens
       run: cargo test --features debug_tokens --verbose
     - name: Run tests with async_io
       run: cargo test --lib --features async_io --verbose
