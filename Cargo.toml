@@ -28,7 +28,6 @@ missing_docs = { level = "warn", priority = -2 }
 async_io = ["cscsca_macros/async_io"]
 debug_tokens = []
 docs = []
-default = ["debug_tokens"]
 
 [profile.release]
 lto = true
