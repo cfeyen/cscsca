@@ -1,7 +1,7 @@
 [package]
 name = "cscsca"
 authors = ["Charles Feyen"]
-version = "0.31.0"
+version = "0.32.0"
 edition = "2024"
 readme = "README.md"
 keywords = ["linguistics", "conlang", "sound_change_applier"]
@@ -13,7 +13,7 @@ repository = "https://github.com/cfeyen/cscsca"
 [lints.clippy]
 non_minimal_cfg = { level = "allow", priority = -1 }
 correctness = { level = "warn", priority = -2 }
-suspicious  = { level = "warn", priority = -2 }
+suspicious = { level = "warn", priority = -2 }
 complexity = { level = "warn", priority = -2 }
 perf = { level = "warn", priority = -2 }
 pedantic = { level = "warn", priority = -2 }
@@ -26,6 +26,7 @@ missing_docs = { level = "warn", priority = -2 }
 
 [features]
 async_io = ["cscsca_macros/async_io"]
+debug_tokens = []
 docs = []
 
 [profile.release]

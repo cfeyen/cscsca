@@ -2,12 +2,15 @@
 
 use std::{error::Error, num::NonZero};
 
+#[cfg(feature = "debug_tokens")]
+pub use lexer::{Lexer, Sir, sir::SirToken, token_types::{PhoneValidStr, Span}};
+
+mod lexer;
 mod ir;
 mod phones;
 mod tokens;
 mod applier;
 mod matcher;
-mod sub_string;
 mod escaped_strings;
 mod executor;
 mod keywords;

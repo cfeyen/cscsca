@@ -130,7 +130,7 @@ pub(crate) fn is_isolated_char(c: char) -> bool {
 
 /// Checks if a char can act as a bound by an isolated char
 pub(crate) fn is_isolation_bound(c: char) -> bool {
-    c.is_whitespace() || is_special_char(c)
+     c.is_whitespace() || (c != ESCAPE_CHAR && is_special_char(c))
 }
 
 // Strings that are only special at the start of a line

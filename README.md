@@ -177,8 +177,6 @@ DEFINE F {f, s, ç, x}
 ## @C now uses the new definitions of @P and @F accounts for all consonants again
 ```
 
-**Note**: escaping the newline at the end of a lazy *Definition* has no effect and does not include the next line in its contents, it also does not escape a newline or special character after the *Definition*'s usage
-
 ### Special Characters
 - **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
 - **`#`**: a word boundary
@@ -243,7 +241,8 @@ Replace *`text`* with **`--read`** *`read_file`* or **`-r`** *`read_file`* to re
 `á` is not `á`. The first is `a` and the combining character `\u{301}`, the second is a single character `á`. CSCSCA counts these as different. To ensure you know which characters you are using, cscsca chars *`text`* prints every character in *`text`*, separating combining characters
 
 ## Crate Features
-- `async_io`: Allows for IO to be done through asynchronous functions instead of synchronous ones. Cannot be active when compiling CSCSCA to an executable 
+- `async_io`: Allows for IO to be done through asynchronous functions instead of synchronous ones. Cannot be active when compiling CSCSCA to an executable
+- `debug_tokens`: Gives access to a high-level tokenized form of CSCSCA source code. (Mostly useful for custom editors)
 - `docs`: Adds the function `cscsca::docs` that returns everything under the heading `Writing Sound Change Rules With CSCSCA` in this file
 
 ## Library API

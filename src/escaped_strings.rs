@@ -1,4 +1,4 @@
-use crate::{ir::IrError, keywords::{is_isolated_char, is_isolation_bound, is_special_char, ESCAPE_CHAR, SPECIAL_STRS}};
+use crate::{keywords::{is_isolated_char, is_special_char, ESCAPE_CHAR}};
 
 /// A `String` that has all special characters escaped
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Default)]
@@ -41,61 +41,6 @@ impl<'a> EscapedStr<'a> {
     }
 }
 
-/// Ensures all escapes are valid
-pub fn check_escapes(input: &str) -> Result<(), IrError<'_>> {
-    let mut chars = input.chars();
-    let mut i = 0;
-    let mut last_is_whitespace_or_always_special_char = true;
-
-    'outer: while let Some(c) = chars.next() {
-        i += c.len_utf8();
-
-        if c == ESCAPE_CHAR {
-            if let Some(next) = chars.next() {
-                if is_special_char(next) {
-                    i += next.len_utf8();
-                    last_is_whitespace_or_always_special_char = true;
-                    continue;
-                }
-
-                if last_is_whitespace_or_always_special_char && is_isolated_char(c) && {
-                    let after_next: &str = input.get(i+next.len_utf8()..).unwrap_or_default();
-                    after_next.is_empty() || after_next.starts_with(is_isolation_bound)
-                } {
-                    i += next.len_utf8();
-                    last_is_whitespace_or_always_special_char = false;
-                    continue;
-                }
-
-                let after_c = &input[i..];
-                i += next.len_utf8();
-
-                if last_is_whitespace_or_always_special_char {
-                    for s in SPECIAL_STRS {
-                        if after_c.starts_with(s) && {
-                            let after_s = &after_c.get(s.len()..).unwrap_or_default();
-                            after_s.is_empty() || after_s.starts_with(is_isolation_bound)
-                        } {
-                            for c in s.chars().skip(1) {
-                                i += c.len_utf8();
-                            }
-                            continue 'outer;
-                        }
-                    }
-                }
-
-                return Err(IrError::BadEscape(Some(next)))
-            }
-
-            return Err(IrError::BadEscape(None))
-        }
-
-        last_is_whitespace_or_always_special_char = c.is_whitespace();
-    }
-
-    Ok(())
-}
-
 /// Escapes special chars and isolated special strings in input
 fn escape_input(input: &str) -> String {
     let mut escaped = String::new();
@@ -109,15 +54,4 @@ fn escape_input(input: &str) -> String {
     }
 
     escaped
-}
-
-#[cfg(test)]
-#[test]
-fn niche_escapes() {
-    assert_eq!("\\_\\/".to_string(), escape_input("_/"));
-    assert_eq!("\\_a".to_string(), escape_input("_a"));
-
-    // isolated only escapes
-    assert!(check_escapes("\\_a").is_err());
-    assert!(check_escapes("\\_ a").is_ok());
 }

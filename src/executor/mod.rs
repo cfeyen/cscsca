@@ -10,10 +10,9 @@ use std::num::NonZero;
 
 use crate::{
     ONE, RulelessScaError, ScaError, ScaErrorType, await_io, escaped_strings::EscapedString,
-    executor::{getter::ContextIoGetter, runtime::ContextRuntime},
-    io_fn,
-    ir::{IrLine, tokenization_data::TokenizationData, tokenizer::tokenize_line_or_create_command},
-    matcher::patterns::ir_to_patterns::{RuleLine, build_rule},
+    executor::{getter::ContextIoGetter, runtime::ContextRuntime}, io_fn,
+    ir::{IrLine, ir_line_from_sir, tokenization_data::TokenizationData},
+    lexer::{Sir, Lexer}, matcher::patterns::ir_to_patterns::{RuleLine, build_rule},
     phones::{build_phone_list, phone_list_to_string}
 };
 
@@ -105,7 +104,7 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
         let escaped = EscapedString::from(input);
         let mut phones = build_phone_list(escaped.as_escaped_str());
 
-        let mut lines = rules.lines().enumerate().map(|(line_num, line)| (unsafe { NonZero::new_unchecked(line_num + 1) }, line));
+        let mut sir = Lexer::lex(rules);
         let mut tokenization_data = TokenizationData::new();
 
         // prepares the runtime and getter for a new set of applications
@@ -113,10 +112,12 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
         self.runtime.on_start();
 
         // builds and applies rules line by line
-        while let Some((line_num, line)) = lines.next() {
+        while !sir.is_empty() {
+            let line_num = unsafe { NonZero::new_unchecked(1 + sir.line()) };
+
             // builds and attempts to apply the rules
             let application_result = match await_io! {
-                build_line(line, &mut lines, line_num, &mut tokenization_data, &mut self.getter, ictx)
+                build_line(&mut sir, &mut tokenization_data, &mut self.getter, ictx)
             } {
                 Ok((rule_line, ic)) => {
                     ictx = ic;
@@ -176,24 +177,22 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
 
 /// Builds a line from a string to a `RuleLine`
 #[io_fn]
-fn build_line<'s, G: ContextIoGetter>(line: &'s str, rem_lines: &mut impl Iterator<Item = (NonZero<usize>, &'s str)>, line_num: NonZero<usize>, tokenization_data: &mut TokenizationData<'s>, getter: &mut G, ctx: G::InputContext) -> Result<(RuleLine<'s>, G::InputContext), RulelessScaError> {
-    let mut line_count = ONE;
+fn build_line<'s, G: ContextIoGetter>(sir: &mut Sir<'s>, tokenization_data: &mut TokenizationData<'s>, getter: &mut G, ctx: G::InputContext) -> Result<(RuleLine<'s>, G::InputContext), RulelessScaError> {
+    let line_num = unsafe { NonZero::new_unchecked(sir.line() + 1) };
 
-    let ir_line = tokenize_line_or_create_command(line, &mut rem_lines.map(|(_, line)| {
-        line_count = line_count.saturating_add(1);
-        line
-    }), tokenization_data)
-        .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Parse, line_num, line_count))?;
+
+    let ir_line = ir_line_from_sir(sir, tokenization_data, &mut Vec::new())
+        .map_err(|(e, line_count)| RulelessScaError::from_error(&e, ScaErrorType::Parse, line_num, line_count))?;
 
     match ir_line {
         IrLine::IoEvent(IoEvent::Tokenizer(cmd)) => {
             let c = await_io! { getter.run_build_time_command(ctx, &cmd, tokenization_data, line_num) }?;
-            Ok((RuleLine::Empty { lines: line_count }, c))
+            Ok((RuleLine::Empty { lines: ONE }, c))
         },
         // builds a rule from ir
         ir_line =>
             build_rule(ir_line)
                 .map(|r| (r, ctx))
-                .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Parse, line_num, line_count)),
+                .map_err(|(e, line_count)| RulelessScaError::from_error(&e, ScaErrorType::Parse, line_num, line_count)),
     }
 }

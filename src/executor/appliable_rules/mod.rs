@@ -6,7 +6,7 @@ use std::num::NonZero;
 use crate::{
     ONE, ScaError, await_io, escaped_strings::EscapedString, executor::{
         build_line, getter::{ContextIoGetter, IoGetter}, runtime::{ContextRuntime, Runtime, RuntimeApplier}
-    }, io_fn, ir::tokenization_data::TokenizationData, matcher::patterns::ir_to_patterns::RuleLine, phones::{build_phone_list, phone_list_to_string}
+    }, io_fn, ir::tokenization_data::TokenizationData, lexer::Lexer, matcher::patterns::ir_to_patterns::RuleLine, phones::{build_phone_list, phone_list_to_string}
 };
 
 /// Builds all rules to a form that may be applied more easily within a given context
@@ -17,7 +17,7 @@ use crate::{
 pub fn build_rules_with_context<'s, G: ContextIoGetter>(rules: &'s str, getter: &mut G, ctx: G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
     let tokenization_data = TokenizationData::new();
     
-    await_io! { build_rules_with_tokenization_data_with_context(rules, tokenization_data, 0, getter, ctx) }
+    await_io! { build_rules_with_tokenization_data_and_context(rules, tokenization_data, getter, ctx) }
 }
 
 /// Builds all rules to a form that may be applied more easily
@@ -36,18 +36,18 @@ pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<Ap
 /// # Errors
 /// Errors on invalid rules or failed io
 #[io_fn]
-fn build_rules_with_tokenization_data_with_context<'s, G: ContextIoGetter>(rules: &'s str, mut tokenization_data: TokenizationData<'s>, line_offset: usize, getter: &mut G, mut ctx: G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
+fn build_rules_with_tokenization_data_and_context<'s, G: ContextIoGetter>(rules: &'s str, mut tokenization_data: TokenizationData<'s>, getter: &mut G, mut ctx: G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
     let mut rule_lines = Vec::new();
-    let mut lines = rules.lines().enumerate().map(|(line_num, line)| (unsafe { NonZero::new_unchecked(line_num + line_offset + 1) }, line));
+    let mut sir = Lexer::lex(rules);
 
     // prepares the getter to start fetching a new set of input
     getter.on_start();
 
     // builds each line
-    while let Some((line_num, line)) = lines.next() {
+    while !sir.is_empty() {
         // builds the line and returns any errors
         let (rule_line, c) = match await_io! {
-            build_line(line, &mut lines, line_num, &mut tokenization_data, getter, ctx)
+            build_line(&mut sir, &mut tokenization_data, getter, ctx)
         } {
             Ok(rule_line) => rule_line,
             Err(e) => {
@@ -165,12 +165,16 @@ impl<'s> AppliableRules<'s> {
     /// leaves `self` unchanged on error
     #[io_fn]
     pub fn extend_with_context<G: ContextIoGetter>(&mut self, next_rules: &'s str, getter: &mut G, ctx: G::InputContext) -> Result<(), ScaError> {
-        let line_offset = self.rules.iter().fold(0, |acc, rule_line| acc + rule_line.lines().get());
         let tokenization_data = self.tokenization_data.with_inserts();
+
+        let num_lines_pre_extension = self.lines.len();
         
         let mut new_appliable = await_io! {
-            build_rules_with_tokenization_data_with_context(next_rules, tokenization_data, line_offset, getter, ctx)
-        }?;
+            build_rules_with_tokenization_data_and_context(next_rules, tokenization_data, getter, ctx)
+        }.map_err(|mut e| {
+            e.line_num = unsafe { NonZero::new_unchecked(e.line_num.get() + num_lines_pre_extension) };
+            e
+        })?;
 
         self.lines.append(&mut new_appliable.lines);
         self.rules.append(&mut new_appliable.rules);

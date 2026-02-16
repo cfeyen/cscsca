@@ -1,7 +1,7 @@
 use crate::keywords::{DEFINITION_PREFIX, LABEL_PREFIX, VARIABLE_PREFIX};
 
 /// Prefixes added to literal strings to modify their effects
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Prefix {
     /// Inserts a predefined value in its place
     Definition,
