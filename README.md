@@ -252,16 +252,12 @@ There are both fallible and infallible variants of the crate's application funct
 ### `IoGetter`s
 Objects implementing the `IoGetter` trait allow you to control where and how input is fetched
 
-The provided `CliGetter` uses standard IO and trims the input
-
 ### `Runtime`s
 Objects implementing the `Runtime` trait allow you to control some of CSCSCA's runtime behavior
 - Output: Allows you to control how printing works
 - Infinite Loop Protection: Using the shifts `>` and `<` can create an infinite loop. To avoid this, CSCSCA provides a hard limit on the time/attempts applying a rule can take. This limit may be set via runtimes
 
-The provided `CliRuntime` uses standard IO and has a limit of 10000 application attempts per line
-
-The provided `LogRuntime` logs output internally, refreshes the logs before starting each group of applications, and uses the same limit as the `CliRuntime`
+The provided `LogRuntime` logs output internally, refreshes the logs before starting each group of applications, and uses a default limit of 10000 application attempts
 
 **Warning**:
 If a time limit is used, it does require a call to fetch system time. In the case of Web Assembly, this causes a panic.
