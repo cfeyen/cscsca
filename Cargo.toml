@@ -11,6 +11,7 @@ description = "Charles' Super Cool Sound Change Applier - A tool for simulating 
 repository = "https://github.com/cfeyen/cscsca"
 
 [lints.clippy]
+result_large_err = { level = "allow", priority = -1 }
 non_minimal_cfg = { level = "allow", priority = -1 }
 correctness = { level = "warn", priority = -2 }
 suspicious = { level = "warn", priority = -2 }

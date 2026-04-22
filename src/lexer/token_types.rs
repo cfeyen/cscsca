@@ -33,6 +33,7 @@ impl Span {
     }
 
     #[cfg(not(feature = "debug_tokens"))]
+    #[allow(clippy::unused_self)]
     /// Extends the span's length by one
     #[inline]
     pub(super) const fn lengthen(&mut self, _: char) { }

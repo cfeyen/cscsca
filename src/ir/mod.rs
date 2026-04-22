@@ -35,7 +35,7 @@ pub fn ir_line_from_sir<'s>(sir: &mut Sir<'s>, tokenization_data: &mut Tokenizat
                 let name = name.str();
 
                 let sir_tokens = sir_iter.copied().collect::<Vec<_>>();
-                for t in sir_tokens.iter() {
+                for t in &sir_tokens {
                     if let SirToken::NonPhoneEscape('\n', _) | SirToken::EndOfExpr(_) = t {
                         lines = unsafe { NonZero::new_unchecked(lines.get() + 1) }
                     }
@@ -63,7 +63,7 @@ pub fn ir_line_from_sir<'s>(sir: &mut Sir<'s>, tokenization_data: &mut Tokenizat
             if let Some(name) = sir_iter.next() && let SirToken::Phone(name) = name {
                 let name = name.str();
                 let sir_tokens = sir_iter.copied().collect::<Vec<_>>();
-                for t in sir_tokens.iter() {
+                for t in &sir_tokens {
                     if let SirToken::NonPhoneEscape('\n', _) | SirToken::EndOfExpr(_) = t {
                         lines = unsafe { NonZero::new_unchecked(lines.get() + 1) }
                     }
@@ -196,7 +196,7 @@ pub fn sir_expr_to_ir_line<'s>(sir: Vec<SirToken<'s>>, tokenization_data: &mut T
 fn get_expr<'s>(sir: &mut Sir<'s>) -> Vec<SirToken<'s>> {
     let mut line = Vec::new();
 
-    while let Some(token) = sir.next() {
+    for token in sir.by_ref() {
         if matches!(token, SirToken::EndOfExpr(_)) {
             break;
         }

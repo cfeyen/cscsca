@@ -132,7 +132,7 @@ pub(super) trait RuntimeApplier: ContextRuntime {
                 self.execute_runtime_command(ctx, cmd, phones, line_num)
             },
             RuleLine::Rule { rule, lines } => apply(rule, phones, self.line_application_limit())
-                .map(|_| ctx)
+                .map(|()| ctx)
                 .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Application, line_num, *lines))
         }
     }

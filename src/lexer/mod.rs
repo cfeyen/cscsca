@@ -316,7 +316,7 @@ impl<'s> Lexer<'s> {
 
         // adds any found phone and catches the accumulator up to the forward accumulator if needed
         if s.is_empty() || is_special_str(s) {
-            return false;
+            false
         } else {
             self.accumulator = forward_acc;
             self.tokens.push(SirToken::Phone(PhoneValidStr::new(

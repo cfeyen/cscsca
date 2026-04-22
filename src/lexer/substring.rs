@@ -67,7 +67,7 @@ impl<'a> Substring<'a> {
 
     /// Peeks `n` characters after the substring
     pub fn peek_past(&self, n: usize) -> Option<char> {
-        self.iter.clone().skip(n).next()
+        self.iter.clone().nth(n)
     }
 
     /// Restarts the substring after the character after it
