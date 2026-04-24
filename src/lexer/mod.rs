@@ -110,75 +110,16 @@ impl<'s> Lexer<'s> {
         if let Some(c) = self.accumulator.peek() {
             let empty_acc = self.accumulator.str().is_empty();
             let at_line_start = self.accumulator.char() == 0 && self.accumulator.len() == 0;
-            let rest = self.accumulator.rest();
+
+            // checks for statements when at the start of a line
+            if at_line_start {
+                // finishes partial parse if a statement is handled
+                if self.handle_statements() { return; }
+            }
 
             match c {
-                // handles statements
-                _ if at_line_start && rest.starts_with(LAZY_DEFINITION_LINE_START) => {
-                    self.accumulator.grow_by(LAZY_DEFINITION_LINE_START.len());
-                    self.tokens.push(SirToken::LazyDefinitionDeclaration(self.accumulator.span()));
-                    _ = self.accumulator.pass();
-                },
-                _ if at_line_start && rest.starts_with(DEFINITION_LINE_START) => {
-                    self.accumulator.grow_by(DEFINITION_LINE_START.len());
-                    self.tokens.push(SirToken::DefinitionDeclaration(self.accumulator.span()));
-                    _ = self.accumulator.pass();
-                },
-                _ if at_line_start && rest.starts_with(PRINT_LINE_START) => {
-                    self.accumulator.grow_by(PRINT_LINE_START.len());
-                    self.tokens.push(SirToken::PrintCommand(self.accumulator.span()));
-                    _ = self.accumulator.pass();
-
-                    let (msg, span) = self.rest_of_line_as_str();
-                    self.tokens.push(SirToken::Message(msg.trim_start(), span));
-                },
-                _ if at_line_start && rest.starts_with(GET_AS_CODE_LINE_START) => {
-                    self.accumulator.grow_by(GET_AS_CODE_LINE_START.len());
-                    self.tokens.push(SirToken::GetAsCodeCommand(self.accumulator.span()));
-                    _ = self.accumulator.pass();
-
-                    if self.parse_phone() {
-                        let (msg, span) = self.rest_of_line_as_str();
-                        self.tokens.push(SirToken::Message(msg.trim_start(), span));
-                    }
-                },
-                _ if at_line_start && rest.starts_with(GET_LINE_START) => {
-                    self.accumulator.grow_by(GET_LINE_START.len());
-                    self.tokens.push(SirToken::GetCommand(self.accumulator.span()));
-                    _ = self.accumulator.pass();
-
-                    if self.parse_phone() {
-                        let (msg, span) = self.rest_of_line_as_str();
-                        self.tokens.push(SirToken::Message(msg.trim_start(), span));
-                    }
-                },
-                _ if at_line_start && rest.starts_with(COMMENT_LINE_START) => {
-                    let (_, span) = self.rest_of_line_as_str();
-                    self.tokens.push(SirToken::Comment(span));
-                },
                 // handles escapes
-                ESCAPE_CHAR => {
-                    if let Some(c2) = self.accumulator.peek_past(1) {
-                        if c2 == '\r' && let Some('\n') = self.accumulator.peek_past(2) {
-                            self.push_phone();
-                            self.accumulator.grow_by(3);
-                            self.tokens.push(SirToken::NonPhoneEscape('\n', self.accumulator.span()));
-                            _ = self.accumulator.pass();
-                        } else if self.is_escapable(c2, 1, empty_acc) {
-                            self.accumulator.grow_by(2);
-                        } else {
-                            self.push_phone();
-                            self.accumulator.grow_by(2);
-                            self.tokens.push(SirToken::NonPhoneEscape(c2, self.accumulator.span()));
-                            _ = self.accumulator.pass();
-                        }
-                    } else {
-                        self.push_phone();
-                        self.accumulator.grow();
-                        self.tokens.push(SirToken::NonPhoneEscape('\n', self.accumulator.span()));
-                        _ = self.accumulator.pass();
-                    }
-                },
+                ESCAPE_CHAR => self.parse_escape(),
                 // handles prefixes
                 DEFINITION_PREFIX => self.set_prefix(Prefix::Definition),
                 LABEL_PREFIX => self.set_prefix(Prefix::Label),
@@ -257,6 +198,108 @@ impl<'s> Lexer<'s> {
             }
         } else if !self.accumulator.str().is_empty() || self.prefix.is_some() {
             self.push_phone();
+        }
+    }
+
+    /// Handles any statements that might start the unaccumulated code
+    /// 
+    /// Returns `true` if a statement was found and parsed
+    fn handle_statements(&mut self) -> bool {
+        let rest = self.accumulator.rest();
+
+        // handles lazy deinitions
+        if rest.starts_with(LAZY_DEFINITION_LINE_START) {
+            self.accumulator.grow_by(LAZY_DEFINITION_LINE_START.len());
+            self.tokens.push(SirToken::LazyDefinitionDeclaration(self.accumulator.span()));
+            _ = self.accumulator.pass();
+
+            return true;
+        }
+        
+        // handles eager definitions
+        if rest.starts_with(DEFINITION_LINE_START) {
+            self.accumulator.grow_by(DEFINITION_LINE_START.len());
+            self.tokens.push(SirToken::DefinitionDeclaration(self.accumulator.span()));
+            _ = self.accumulator.pass();
+
+            return true;
+        }
+        
+        // handles logging statements
+        if rest.starts_with(PRINT_LINE_START) {
+            self.accumulator.grow_by(PRINT_LINE_START.len());
+            self.tokens.push(SirToken::PrintCommand(self.accumulator.span()));
+            _ = self.accumulator.pass();
+
+            let (msg, span) = self.rest_of_line_as_str();
+            self.tokens.push(SirToken::Message(msg.trim_start(), span));
+
+            return true;
+        }
+        
+        // handles get code statements
+        if rest.starts_with(GET_AS_CODE_LINE_START) {
+            self.accumulator.grow_by(GET_AS_CODE_LINE_START.len());
+            self.tokens.push(SirToken::GetAsCodeCommand(self.accumulator.span()));
+            _ = self.accumulator.pass();
+
+            if self.parse_phone() {
+                let (msg, span) = self.rest_of_line_as_str();
+                self.tokens.push(SirToken::Message(msg.trim_start(), span));
+            }
+
+            return true
+        }
+        
+        // handles get statements
+        if rest.starts_with(GET_LINE_START) {
+            self.accumulator.grow_by(GET_LINE_START.len());
+            self.tokens.push(SirToken::GetCommand(self.accumulator.span()));
+            _ = self.accumulator.pass();
+
+            if self.parse_phone() {
+                let (msg, span) = self.rest_of_line_as_str();
+                self.tokens.push(SirToken::Message(msg.trim_start(), span));
+            }
+
+            return true;
+        }
+        
+        // handles comments
+        if rest.starts_with(COMMENT_LINE_START) {
+            let (_, span) = self.rest_of_line_as_str();
+            self.tokens.push(SirToken::Comment(span));
+
+            return true;
+        }
+        
+        false
+    }
+
+    /// Parses an escape sequence
+    fn parse_escape(&mut self) {
+        // does not parse if the first character is not an escape character
+        if !matches!(self.accumulator.peek(), Some(ESCAPE_CHAR)) { return; }
+
+        if let Some(c2) = self.accumulator.peek_past(1) {
+            if c2 == '\r' && let Some('\n') = self.accumulator.peek_past(2) {
+                self.push_phone();
+                self.accumulator.grow_by(3);
+                self.tokens.push(SirToken::NonPhoneEscape('\n', self.accumulator.span()));
+                _ = self.accumulator.pass();
+            } else if self.is_escapable(c2, 1, self.accumulator.str().is_empty()) {
+                self.accumulator.grow_by(2);
+            } else {
+                self.push_phone();
+                self.accumulator.grow_by(2);
+                self.tokens.push(SirToken::NonPhoneEscape(c2, self.accumulator.span()));
+                _ = self.accumulator.pass();
+            }
+        } else {
+            self.push_phone();
+            self.accumulator.grow();
+            self.tokens.push(SirToken::NonPhoneEscape('\n', self.accumulator.span()));
+            _ = self.accumulator.pass();
         }
     }
 
