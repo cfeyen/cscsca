@@ -111,11 +111,8 @@ impl<'s> Lexer<'s> {
             let empty_acc = self.accumulator.str().is_empty();
             let at_line_start = self.accumulator.char() == 0 && self.accumulator.len() == 0;
 
-            // checks for statements when at the start of a line
-            if at_line_start {
-                // finishes partial parse if a statement is handled
-                if self.handle_statements() { return; }
-            }
+            // checks for statements when at the start of a line, finishes partial parse if a statement is handled
+            if at_line_start && self.handle_statements() { return; }
 
             match c {
                 // handles escapes
