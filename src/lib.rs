@@ -8,6 +8,9 @@ pub use lexer::{Lexer, Sir, sir::SirToken, token_types::{PhoneValidStr, Span}};
 mod lexer;
 mod ir;
 mod phones;
+#[cfg(feature = "debug_tokens")]
+pub mod tokens;
+#[cfg(not(feature = "debug_tokens"))]
 mod tokens;
 mod applier;
 mod matcher;

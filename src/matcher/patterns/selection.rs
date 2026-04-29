@@ -95,7 +95,7 @@ impl std::fmt::Display for Selection<'_> {
             write!(f, "{id}")?;
         }
 
-        write!(f, "{} ", ScopeType::Selection.fmt_start())?;
+        write!(f, "{} ", ScopeType::Selection.start_char())?;
 
         if let Some(first_option) = self.options.first() {
             write!(f, "{first_option}")?;
@@ -107,6 +107,6 @@ impl std::fmt::Display for Selection<'_> {
             }
         }
 
-        write!(f, " {}", ScopeType::Selection.fmt_end())
+        write!(f, " {}", ScopeType::Selection.end_char())
     }
 }

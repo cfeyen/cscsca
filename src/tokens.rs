@@ -2,9 +2,12 @@ use crate::{ir::tokens::IrToken, keywords::{AND_CHAR, ANY_CHAR, REPETITION_END_C
 
 use std::{fmt::Display, rc::Rc};
 
+/// A token determining the direction and type of shift
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Shift {
+    /// The shidt direction
     pub dir: Direction,
+    /// The shift type
     pub kind: ShiftType,
 }
 
@@ -28,7 +31,7 @@ pub enum Direction {
 
 impl Direction {
     /// Changes n by dist according to the direction (wraps instead of overflowing)
-    pub const fn change_by(self, n: usize, dist: usize) -> usize {
+    pub (crate) const fn change_by(self, n: usize, dist: usize) -> usize {
         match self {
             Self::Ltr => n.wrapping_add(dist),
             Self::Rtl => n.wrapping_sub(dist),
@@ -36,14 +39,14 @@ impl Direction {
     }
 
     /// Changes n by 1 according to the direction (wraps instead of overflowing)
-    pub const fn change_by_one(self, n: usize) -> usize {
+    pub (crate) const fn change_by_one(self, n: usize) -> usize {
         self.change_by(n, 1)
     }
 
     /// Returns the first index required for traversing a list according to direction
     /// 
     /// (LTR returns 0, RTL returns list length - 1)
-    pub const fn start_index<T>(self, list: &[T]) -> usize {
+    pub (crate) const fn start_index<T>(self, list: &[T]) -> usize {
         match self {
             Self::Ltr => 0,
             Self::Rtl => list.len().wrapping_sub(1),
@@ -83,7 +86,9 @@ pub enum ScopeType {
 }
 
 impl ScopeType {
-    pub const fn fmt_start(self) -> char {
+    /// Gets the character for the starting brace
+    #[must_use]
+    pub const fn start_char(self) -> char {
         match self {
             ScopeType::Optional => OPTIONAL_START_CHAR,
             ScopeType::Selection => SELECTION_START_CHAR,
@@ -91,7 +96,9 @@ impl ScopeType {
         }
     }
 
-    pub const fn fmt_end(self) -> char {
+    /// Gets the character for the ending brace
+    #[must_use]
+    pub const fn end_char(self) -> char {
         match self {
             ScopeType::Optional => OPTIONAL_END_CHAR,
             ScopeType::Selection => SELECTION_END_CHAR,
@@ -102,14 +109,17 @@ impl ScopeType {
 
 impl Display for ScopeType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}...{}", self.fmt_start(), self.fmt_end())
+        write!(f, "{}...{}", self.start_char(), self.end_char())
     }
 }
 
+/// The type of a condition conjunction
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AndType {
+    /// And
     #[default]
     And,
+    /// And not
     AndNot
 }
 
@@ -122,6 +132,7 @@ impl std::fmt::Display for AndType {
     }
 }
 
+/// The type of a condition
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum CondType {
     /// The input in a pattern based condition or anti-condition
@@ -142,7 +153,7 @@ impl std::fmt::Display for CondType {
 
 /// A scope label
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ScopeId<'s> {
+pub (crate) enum ScopeId<'s> {
     /// Named label
     Name(&'s str),
     /// The number that a scope is of its type in an input or output
@@ -165,7 +176,7 @@ impl std::fmt::Display for ScopeId<'_> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum LabelType {
+pub (crate) enum LabelType {
     Scope(ScopeType),
     Any,
 }

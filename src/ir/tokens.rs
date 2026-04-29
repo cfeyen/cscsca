@@ -37,8 +37,8 @@ impl Display for IrToken<'_> {
             Self::Break(r#break) => write!(f, "{break}"),
             Self::CondType(focus) => write!(f, "{focus}"),
             Self::Phone(phone) => write!(f, "{phone}"),
-            Self::ScopeEnd(kind) => write!(f, "{}", kind.fmt_end()),
-            Self::ScopeStart(kind) => write!(f, "{}", kind.fmt_start()),
+            Self::ScopeEnd(kind) => write!(f, "{}", kind.end_char()),
+            Self::ScopeStart(kind) => write!(f, "{}", kind.start_char()),
             Self::Label(name) => write!(f, "{LABEL_PREFIX}{name}"),
             Self::Negative => write!(f, "{NOT_CHAR}"),
         }

@@ -102,6 +102,6 @@ impl std::fmt::Display for Optional<'_> {
             write!(f, "{id}")?;
         }
 
-        write!(f, "{} {} {}", ScopeType::Optional.fmt_start(), self.option, ScopeType::Optional.fmt_end())
+        write!(f, "{} {} {}", ScopeType::Optional.start_char(), self.option, ScopeType::Optional.end_char())
     }
 }

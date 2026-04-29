@@ -17,8 +17,8 @@ pub enum SirToken<'s> {
     Variable(PhoneValidStr<'s>),
     /// A prefix that does not start a name
     InvalidPrefix(Prefix, Span),
-    /// A string with special effects
-    SpecialStr(PhoneValidStr<'s>),
+    /// A phone that isn't valid as a phone
+    InvalidPhone(PhoneValidStr<'s>),
     /// An escaped character that does not result in part of a phone or name
     NonPhoneEscape(char, Span),
     /// A shift or condition segmenting token
@@ -65,7 +65,7 @@ impl SirToken<'_> {
         match self {
             Self::Phone(s) | Self::Definition(s)
             | Self::Label(s) | Self::Variable(s)
-            | Self::SpecialStr(s) => s.span(),
+            | Self::InvalidPhone(s)  => s.span(),
             Self::InvalidPrefix(_, s) | Self::NonPhoneEscape(_, s)
             | Self::Break(_, s) | Self::CondFocus(_, s)
             | Self::ScopeStart(_, s) | Self::ScopeEnd(_, s)

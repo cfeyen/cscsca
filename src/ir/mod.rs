@@ -1,7 +1,12 @@
 use std::num::NonZero;
 
 use crate::{
-    ONE, executor::io_events::{GetType, IoEvent, RuntimeIoEvent, TokenizerIoEvent}, ir::tokenization_data::TokenizationData, keywords::{DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, INPUT_PATTERN_STR, VARIABLE_PREFIX}, lexer::{Sir, sir::SirToken}, phones::Phone, tokens::CondType
+    ONE,
+    executor::io_events::{GetType, IoEvent, RuntimeIoEvent, TokenizerIoEvent},
+    ir::tokenization_data::TokenizationData,
+    keywords::{DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, VARIABLE_PREFIX},
+    lexer::{Sir, sir::SirToken},
+    phones::Phone,
 };
 
 use tokens::IrToken;
@@ -155,6 +160,7 @@ pub fn sir_expr_to_ir_line<'s>(sir: Vec<SirToken<'s>>, tokenization_data: &mut T
                 continue;
             }
             SirToken::InvalidPrefix(prefix, _) => return (Err(IrError::EmptyPrefix(prefix)), lines),
+            SirToken::InvalidPhone(phone) => return (Err(IrError::InvalidPhone(phone.str())), lines),
             SirToken::Label(label) => IrToken::Label(label.str()),
             SirToken::Negative(_) => IrToken::Negative,
             SirToken::EndOfExpr(_) | SirToken::NonPhoneEscape('\n', _) => {
@@ -165,10 +171,6 @@ pub fn sir_expr_to_ir_line<'s>(sir: Vec<SirToken<'s>>, tokenization_data: &mut T
             SirToken::Phone(symbol) => IrToken::Phone(Phone::Symbol(symbol.str())),
             SirToken::ScopeEnd(st, _) => IrToken::ScopeEnd(st),
             SirToken::ScopeStart(st, _) => IrToken::ScopeStart(st),
-            SirToken::SpecialStr(s) => match s.str() {
-                INPUT_PATTERN_STR => IrToken::CondType(CondType::Pattern),
-                s => return (Err(IrError::InvalidPhone(s)), lines)
-            },
             SirToken::Variable(var) => {
                 let content = tokenization_data.get_variable(var.str());
 

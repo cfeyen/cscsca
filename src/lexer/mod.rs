@@ -1,11 +1,7 @@
 use crate::{
     ir::{prefix::Prefix, tokens::Break},
     keywords::{
-        AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START,
-        DEFINITION_PREFIX, ESCAPE_CHAR, GET_AS_CODE_LINE_START, GET_LINE_START, LABEL_PREFIX,
-        LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR,
-        PRINT_LINE_START, REPETITION_END_CHAR, REPETITION_START_CHAR, RTL_CHAR, SELECTION_END_CHAR,
-        SELECTION_START_CHAR, VARIABLE_PREFIX, is_isolated_char, is_isolation_bound, is_special_char, is_special_str
+        AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, REPETITION_END_CHAR, REPETITION_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, VARIABLE_PREFIX, is_isolated_char, is_isolation_bound, is_special_char, is_special_str
     },
     lexer::{sir::SirToken, substring::Substring, token_types::{PhoneValidStr, Span}},
     tokens::{AndType, CondType, Direction, ScopeType, Shift, ShiftType}
@@ -411,7 +407,10 @@ impl<'s> Lexer<'s> {
                 Some(Prefix::Definition) => SirToken::Definition(fvs),
                 Some(Prefix::Label) => SirToken::Label(fvs),
                 Some(Prefix::Variable) => SirToken::Variable(fvs),
-                None if is_special_str(s) => SirToken::SpecialStr(fvs),
+                None if is_special_str(s) => match s {
+                    INPUT_PATTERN_STR => SirToken::CondFocus(CondType::Pattern, Span::new(line, char, index, len)),
+                    _ => SirToken::InvalidPhone(fvs),
+                }
                 None => SirToken::Phone(fvs),
             };
 

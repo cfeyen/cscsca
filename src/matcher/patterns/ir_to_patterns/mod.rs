@@ -394,10 +394,10 @@ impl std::fmt::Display for RuleStructureError<'_> {
             Self::LabelNotFollowedByScope(name)
                 => write!(f, "Label '{}' is not followed by a scope", IrToken::Label(name)),
             Self::NoShift => write!(f, "Rule does not contains a shift token"),
-            Self::UnopendScope(kind) => write!(f, "Found unopened '{}'", kind.fmt_end()),
-            Self::UnclosedScope(kind) => write!(f, "Found unclosed '{}'", kind.fmt_start()),
+            Self::UnopendScope(kind) => write!(f, "Found unopened '{}'", kind.end_char()),
+            Self::UnclosedScope(kind) => write!(f, "Found unclosed '{}'", kind.start_char()),
             Self::MismatchedScopeBounds(start, end)
-                => write!(f, "Found mismatched scope bounds '{}'...'{}'", start.fmt_start(), end.fmt_end()),
+                => write!(f, "Found mismatched scope bounds '{}'...'{}'", start.start_char(), end.end_char()),
             Self::UnexpectedToken(ir_token) => write!(f, "Found unexpected token '{ir_token}'"),
             Self::NoConditionFocus => write!(f, "Found condition without an input patern ('{}') or equality ('{}')", CondType::Pattern, CondType::Match),
             Self::AndDoesNotFollowCond(and_type) => write!(f, "Found '{and_type}' outside of a condition"),
@@ -405,7 +405,7 @@ impl std::fmt::Display for RuleStructureError<'_> {
                 => write!(f, "Found a second shift token '{shift}' after the first"),
             Self::UnexpectedCondType(r#type)
                 => write!(f, "Found '{type}' either outside of a condition or after '{}' or '{}'", CondType::Pattern, CondType::Match),
-            Self::RepetitionOutOfCond => write!(f, "Repetitions ('{}...{}') are not allowed outside of conditions and anti-conditions", ScopeType::Repetition.fmt_start(), ScopeType::Repetition.fmt_end()),
+            Self::RepetitionOutOfCond => write!(f, "Repetitions ('{}...{}') are not allowed outside of conditions and anti-conditions", ScopeType::Repetition.start_char(), ScopeType::Repetition.end_char()),
             Self::EmptyRepetition => write!(f, "A repetition must contain some inclusive pattern"),
             Self::EmptyExclusion => write!(f, "A repetition exclusion must contain some pattern"),
         }
