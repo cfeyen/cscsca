@@ -42,15 +42,19 @@ impl Span {
 #[cfg(feature = "debug_tokens")]
 impl Span {
     /// Gets the line the span starts on (zero indexed)
+    #[must_use]
     pub const fn line(&self) -> usize { self.line }
 
     /// Gets the character of the line the span starts on (zero indexed)
+    #[must_use]
     pub const fn char(&self) -> usize { self.char }
 
     /// Gets the index of the starting byte of the span
+    #[must_use]
     pub const fn index(&self) -> usize { self.index }
 
     /// Gets the length of the span in bytes
+    #[must_use]
     pub const fn len(&self) -> usize { self.len }
 }
 
@@ -74,10 +78,12 @@ impl<'s> PhoneValidStr<'s> {
     }
     
     /// Gets the string
+    #[must_use]
     pub const fn str(&self) -> &'s str { self.str }
 
     #[cfg(feature = "debug_tokens")]
     /// Gets the span of the phone or name
+    #[must_use]
     pub const fn span(&self) -> &Span { &self.span }
 }
 

@@ -26,6 +26,7 @@ pub struct Sir<'s> {
 
 impl<'s> Sir<'s> {
     /// Creates a new SIR iterator from a list of `SirTokens`
+    #[must_use]
     pub fn new(mut sir: Vec<SirToken<'s>>) -> Self {
         sir.reverse();
 
@@ -36,17 +37,20 @@ impl<'s> Sir<'s> {
     }
 
     /// Determines if the iterator is exausted
+    #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.tokens.is_empty()
     }
 
     /// Gets the current line number (starts at zero)
+    #[must_use]
     pub const fn line(&self) -> usize {
         self.line
     }
 
     #[cfg(feature = "debug_tokens")]
     /// Peeks the next token
+    #[must_use]
     pub fn peek(&self) -> Option<&<Self as Iterator>::Item> {
         self.tokens.last()
     }
@@ -93,6 +97,7 @@ impl<'s> Lexer<'s> {
     }
 
     /// Converts rules into SIR
+    #[must_use]
     pub fn lex(rules: &'s str) -> Sir<'s> {
         let mut lexer = Self::new(rules);
 

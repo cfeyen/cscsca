@@ -60,6 +60,7 @@ pub enum SirToken<'s> {
 #[cfg(feature = "debug_tokens")]
 impl SirToken<'_> {
     /// Gets the location data for a token
+    #[must_use]
     pub fn span(&self) -> &Span {
         match self {
             Self::Phone(s) | Self::Definition(s)
