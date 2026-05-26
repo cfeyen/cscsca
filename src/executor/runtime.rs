@@ -1,4 +1,6 @@
-use std::{num::NonZero, time::Duration};
+use std::num::NonZero;
+#[cfg(feature = "sys_time")]
+use std::time::Duration;
 
 use crate::{
     applier::apply, await_io, io_fn, matcher::patterns::ir_to_patterns::RuleLine, phones::{phone_list_to_string, Phone}, RulelessScaError, ScaErrorType, ONE
@@ -12,6 +14,7 @@ pub(crate) const DEFAULT_LINE_APPLICATION_LIMIT: LineApplicationLimit = LineAppl
 /// prevents infinite loops from being infinite
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LineApplicationLimit {
+    #[cfg(feature = "sys_time")]
     /// Maximum time allotted for line application
     Time(Duration),
     /// Maximum times an application attempt may be made by a line

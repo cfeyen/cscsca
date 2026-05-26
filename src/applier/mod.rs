@@ -1,3 +1,4 @@
+#[cfg(feature = "sys_time")]
 use std::time::Instant;
 
 use crate::{
@@ -19,6 +20,7 @@ mod tests;
 /// The condition for a line application limit
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub (crate) enum LimitCondition {
+    #[cfg(feature = "sys_time")]
     /// End time
     Time(Instant),
     /// Application attempts
@@ -31,6 +33,7 @@ pub (crate) enum LimitCondition {
 impl From<LineApplicationLimit> for LimitCondition {
     fn from(val: LineApplicationLimit) -> Self {
         match val {
+            #[cfg(feature = "sys_time")]
             LineApplicationLimit::Time(time) => LimitCondition::Time(Instant::now() + time),
             LineApplicationLimit::Attempts(max) => LimitCondition::Count { attempts: 0, max },
         }
@@ -42,6 +45,7 @@ impl LimitCondition {
     /// moves `Count` varient closer to completion
     fn check(&mut self) -> bool {
         match self {
+            #[cfg(feature = "sys_time")]
             Self::Time(time) => Instant::now() >= *time,
             Self::Count { attempts, max } if *attempts >= *max => true,
             Self::Count { attempts, max: _ } => {
@@ -254,6 +258,7 @@ impl std::fmt::Display for ApplicationError<'_> {
                 write!(f, "Cannot match the following token in the output to a token in the input: {pattern}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
             },
             Self::ExceededLimit(limit) => write!(f, "{}", match limit {
+                #[cfg(feature = "sys_time")]
                 LimitCondition::Time(_) => "Could not apply changes in allotted time",
                 LimitCondition::Count { attempts: _, max: _ } => "Could not apply changes with the allotted application attempts",
             }),

@@ -59,6 +59,7 @@ Replace *`text`* with **`--read`** *`read_file`* or **`-r`** *`read_file`* to re
 - `async_io`: Allows for IO to be done through asynchronous functions instead of synchronous ones. Cannot be active when compiling CSCSCA to an executable
 - `debug_tokens`: Gives access to a high-level tokenized form of CSCSCA source code. (Mostly useful for custom editors)
 - `docs`: Adds the function `cscsca::docs` that returns everything under the heading `Writing Sound Change Rules With CSCSCA` in this file
+- `sys_time`: Adds `LineApplicationLimit::Time`, which allows CSCSCA to end a long application after a time limit instead of an attempt limit. (**Warning**: this is not WASM compatable)
 
 ## Library API
 ### Fallible and Infallible Application

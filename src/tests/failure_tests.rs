@@ -1,19 +1,6 @@
-use std::time::Duration;
-
 use crate::build_rules;
-use crate::executor::{LineByLineExecuter, runtime::LineApplicationLimit};
 use crate::io_macros::{await_io, io_test};
 use crate::tests::{apply_fallible, NoGet, NoLog};
-
-#[io_test(pollster::block_on)]
-fn time_out_of_infinte_loop() {
-    let mut exector = LineByLineExecuter::new(
-        NoLog::new(Some(LineApplicationLimit::Time(Duration::from_millis(100)))),
-        NoGet
-    );
-
-    assert!(await_io! { exector.apply_fallible("a", "{a, b} > {b, a}") }.is_err());
-}
 
 #[io_test(pollster::block_on)]
 fn repetition_out_of_cond() {

@@ -24,3 +24,7 @@ jobs:
       run: cargo test --features debug_tokens --verbose
     - name: Run tests with async_io
       run: cargo test --lib --features async_io --verbose
+    - name: Run tests with sys_time
+      run: cargo test --features sys_time tests::sys_time_tests --verbose
+    - name: Run tests with sys_time and async_io
+      run: cargo test --lib --features sys_time --features async_io tests::sys_time_tests --verbose

@@ -1,6 +1,11 @@
 use crate::{executor::{getter::IoGetter, runtime::DEFAULT_LINE_APPLICATION_LIMIT, LineByLineExecuter}, LineApplicationLimit, Runtime, ScaError};
 use crate::io_macros::{await_io, io_test, io_fn};
 
+mod demo_tests;
+mod failure_tests;
+#[cfg(feature = "sys_time")]
+mod sys_time_tests;
+
 /// Applies rules to an input with default execution and errors converted to a string
 #[io_fn]
 pub fn apply(input: &str, rules: &str) -> String {
@@ -33,6 +38,7 @@ impl IoGetter for NoGet {
 pub struct NoLog(Option<LineApplicationLimit>);
 
 impl NoLog {
+    #[cfg(feature = "sys_time")]
     pub const fn new(line_application_limit: Option<LineApplicationLimit>) -> Self {
         Self(line_application_limit)
     }
@@ -54,9 +60,6 @@ impl Default for NoLog {
         Self(Some(DEFAULT_LINE_APPLICATION_LIMIT))
     }
 }
-
-mod demo_tests;
-mod failure_tests;
 
 #[io_test(pollster::block_on)]
 fn escape() {
