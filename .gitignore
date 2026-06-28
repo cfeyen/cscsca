@@ -1,4 +1,10 @@
+# Build artifacts
 target
+
+# Planning and manual testing
 potential_features
 test.sca
+
+# IDE and developement enviroment
 .vscode
+.venv

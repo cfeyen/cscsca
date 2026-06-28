@@ -1,0 +1,16 @@
+repos:
+- repo: local
+  hooks:
+  - id: cargo-tests
+    name: cargo tests
+    language: unsupported_script
+    pass_filenames: false
+    entry: .pre-commit/exec_commands.py
+    args: [
+      "cargo build",
+      "cargo test",
+      "cargo test --features debug_tokens",
+      "cargo test --lib --features async_io",
+      "cargo test --features sys_time tests::sys_time_tests",
+      "cargo test --lib --features sys_time --features async_io tests::sys_time_tests",
+    ]
