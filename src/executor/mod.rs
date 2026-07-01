@@ -18,19 +18,19 @@ use crate::{
 
 use io_events::IoEvent;
 use runtime::{Runtime, RuntimeApplier};
-use getter::{IoGetter, ComptimeCommandExecuter};
+use getter::{IoGetter, ComptimeCommandExecutor};
 
-/// An executer that contains both an `IoGetter` and a `Runtime`
+/// An executor that contains both an `IoGetter` and a `Runtime`
 /// 
 /// Builds then applies one line at a time
 #[derive(Debug, Clone, Copy, Default)]
-pub struct LineByLineExecuter<R: ContextRuntime, G: ContextIoGetter> {
+pub struct LineByLineExecutor<R: ContextRuntime, G: ContextIoGetter> {
     runtime: R,
     getter: G,
 }
 
 
-impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
+impl<R: Runtime, G: IoGetter> LineByLineExecutor<R, G> {
 /// Applies the rules to the input, all errors are a formatted string
     #[inline]
     #[io_fn]
@@ -52,8 +52,8 @@ impl<R: Runtime, G: IoGetter> LineByLineExecuter<R, G> {
     }
 }
 
-impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
-    /// Creates a new `LineByLineExecuter`
+impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecutor<R, G> {
+    /// Creates a new `LineByLineExecutor`
     #[inline]
     pub const fn new(runtime: R, getter: G) -> Self {
         Self {
@@ -84,6 +84,12 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecuter<R, G> {
     #[inline]
     pub const fn getter_mut(&mut self) -> &mut G {
         &mut self.getter
+    }
+
+    /// Consume the executor and return the runtime and getter
+    #[inline]
+    pub fn into_components(self) -> (R, G) {
+        (self.runtime, self.getter)
     }
 
     /// Applies the rules to the input within the given contexts, all errors are a formatted string

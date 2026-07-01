@@ -198,7 +198,7 @@ fn apply_changes(paths: &[String], output_data: &OutputData, rule_sets: &[String
         AppRuntime::Loud(LogAndPrintRuntime::default())
     };
 
-    let mut executor = cscsca::LineByLineExecuter::new(runtime, CliGetter);
+    let mut executor = cscsca::LineByLineExecutor::new(runtime, CliGetter);
 
     // applies each rule set
     for (i, rule_set) in rule_sets.iter().enumerate() {
