@@ -86,7 +86,7 @@ pub trait IoGetter {
 /// 
 /// # Note
 /// Default methods should not be overridden
-pub(super) trait ComptimeCommandExecuter: ContextIoGetter {
+pub(super) trait ComptimeCommandExecutor: ContextIoGetter {
     /// Runs a command at build time
     #[io_fn]
     fn run_build_time_command<'s>(&mut self, ctx: Self::InputContext, cmd: &TokenizerIoEvent<'s>, tokenization_data: &mut TokenizationData<'s>, line_num: NonZero<usize>) -> Result<Self::InputContext, RulelessScaError> {
@@ -108,4 +108,4 @@ pub(super) trait ComptimeCommandExecuter: ContextIoGetter {
     }
 }
 
-impl<T: ContextIoGetter> ComptimeCommandExecuter for T {}
+impl<T: ContextIoGetter> ComptimeCommandExecutor for T {}

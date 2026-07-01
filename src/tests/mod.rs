@@ -1,4 +1,4 @@
-use crate::{executor::{getter::IoGetter, runtime::DEFAULT_LINE_APPLICATION_LIMIT, LineByLineExecuter}, LineApplicationLimit, Runtime, ScaError};
+use crate::{executor::{getter::IoGetter, runtime::DEFAULT_LINE_APPLICATION_LIMIT, LineByLineExecutor}, LineApplicationLimit, Runtime, ScaError};
 use crate::io_macros::{await_io, io_test, io_fn};
 
 mod demo_tests;
@@ -10,7 +10,7 @@ mod sys_time_tests;
 #[io_fn]
 pub fn apply(input: &str, rules: &str) -> String {
     await_io! {
-        LineByLineExecuter::new(NoLog::default(), NoGet)
+        LineByLineExecutor::new(NoLog::default(), NoGet)
             .apply(input, rules)
     }
 }
@@ -19,7 +19,7 @@ pub fn apply(input: &str, rules: &str) -> String {
 #[io_fn]
 pub fn apply_fallible(input: &str, rules: &str) -> Result<String, ScaError> {
     await_io! {
-        LineByLineExecuter::new(NoLog::default(), NoGet)
+        LineByLineExecutor::new(NoLog::default(), NoGet)
             .apply_fallible(input, rules)
     }
 }
@@ -92,7 +92,7 @@ fn input() {
 
     assert_eq!(
         await_io! {
-            LineByLineExecuter::new(runtime, SingleInputGetter("a"))
+            LineByLineExecutor::new(runtime, SingleInputGetter("a"))
                 .apply_fallible("a", "GET a :\n%a >> b")
         },
         Ok("b".to_string())
@@ -100,13 +100,13 @@ fn input() {
 
     assert_eq!(
         await_io! {
-            LineByLineExecuter::new(runtime, SingleInputGetter("b"))
+            LineByLineExecutor::new(runtime, SingleInputGetter("b"))
                 .apply_fallible("a", "GET a :\n%a >> b")
         },
         Ok("a".to_string())
     );
 
-    let mut executor = LineByLineExecuter::new(runtime, SingleInputGetter("a >> b"));
+    let mut executor = LineByLineExecutor::new(runtime, SingleInputGetter("a >> b"));
     
     assert!(
         await_io! { executor.apply_fallible("a", "GET rule :\n%rule") }.is_err()

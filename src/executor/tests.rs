@@ -3,7 +3,7 @@ use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 use super::{
     runtime::LogRuntime,
     getter::IoGetter,
-    LineByLineExecuter,
+    LineByLineExecutor,
 };
 
 use crate::{ContextIoGetter, ContextRuntime, build_rules, executor::appliable_rules::build_rules_with_context, io_macros::{await_io, io_fn, io_test}, tests::{NoGet, NoLog}};
@@ -25,7 +25,7 @@ fn line_by_line_getter() {
 
     assert_eq!(
         await_io! {
-            LineByLineExecuter::new(NoLog::default(), get_b)
+            LineByLineExecutor::new(NoLog::default(), get_b)
                 .apply_fallible("a", rules)
         },
         Ok("b".to_string())
@@ -36,7 +36,7 @@ fn line_by_line_getter() {
 fn line_by_line_log_runtime() {
     let rules = "PRINT 1:\na >> b\nPRINT 2:\nc >> d\nPRINT 3:";
 
-    let mut executor = LineByLineExecuter::new(LogRuntime::default(), NoGet);
+    let mut executor = LineByLineExecutor::new(LogRuntime::default(), NoGet);
 
     assert_eq!(
         await_io! { executor.apply_fallible("abcd", rules) },
@@ -82,7 +82,7 @@ fn context_runtimes() {
     let mut logs = Vec::new();
     let runtime = RefContextLogger(PhantomData);
 
-    let mut executor = LineByLineExecuter::new(runtime, NoGet);
+    let mut executor = LineByLineExecutor::new(runtime, NoGet);
     await_io! { executor.apply_with_contexts("pata", "PRINT this is a test:", &mut logs, ()) };
 
     assert_eq!(logs, vec![("this is a test:".to_string(), "pata".to_string())]);
@@ -100,7 +100,7 @@ fn context_runtimes() {
     let logs = Rc::new(RefCell::new(Vec::new()));
     let runtime = RcContextLogger;
 
-    let mut executor = LineByLineExecuter::new(runtime, NoGet);
+    let mut executor = LineByLineExecutor::new(runtime, NoGet);
     await_io! { executor.apply_with_contexts("pata", "PRINT this is a test:", logs.clone(), ()) };
 
     assert_eq!(logs.borrow().clone(), vec![("this is a test:".to_string(), "pata".to_string())]);
@@ -149,7 +149,7 @@ fn context_getters() {
     let mut inputs = ["in".to_string()].into_iter();
     let getter = RefContextGetter(PhantomData);
 
-    let mut executor = LineByLineExecuter::new(NoLog::default(), getter);
+    let mut executor = LineByLineExecutor::new(NoLog::default(), getter);
     let res = await_io! { executor.apply_with_contexts("a", "GET a test:\na >> %a", (), &mut inputs) };
 
     assert_eq!(res, "in");
@@ -167,7 +167,7 @@ fn context_getters() {
     let inputs = Rc::new(RefCell::new(["in".to_string()].into_iter()));
     let getter = RcContextGetter;
 
-    let mut executor = LineByLineExecuter::new(NoLog::default(), getter);
+    let mut executor = LineByLineExecutor::new(NoLog::default(), getter);
     let res = await_io! { executor.apply_with_contexts("a", "GET a test:\na >> %a", (), inputs) };
 
     assert_eq!(res, "in");

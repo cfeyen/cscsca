@@ -21,7 +21,7 @@ mod io_macros;
 
 pub use crate::{
     executor::{
-        LineByLineExecuter,
+        LineByLineExecutor,
         appliable_rules::{
             build_rules,
             AppliableRules,
