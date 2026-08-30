@@ -1,10 +1,8 @@
-use std::cell::RefCell;
-
 use crate::{
     matcher::{
         choices::{Choices, OwnedChoices},
         match_state::MatchState,
-        patterns::{check_box::CheckBox, repetition::Repetition, list::PatternList, non_bound::NonBound, optional::Optional, selection::Selection},
+        patterns::{check_box::CheckBox, repetition::Repetition, list::PatternList, non_bound::NonBound, optional::Optional, selection::Selection, negative::Negative},
         phones::Phones
     },
     phones::Phone,
@@ -20,6 +18,7 @@ pub mod optional;
 pub mod selection;
 pub mod check_box;
 pub mod ir_to_patterns;
+pub mod negative;
 
 #[cfg(test)]
 mod tests;
@@ -33,11 +32,10 @@ pub enum Pattern<'s> {
     Repetition(Repetition<'s>),
     Optional(Optional<'s>),
     Selection(Selection<'s>),
-    List(PatternList<'s>),
+    Negative(Box<Negative<'s>>),
 }
 
-impl<'s> Pattern<'s> {
-    pub const fn new_phone(phone: Phone<'s>) -> Self {
+impl<'s> Pattern<'s> {pub const fn new_phone(phone: Phone<'s>) -> Self {
         Self::Phone(CheckBox::new(phone))
     }
 
@@ -45,10 +43,10 @@ impl<'s> Pattern<'s> {
         Self::NonBound(CheckBox::new(NonBound { id }))
     }
 
-    pub fn new_repetition(id: Option<&'s str>, inclusive: PatternList<'s>, exclusive: Option<PatternList<'s>>) -> Self {
+    pub fn new_repetition(id: Option<&'s str>, inclusive: PatternList<'s>) -> Self {
         Self::Repetition(Repetition {
             checked_at_zero: false,
-            inclusive, exclusive: exclusive.map(RefCell::new),
+            inclusive,
             included: PatternList::default(),
             inclusions: 0,
             len: 0,
@@ -79,6 +77,11 @@ impl<'s> Pattern<'s> {
             id
         })
     }
+
+    pub fn new_negative(pattern: Self, negative_pattern: Self) -> Self {
+        Pattern::Negative(Box::new(Negative::new(pattern, negative_pattern)))
+    }
+    
 }
 
 impl<'s> MatchState<'s> for Pattern<'s> {
@@ -89,7 +92,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Repetition(repetition) => repetition.matches(phones, choices),
             Self::Optional(option) => option.matches(phones, choices),
             Self::Selection(selection) => selection.matches(phones, choices),
-            Self::List(list) => list.matches(phones, choices),
+            Self::Negative(negative) => negative.matches(phones, choices)
         }
     }
 
@@ -100,7 +103,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Repetition(repetition) => repetition.next_match(phones, choices),
             Self::Optional(option) => option.next_match(phones, choices),
             Self::Selection(selection) => selection.next_match(phones, choices),
-            Self::List(list) => list.next_match(phones, choices),
+            Self::Negative(negative) => negative.next_match(phones, choices)
         }
     }
 
@@ -111,7 +114,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Repetition(repetition) => repetition.len(),
             Self::Optional(option) => option.len(),
             Self::Selection(selection) => selection.len(),
-            Self::List(list) => list.len(),
+            Self::Negative(negative) => negative.len(),
         }
     }
 
@@ -122,7 +125,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Repetition(repetition) => repetition.reset(),
             Self::Optional(option) => option.reset(),
             Self::Selection(selection) => selection.reset(),
-            Self::List(list) => list.reset(),
+            Self::Negative(list) => list.reset(),
         }
     }
 
@@ -133,7 +136,7 @@ impl<'s> MatchState<'s> for Pattern<'s> {
             Self::Repetition(repetition) => repetition.advance_once(),
             Self::Optional(option) => option.advance_once(),
             Self::Selection(selection) => selection.advance_once(),
-            Self::List(list) => list.advance_once(),
+            Self::Negative(negative) => negative.advance_once(),
         }
     }
 }
@@ -146,7 +149,7 @@ impl std::fmt::Display for Pattern<'_> {
             Self::Repetition(repetition) => write!(f, "{repetition}"),
             Self::Optional(option) => write!(f, "{option}"),
             Self::Selection(selection) => write!(f, "{selection}"),
-            Self::List(list) => write!(f, "{list}"),
+            Self::Negative(negative) => write!(f, "{negative}"),
         }
     }
 }

@@ -60,7 +60,7 @@ Scopes are a way to dynamically determine which phone, group of phones, or lack 
 There are three types of scopes
 - optional **`(`**...**`)`**: a phone or group of phones that is optional
 - selection **`{`**...**`,`**...**`}`**: a list of comma-separated phones or a group of phones that selects one phone or group of phones in that list
-- repetition **`[`**...**`]`**: a phone or group of phones repeated 0 or more times. If a **`!`** is added in the scope, the scope represents the phone or group of phones before the **`!`** repeated 0 or more times, if it does not contain the phone or group of phones after the **`!`**
+- repetition **`[`**...**`]`**: a phone or group of phones repeated 0 or more times.
 
 
 **Note**: repetition scopes are only allowed in conditions/anti-conditions (see: Conditions and Anti-Conditions)
@@ -180,6 +180,9 @@ DEFINE F {f, s, ç, x}
 ### Special Characters
 - **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
 - **`#`**: a word boundary
+- **`!`**: represents the proceeding pattern (selection, phone, etc) while disallowing the following pattern
+    - Example: if `@V` repreasents all vowels, the following rule changes `p` to `b` proceeding any vowel other than `u` or `o` `p >> b / _ @V ! {u, o}`
+    - Note: if you want multiple patterns to be part of a negation pattern, wrap them in a selection scope (such as: `{(@G) @V} ! {(w) {u, o}}`)
 - **`\`**: escapes the effects of the following character, may be used at the end of a line to continue the rule on the next line
 
 ### IO and Variables

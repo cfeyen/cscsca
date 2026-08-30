@@ -1,7 +1,5 @@
-use std::cell::RefCell;
-
 use crate::{
-    keywords::{REPETITION_END_CHAR, REPETITION_START_CHAR, NOT_CHAR},
+    keywords::{REPETITION_END_CHAR, REPETITION_START_CHAR},
     matcher::{choices::{Choices, OwnedChoices}, match_state::MatchState, patterns::list::PatternList, phones::Phones},
 };
 
@@ -9,53 +7,18 @@ use crate::{
 pub struct Repetition<'s> {
     pub(super) checked_at_zero: bool,
     pub(super) inclusive: PatternList<'s>,
-    pub(super) exclusive: Option<RefCell<PatternList<'s>>>,
     pub(super) included: PatternList<'s>,
     pub(super) inclusions: usize,
     pub(super) len: usize,
     pub(super) id: Option<&'s str>,
 }
 
-impl<'s> Repetition<'s> {
-    fn get_max_len(&self, choices: &Choices<'_, '_>) -> Option<usize> {
-        self.id.and_then(|id| choices.repetition.get(id)).copied()
-    }
-
-    fn exclusive_matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> bool where 's: 'p {
-        let max_ex_len = self.get_max_len(choices).unwrap_or(self.len);
-
-        if let Some(mut exclusive) = self.exclusive.as_ref().map(RefCell::borrow_mut) {
-            for i in 0..self.len {
-                while exclusive.next_match(phones, choices).is_some() {
-                    if i + exclusive.len() <= max_ex_len {
-                        exclusive.reset();
-                        return true
-                    }
-                }
-                
-                exclusive.reset();
-                _ = phones.next();
-            }
-        }
-
-        false
-    }
-
-    fn included_matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
+impl<'s> MatchState<'s> for Repetition<'s> {
+    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if self.included.len() == self.len && let Some(new_choices) = self.included.matches(phones, choices) {
             Some(new_choices)
         } else {
             None
-        }
-    }
-}
-
-impl<'s> MatchState<'s> for Repetition<'s> {
-    fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
-        if self.exclusive_matches(&mut phones.clone(), choices) {
-            None
-        } else {
-            self.included_matches(phones, choices)
         }
     }
 
@@ -71,15 +34,11 @@ impl<'s> MatchState<'s> for Repetition<'s> {
 
             // checks each varient up to the maximum length 
             loop {
-                if self.exclusive_matches(&mut phones.clone(), choices) {
-                    return None;
-                }
-
                 if let Some(included_choices) = self.included.next_match(phones, &new_choices) {
                     let mut choices = new_choices.partial_clone();
                     choices.take_owned(included_choices);
 
-                    if let Some(match_choices) = self.included_matches(&mut phones.clone(), &choices) {
+                    if let Some(match_choices) = self.matches(&mut phones.clone(), &choices) {
                         choices.take_owned(match_choices);
 
                         if let Some(id) = &self.id && !choices.repetition.contains_key(id) {
@@ -152,12 +111,6 @@ impl std::fmt::Display for Repetition<'_> {
             write!(f, "{id}")?;
         }
 
-        write!(f, "{REPETITION_START_CHAR} {} ", self.inclusive)?;
-
-        if let Some(exclusive) = &self.exclusive {
-            write!(f, "{NOT_CHAR} {} ", exclusive.borrow())?;
-        }
-
-        write!(f, "{REPETITION_END_CHAR}")
+        write!(f, "{REPETITION_START_CHAR} {} {REPETITION_END_CHAR}", self.inclusive)
     }
 }
