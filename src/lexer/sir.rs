@@ -1,7 +1,7 @@
 use crate::{
     ir::{prefix::Prefix, tokens::Break},
     lexer::token_types::{PhoneValidStr, Span},
-    tokens::{CondType, ScopeType}
+    tokens::{CondType, RepetitionNumber, ScopeType}
 };
 
 /// A Scoped Intermediate Representation token
@@ -55,6 +55,8 @@ pub enum SirToken<'s> {
     Whitespace(Span),
     /// The end of an unescaped line
     EndOfExpr(Span),
+    /// A phone
+    Number(RepetitionNumber, Span),
 }
 
 #[cfg(feature = "debug_tokens")]
@@ -75,7 +77,8 @@ impl SirToken<'_> {
             | Self::GetCommand(s) | Self::GetAsCodeCommand(s)
             | Self::PrintCommand(s) | Self::Comment(s)
             | Self::Whitespace(s) | Self::EndOfExpr(s)
-            | Self::Message(_, s) => s
+            | Self::Message(_, s) | Self::Number(_, s)
+            => s
         }
     }
 }

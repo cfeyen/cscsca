@@ -2,11 +2,11 @@ use crate::{
     matcher::{
         choices::{Choices, OwnedChoices},
         match_state::MatchState,
-        patterns::{check_box::CheckBox, repetition::Repetition, list::PatternList, non_bound::NonBound, optional::Optional, selection::Selection, negative::Negative},
+        patterns::{check_box::CheckBox, repetition::Repetition, list::PatternList, ir_to_patterns::RuleStructureError, non_bound::NonBound, optional::Optional, selection::Selection, negative::Negative},
         phones::Phones
     },
     phones::Phone,
-    tokens::ScopeId,
+    tokens::{ScopeId, RepetitionNumber},
 };
 
 pub mod list;
@@ -43,15 +43,8 @@ impl<'s> Pattern<'s> {pub const fn new_phone(phone: Phone<'s>) -> Self {
         Self::NonBound(CheckBox::new(NonBound { id }))
     }
 
-    pub fn new_repetition(id: Option<&'s str>, inclusive: PatternList<'s>) -> Self {
-        Self::Repetition(Repetition {
-            checked_at_zero: false,
-            inclusive,
-            included: PatternList::default(),
-            inclusions: 0,
-            len: 0,
-            id,
-        })
+    pub fn new_repetition(id: Option<&'s str>, pattern: PatternList<'s>, min: RepetitionNumber, max: Option<RepetitionNumber>) -> Result<Self, RuleStructureError<'s>> {
+        Ok(Self::Repetition(Repetition::new(id, pattern, min, max)?))
     }
 
     pub const fn new_optional(content: Vec<Pattern<'s>>, id: Option<ScopeId<'s>>) -> Self {

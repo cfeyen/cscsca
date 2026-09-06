@@ -1,9 +1,10 @@
-use std::{cell::RefCell, num::NonZero, rc::Rc};
+use std::{cell::RefCell, iter::Peekable, num::NonZero, rc::Rc};
 
 use crate::{
     ONE, executor::io_events::{IoEvent, RuntimeIoEvent}, ir::{IrLine, tokens::{Break, IrToken}}, matcher::patterns::{
         Pattern, cond::CondPattern, list::PatternList, rule::{RulePattern, SoundChangeRule}
-    }, tokens::{AndType, CondType, LabelType, ScopeId, ScopeType, Shift}
+    },
+    tokens::{AndType, CondType, LabelType, RepetitionNumber, ScopeId, ScopeType, Shift}
 };
 
 #[cfg(test)]
@@ -112,7 +113,7 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, (RuleStructureError, NonZero
 #[inline]
 fn ir_to_input_output<'s>(ir: &[&IrToken<'s>]) -> Result<Vec<Pattern<'s>>, RuleStructureError<'s>> {
     ir_tokens_to_patterns(
-        &mut ir.iter().copied(), 
+        &mut ir.iter().copied().peekable(), 
         Some(&RefCell::default()),
         None, 
         None
@@ -129,10 +130,10 @@ fn ir_to_cond<'s>(ir: &[&IrToken<'s>]) -> Result<CondPattern<'s>, RuleStructureE
             return Err(RuleStructureError::NoConditionFocus);
         };
 
-        let cond_ir = &mut ir.iter().copied();
+        let cond_ir = &mut ir.iter().copied().peekable();
         // takes all of the tokens before the input token and stores them in before
         // and discards the input token leaving cond_ir as the portion after it
-        let before = &mut cond_ir.take_while(|&token| token != &IrToken::CondType(focus));
+        let before = &mut cond_ir.take_while(|&token| token != &IrToken::CondType(focus)).peekable();
 
         Ok(CondPattern::new(
             focus,
@@ -142,7 +143,7 @@ fn ir_to_cond<'s>(ir: &[&IrToken<'s>]) -> Result<CondPattern<'s>, RuleStructureE
 }
 
 /// Converts ir tokens to patterns
-fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<Pattern<'s>>, RuleStructureError<'s>> {
+fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut Peekable<impl Iterator<Item = &'ir IrToken<'s>>>, default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent_scope: Option<&ScopeId<'s>>, end_at: Option<ScopeType>) -> Result<Vec<Pattern<'s>>, RuleStructureError<'s>> {
     let mut patterns = Vec::new();
 
     while let Some(ir_token) = ir.next() {
@@ -166,8 +167,8 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
                 Pattern::new_selection(selection_contents_to_patterns(ir, child_ids.as_ref(), id.as_ref())?, id)
             },
             IrToken::ScopeStart(ScopeType::Repetition) => {
-                let pattern = PatternList::new(ir_to_repetition_pattern(ir)?);
-                Pattern::new_repetition(None, pattern)
+                let RepetitionData { patterns, min, max } = ir_to_repetition_pattern(ir)?;
+                Pattern::new_repetition(None, PatternList::new(patterns), min, max)?
             },
             // ensures a label is proceeding a labelable token then creates that token with the label
             IrToken::Label(name) => {
@@ -181,8 +182,8 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
                         ScopeType::Optional => Pattern::new_optional(ir_tokens_to_patterns(ir, child_ids, id.as_ref(), Some(ScopeType::Optional))?, id),
                         ScopeType::Selection => Pattern::new_selection(selection_contents_to_patterns(ir, child_ids, id.as_ref())?, id),
                         ScopeType::Repetition => {
-                            let pattern = PatternList::new(ir_to_repetition_pattern(ir)?);
-                            Pattern::new_repetition(Some(*name), pattern)
+                            let RepetitionData { patterns, min, max } = ir_to_repetition_pattern(ir)?;
+                            Pattern::new_repetition(Some(*name), PatternList::new(patterns), min, max)?
                         },
                     }
                 } else if let Some(IrToken::Any) = next {
@@ -238,20 +239,57 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToke
     Ok(patterns)
 }
 
-fn ir_to_repetition_pattern<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'ir IrToken<'s>>) -> Result<Vec<Pattern<'s>>, RuleStructureError<'s>> {
+struct RepetitionData<'s> {
+    patterns: Vec<Pattern<'s>>,
+    min: RepetitionNumber,
+    max: Option<RepetitionNumber>,
+}
+
+fn ir_to_repetition_pattern<'ir, 's: 'ir>(mut ir: &mut Peekable<impl Iterator<Item = &'ir IrToken<'s>>>) -> Result<RepetitionData<'s>, RuleStructureError<'s>> {
     let mut content = Vec::new();
     // scope_stack tracks which scope the function is analyzing to determine when to seperate options and return
     let mut scope_stack = Vec::new();
 
-    for ir_token in ir {
+    for ir_token in &mut ir {
         match ir_token {
+            IrToken::CondType(CondType::Match) => {
+                let min = match ir.next() {
+                    None => return Err(RuleStructureError::ExpectedRangeMinimum),
+                    Some(IrToken::Number(min)) => *min,
+                    Some(token) => return Err(RuleStructureError::UnexpectedToken(*token)),
+                };
+
+                let max = if ir.next_if(|token| *token == &IrToken::ArgSep).is_some() {
+                    match ir.next() {
+                        None => return Err(RuleStructureError::ExpectedRangeMaximum),
+                        Some(IrToken::Number(max)) => Some(*max),
+                        Some(token) => return Err(RuleStructureError::UnexpectedToken(*token)),
+                    }
+                } else {
+                    None
+                };
+
+                if ir.next_if(|token| *token == &IrToken::ScopeEnd(ScopeType::Repetition)).is_none() {
+                    return Err(RuleStructureError::TokenRequired(IrToken::ScopeEnd(ScopeType::Repetition)));
+                }
+                
+                return Ok(RepetitionData {
+                    patterns: ir_tokens_to_patterns(&mut content.into_iter().peekable(), None, None, None)?,
+                    min,
+                    max,
+                });
+            }
             IrToken::ScopeEnd(kind) => {
                 if *kind == ScopeType::Repetition && scope_stack.is_empty() {
                     if content.is_empty() {
                         return Err(RuleStructureError::EmptyRepetition);
                     }
 
-                    return ir_tokens_to_patterns(&mut content.into_iter(), None, None, None);
+                    return Ok(RepetitionData {
+                        patterns: ir_tokens_to_patterns(&mut content.into_iter().peekable(), None, None, None)?,
+                        min: 0,
+                        max: None,
+                    });
                 } else if let Some(start) = scope_stack.last() {
                     if start == kind {
                         scope_stack.pop();
@@ -302,7 +340,7 @@ fn selection_contents_to_patterns<'ir, 's: 'ir>(ir: &mut impl Iterator<Item = &'
                         let mut items = Vec::new();
 
                         for item in options {
-                            items.push(ir_tokens_to_patterns(&mut item.into_iter(), default_scope_ids, scope, None)?);
+                            items.push(ir_tokens_to_patterns(&mut item.into_iter().peekable(), default_scope_ids, scope, None)?);
                         }
 
                         return Ok(items);
@@ -408,6 +446,10 @@ pub enum RuleStructureError<'s> {
     EmptyRepetition,
     EmptyInclusion,
     EmptyExclusion,
+    ExpectedRangeMinimum,
+    ExpectedRangeMaximum,
+    TokenRequired(IrToken<'s>),
+    MinExceedsMax { min: RepetitionNumber, max: RepetitionNumber },
 }
 
 impl std::error::Error for RuleStructureError<'_> {}
@@ -437,6 +479,10 @@ impl std::fmt::Display for RuleStructureError<'_> {
             Self::EmptyRepetition => write!(f, "A repetition must contain some inclusive pattern"),
             Self::EmptyInclusion => write!(f, "A negative's inclusion must contain some pattern"),
             Self::EmptyExclusion => write!(f, "A negative's exclusion must contain some pattern"),
+            Self::ExpectedRangeMinimum => write!(f, "Expected a minimum repetition number"),
+            Self::ExpectedRangeMaximum => write!(f, "Expected a maximum repetition number"),
+            Self::TokenRequired(ir_token) => write!(f, "Required token: '{ir_token}'"),
+            Self::MinExceedsMax {min, max } => write!(f, "Repetition minimum ({min}) exceeds maximum ({max})"),
         }
     }
 }

@@ -157,5 +157,13 @@ fn escape_printing() {
 #[io_test(pollster::block_on)]
 fn complex_agreement() {
     assert_eq!("zbc", await_io! { apply("abc", "a >> z / _ $c{b, * c} // _ $c{b, d}") });
-    assert_eq!("bbc", await_io! { apply("abc", "a >> $a{b} / _ [* ! z] $a{c}") })
+    assert_eq!("bbc", await_io! { apply("abc", "a >> $a{b} / _ [* ! z] $a{c}") });
+}
+
+#[io_test(pollster::block_on)]
+fn bounded_repetition() {
+    assert_eq!("azzzzzc bzzzzc bzzzc bzzc azc ac", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 2, 4] c") });
+    assert_eq!("bzzzzzc bzzzzc bzzzc bzzc azc ac", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 2] c") });
+    assert_eq!("azzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 0, 4] c") });
+    assert_eq!("bzzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z] c") });
 }

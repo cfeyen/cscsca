@@ -60,7 +60,8 @@ Scopes are a way to dynamically determine which phone, group of phones, or lack 
 There are three types of scopes
 - optional **`(`**...**`)`**: a phone or group of phones that is optional
 - selection **`{`**...**`,`**...**`}`**: a list of comma-separated phones or a group of phones that selects one phone or group of phones in that list
-- repetition **`[`**...**`]`**: a phone or group of phones repeated 0 or more times.
+- repetition **`[`**...**`]`**: a phone or group of phones repeated 0 or more times. At the end of a repetition scope, you may also add `= n` or `= n, m` where `n` is the minimum number of repetitions, and `m` is the maximum
+    - Example: `[s = 1, 2]` one or two occurances of the phone `s`
 
 
 **Note**: repetition scopes are only allowed in conditions/anti-conditions (see: Conditions and Anti-Conditions)

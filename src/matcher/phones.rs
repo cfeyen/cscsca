@@ -70,7 +70,7 @@ impl<'p, 's> Phones<'p, 's> {
         if let Some(i) = self.index {
             self.index = match self.direction {
                 Direction::Ltr => i.checked_add(n)
-                    .and_then(|i| if i >= self.phone_list.len() { None } else { Some(i) }),
+                    .filter(|&i| i < self.phone_list.len()),
                 Direction::Rtl => i.checked_sub(n),
             }
         }

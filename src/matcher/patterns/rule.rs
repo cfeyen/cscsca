@@ -171,6 +171,6 @@ impl std::fmt::Display for SoundChangeRule<'_> {
             _ = write!(anti_conds, " {} {anti_cond}", IrToken::Break(Break::AntiCond));
         }
         
-        write!(f, "{} {} {}{}{}", input, &self.kind, output, conds, anti_conds)
+        write!(f, "{} {} {}{}{}", input, self.kind, output, conds, anti_conds)
     }
 }

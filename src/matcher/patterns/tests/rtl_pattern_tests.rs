@@ -150,7 +150,7 @@ fn agreeing_non_bounds() {
 fn unbounded_repetition() {
     let choices = Choices::default();
 
-    let pattern = Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]));
+    let pattern = Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build");
     let mut match_phones = Phones::new(&[], 0, Direction::Rtl);
 
     assert!(pattern.matches(&mut match_phones, &choices).is_some());
@@ -162,7 +162,7 @@ fn bounded_repetition() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("b")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 1, Direction::Rtl);
@@ -171,7 +171,7 @@ fn bounded_repetition() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("b")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("b")], 2, Direction::Rtl);
@@ -180,7 +180,7 @@ fn bounded_repetition() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("b")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("-"), Phone::Symbol("-"), Phone::Symbol("b")], 4, Direction::Rtl);
@@ -189,7 +189,7 @@ fn bounded_repetition() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("b")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Bound, Phone::Symbol("b")], 2, Direction::Rtl);
@@ -205,9 +205,9 @@ fn agreeing_repetitions() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("b")),
-        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("c")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("b"), Phone::Symbol("c"),], 3, Direction::Rtl);
@@ -216,9 +216,9 @@ fn agreeing_repetitions() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("b")),
-        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("c")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("b"), Phone::Symbol("-"), Phone::Symbol("c"),], 4, Direction::Rtl);
@@ -228,9 +228,9 @@ fn agreeing_repetitions() {
 
     let mut patterns = PatternList::new(vec![
         Pattern::new_phone(Phone::Symbol("a")),
-        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("b")),
-        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)])),
+        Pattern::new_repetition(Some(label), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build"),
         Pattern::new_phone(Phone::Symbol("c")),
     ]);
     let mut match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("-"), Phone::Symbol("b"), Phone::Symbol("-"), Phone::Symbol("-"), Phone::Symbol("c"),], 5, Direction::Rtl);
@@ -407,4 +407,57 @@ fn negative_matches() {
     let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(negative.next_match(&match_phones, &Choices::default()).is_none());
+}
+
+#[test]
+fn half_bounded_repetition() {
+    let mut pattern = PatternList::new(vec![
+        Pattern::new_phone(Phone::Symbol("a")),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("b"))]), 2, None).expect("Should build"),
+        Pattern::new_phone(Phone::Symbol("c")),
+    ]);
+
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 2, Direction::Rtl);
+
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_none());
+
+    pattern.reset();
+
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("b"), Phone::Symbol("c")], 3, Direction::Rtl);
+
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_some());
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_none());
+}
+
+#[test]
+fn fully_bounded_repetition() {
+    let mut pattern = PatternList::new(vec![
+        Pattern::new_phone(Phone::Symbol("a")),
+        Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("b"))]), 2, Some(3)).expect("Should build"),
+        Pattern::new_phone(Phone::Symbol("c")),
+    ]);
+
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 2, Direction::Rtl);
+
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_none());
+
+    pattern.reset();
+
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("b"), Phone::Symbol("c")], 3, Direction::Rtl);
+
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_some());
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_none());
+
+    pattern.reset();
+
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("b"), Phone::Symbol("b"), Phone::Symbol("c")], 4, Direction::Rtl);
+
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_some());
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_none());
+
+    pattern.reset();
+
+    let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("b"), Phone::Symbol("b"), Phone::Symbol("b"), Phone::Symbol("c")], 5, Direction::Rtl);
+
+    assert!(pattern.next_match(&match_phones, &Choices::default()).is_none());
 }

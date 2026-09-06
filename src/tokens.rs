@@ -2,6 +2,9 @@ use crate::{ir::tokens::IrToken, keywords::{AND_CHAR, ANY_CHAR, REPETITION_END_C
 
 use std::{fmt::Display, rc::Rc};
 
+/// A number of repetitions within a repetition scope
+pub type RepetitionNumber = u16;
+
 /// A token determining the direction and type of shift
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Shift {

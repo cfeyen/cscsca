@@ -171,7 +171,7 @@ fn apply_rule_sets(paths: &[String], output_data: &OutputData, rule_sets: &[cscs
 
     // applies each rule set
     for (i, rule_set) in rule_sets.iter().enumerate() {
-        println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{last_output}{GREEN}'{RESET}", &paths[i]);
+        println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{last_output}{GREEN}'{RESET}", paths[i]);
 
         let set_output = rule_set.apply_fallible(&last_output, &mut runtime)?;
         
@@ -202,7 +202,7 @@ fn apply_changes(paths: &[String], output_data: &OutputData, rule_sets: &[String
 
     // applies each rule set
     for (i, rule_set) in rule_sets.iter().enumerate() {
-        println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{last_output}{GREEN}'{RESET}", &paths[i]);
+        println!("{GREEN}Applying changes in {BLUE}{}{GREEN} to '{BLUE}{last_output}{GREEN}'{RESET}", paths[i]);
 
         let set_output = executor.apply_fallible(&last_output, rule_set)?;
 

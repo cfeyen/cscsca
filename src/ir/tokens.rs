@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::{
     keywords::{ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, LABEL_PREFIX, NOT_CHAR},
     phones::Phone,
-    tokens::{AndType, CondType, ScopeType, Shift}
+    tokens::{AndType, CondType, RepetitionNumber, ScopeType, Shift}
 };
 
 /// Tokens that make up the intermediate representation of sound shifts
@@ -27,6 +27,8 @@ pub enum IrToken<'s> {
     ScopeEnd(ScopeType),
     /// Repetition negator
     Negative,
+    /// A unsigned integer
+    Number(RepetitionNumber),
 }
 
 impl Display for IrToken<'_> {
@@ -41,6 +43,7 @@ impl Display for IrToken<'_> {
             Self::ScopeStart(kind) => write!(f, "{}", kind.start_char()),
             Self::Label(name) => write!(f, "{LABEL_PREFIX}{name}"),
             Self::Negative => write!(f, "{NOT_CHAR}"),
+            Self::Number(number) => write!(f, "{number}")
         }
     }
 }

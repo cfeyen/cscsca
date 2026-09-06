@@ -22,11 +22,6 @@ impl<'c, 's> Choices<'c, 's> {
         &self.optional
     }
 
-    /// Gets the repetition choices
-    pub fn repetition(&self) -> &HashMap<&'s str, usize> {
-        &self.repetition
-    }
-
     /// Gets the any phone choices
     pub fn any(&self) -> &HashMap<ScopeId<'s>, Phone<'s>> {
         &self.any

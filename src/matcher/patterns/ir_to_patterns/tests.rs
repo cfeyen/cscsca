@@ -564,7 +564,7 @@ fn shift_cond_repetition_input() {
                 PatternList::default(),
                 vec![CondPattern::new(
                     CondType::Pattern,
-                    PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]))]),
+                    PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build")]),
                     PatternList::default(),
                 )],
                 Vec::new(),
@@ -593,7 +593,7 @@ fn shift_anti_cond_repetition_input() {
                 Vec::new(),
                 vec![CondPattern::new(
                     CondType::Pattern,
-                    PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]))]),
+                    PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build")]),
                     PatternList::default(),
                 )],
             ).expect("pattern construction should be valid")
@@ -620,7 +620,7 @@ fn shift_cond_label_repetition_input() {
                 PatternList::default(),
                 vec![CondPattern::new(
                     CondType::Pattern,
-                    PatternList::new(vec![Pattern::new_repetition(Some("label"), PatternList::new(vec![Pattern::new_any(None)]))]),
+                    PatternList::new(vec![Pattern::new_repetition(Some("label"), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build")]),
                     PatternList::default(),
                 )],
                 Vec::new(),
@@ -635,6 +635,100 @@ fn shift_cond_label_repetition_input() {
         IrToken::ScopeEnd(ScopeType::Repetition),
         IrToken::CondType(CondType::Pattern),
     ], lines: ONE }));
+}
+
+#[test]
+fn bounded_repetition() {
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
+
+    assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
+        kind: shift,
+        output: Vec::new(),
+        pattern: RefCell::new(
+            RulePattern::new(
+                PatternList::default(),
+                vec![CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 1, None).expect("Should build")]),
+                    PatternList::default(),
+                )],
+                Vec::new(),
+            ).expect("pattern construction should be valid")
+        ),
+    }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
+        IrToken::Break(Break::Shift(shift)),
+        IrToken::Break(Break::Cond),
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::CondType(CondType::Match),
+        IrToken::Number(1),
+        IrToken::ScopeEnd(ScopeType::Repetition),
+        IrToken::CondType(CondType::Pattern),
+    ], lines: ONE }));
+
+    assert_eq!(Ok(RuleLine::Rule { rule: SoundChangeRule {
+        kind: shift,
+        output: Vec::new(),
+        pattern: RefCell::new(
+            RulePattern::new(
+                PatternList::default(),
+                vec![CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 1, Some(4)).expect("Should build")]),
+                    PatternList::default(),
+                )],
+                Vec::new(),
+            ).expect("pattern construction should be valid")
+        ),
+    }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
+        IrToken::Break(Break::Shift(shift)),
+        IrToken::Break(Break::Cond),
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::CondType(CondType::Match),
+        IrToken::Number(1),
+        IrToken::ArgSep,
+        IrToken::Number(4),
+        IrToken::ScopeEnd(ScopeType::Repetition),
+        IrToken::CondType(CondType::Pattern),
+    ], lines: ONE }));
+
+    assert_eq!(Err((RuleStructureError::MinExceedsMax { min: 1, max: 0 }, ONE)), build_rule(IrLine::Ir { tokens: vec![
+        IrToken::Break(Break::Shift(shift)),
+        IrToken::Break(Break::Cond),
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::CondType(CondType::Match),
+        IrToken::Number(1),
+        IrToken::ArgSep,
+        IrToken::Number(0),
+        IrToken::ScopeEnd(ScopeType::Repetition),
+        IrToken::CondType(CondType::Pattern),
+    ], lines: ONE }));
+
+    assert!(build_rule(IrLine::Ir { tokens: vec![
+        IrToken::Break(Break::Shift(shift)),
+        IrToken::Break(Break::Cond),
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::CondType(CondType::Match),
+        IrToken::Number(0),
+        IrToken::ArgSep,
+        IrToken::ScopeEnd(ScopeType::Repetition),
+        IrToken::CondType(CondType::Pattern),
+    ], lines: ONE }).is_err());
+
+    assert!(build_rule(IrLine::Ir { tokens: vec![
+        IrToken::Break(Break::Shift(shift)),
+        IrToken::Break(Break::Cond),
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::CondType(CondType::Match),
+        IrToken::Number(0),
+        IrToken::ArgSep,
+        IrToken::ScopeEnd(ScopeType::Repetition),
+        IrToken::CondType(CondType::Pattern),
+    ], lines: ONE }).is_err());
 }
 
 #[test]

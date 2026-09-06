@@ -187,7 +187,8 @@ pub fn sir_expr_to_ir_line<'s>(sir: Vec<SirToken<'s>>, tokenization_data: &mut T
             },
             SirToken::DefinitionDeclaration(_) | SirToken::LazyDefinitionDeclaration(_)
             | SirToken::GetCommand(_) | SirToken::GetAsCodeCommand(_)
-            | SirToken::PrintCommand(_) | SirToken::Message(_, _) => return (Err(IrError::StatementParseError), lines)
+            | SirToken::PrintCommand(_) | SirToken::Message(_, _) => return (Err(IrError::StatementParseError), lines),
+            SirToken::Number(number, _) => IrToken::Number(number),
         });
     }
 

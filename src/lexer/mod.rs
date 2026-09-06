@@ -401,17 +401,21 @@ impl<'s> Lexer<'s> {
                 self.tokens.push(SirToken::InvalidPrefix(prefix, Span::new(line, char, index, len)));
             }
         } else {
-            let fvs = PhoneValidStr::new_with_len(s, line, char, index, len);
+            let phone_valid_str = PhoneValidStr::new_with_len(s, line, char, index, len);
 
             let token = match self.prefix {
-                Some(Prefix::Definition) => SirToken::Definition(fvs),
-                Some(Prefix::Label) => SirToken::Label(fvs),
-                Some(Prefix::Variable) => SirToken::Variable(fvs),
+                Some(Prefix::Definition) => SirToken::Definition(phone_valid_str),
+                Some(Prefix::Label) => SirToken::Label(phone_valid_str),
+                Some(Prefix::Variable) => SirToken::Variable(phone_valid_str),
                 None if is_special_str(s) => match s {
                     INPUT_PATTERN_STR => SirToken::CondFocus(CondType::Pattern, Span::new(line, char, index, len)),
-                    _ => SirToken::InvalidPhone(fvs),
+                    _ => SirToken::InvalidPhone(phone_valid_str),
                 }
-                None => SirToken::Phone(fvs),
+                None => if let Ok(number) = phone_valid_str.str().parse() {
+                    SirToken::Number(number, Span::new(line, char, index, len))
+                } else {
+                    SirToken::Phone(phone_valid_str)
+                },
             };
 
             self.tokens.push(token);
