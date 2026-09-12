@@ -28,7 +28,7 @@ pub enum IrToken<'s> {
     /// Repetition negator
     Negative,
     /// A unsigned integer
-    Number(RepetitionNumber),
+    Number(RepetitionNumber, Phone<'s>),
 }
 
 impl Display for IrToken<'_> {
@@ -43,7 +43,7 @@ impl Display for IrToken<'_> {
             Self::ScopeStart(kind) => write!(f, "{}", kind.start_char()),
             Self::Label(name) => write!(f, "{LABEL_PREFIX}{name}"),
             Self::Negative => write!(f, "{NOT_CHAR}"),
-            Self::Number(number) => write!(f, "{number}")
+            Self::Number(_, phone) => write!(f, "{phone}")
         }
     }
 }

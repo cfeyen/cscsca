@@ -167,3 +167,8 @@ fn bounded_repetition() {
     assert_eq!("azzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 0, 4] c") });
     assert_eq!("bzzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z] c") });
 }
+
+#[io_test(pollster::block_on)]
+fn numbers_as_phones() {
+    assert_eq!("023", await_io! { apply("123", "1 >> 0 / _ 2") });
+}

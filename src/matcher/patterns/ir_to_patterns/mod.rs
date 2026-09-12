@@ -229,6 +229,8 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut Peekable<impl Iterator<Item = &'
 
                 continue;
             }
+            // handles numbers out of repetitions
+            IrToken::Number(_, phone) => Pattern::new_phone(*phone),
             // these tokens should be removed in checking
             _ => return Err(RuleStructureError::UnexpectedToken(*ir_token)),
         };
@@ -255,14 +257,14 @@ fn ir_to_repetition_pattern<'ir, 's: 'ir>(mut ir: &mut Peekable<impl Iterator<It
             IrToken::CondType(CondType::Match) => {
                 let min = match ir.next() {
                     None => return Err(RuleStructureError::ExpectedRangeMinimum),
-                    Some(IrToken::Number(min)) => *min,
+                    Some(IrToken::Number(min, _)) => *min,
                     Some(token) => return Err(RuleStructureError::UnexpectedToken(*token)),
                 };
 
                 let max = if ir.next_if(|token| *token == &IrToken::ArgSep).is_some() {
                     match ir.next() {
                         None => return Err(RuleStructureError::ExpectedRangeMaximum),
-                        Some(IrToken::Number(max)) => Some(*max),
+                        Some(IrToken::Number(max, _)) => Some(*max),
                         Some(token) => return Err(RuleStructureError::UnexpectedToken(*token)),
                     }
                 } else {

@@ -55,8 +55,8 @@ pub enum SirToken<'s> {
     Whitespace(Span),
     /// The end of an unescaped line
     EndOfExpr(Span),
-    /// A phone
-    Number(RepetitionNumber, Span),
+    /// A number or phone that looks like a number
+    Number(RepetitionNumber, PhoneValidStr<'s>),
 }
 
 #[cfg(feature = "debug_tokens")]
@@ -67,7 +67,8 @@ impl SirToken<'_> {
         match self {
             Self::Phone(s) | Self::Definition(s)
             | Self::Label(s) | Self::Variable(s)
-            | Self::InvalidPhone(s)  => s.span(),
+            | Self::InvalidPhone(s) | Self::Number(_, s)
+            => s.span(),
             Self::InvalidPrefix(_, s) | Self::NonPhoneEscape(_, s)
             | Self::Break(_, s) | Self::CondFocus(_, s)
             | Self::ScopeStart(_, s) | Self::ScopeEnd(_, s)
@@ -77,7 +78,7 @@ impl SirToken<'_> {
             | Self::GetCommand(s) | Self::GetAsCodeCommand(s)
             | Self::PrintCommand(s) | Self::Comment(s)
             | Self::Whitespace(s) | Self::EndOfExpr(s)
-            | Self::Message(_, s) | Self::Number(_, s)
+            | Self::Message(_, s)
             => s
         }
     }

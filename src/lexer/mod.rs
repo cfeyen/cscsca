@@ -412,7 +412,7 @@ impl<'s> Lexer<'s> {
                     _ => SirToken::InvalidPhone(phone_valid_str),
                 }
                 None => if let Ok(number) = phone_valid_str.str().parse() {
-                    SirToken::Number(number, Span::new(line, char, index, len))
+                    SirToken::Number(number, phone_valid_str)
                 } else {
                     SirToken::Phone(phone_valid_str)
                 },
