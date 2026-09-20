@@ -35,7 +35,8 @@ pub enum Pattern<'s> {
     Negative(Box<Negative<'s>>),
 }
 
-impl<'s> Pattern<'s> {pub const fn new_phone(phone: Phone<'s>) -> Self {
+impl<'s> Pattern<'s> {
+    pub const fn new_phone(phone: Phone<'s>) -> Self {
         Self::Phone(CheckBox::new(phone))
     }
 
@@ -74,7 +75,6 @@ impl<'s> Pattern<'s> {pub const fn new_phone(phone: Phone<'s>) -> Self {
     pub fn new_negative(pattern: Self, negative_pattern: Self) -> Self {
         Pattern::Negative(Box::new(Negative::new(pattern, negative_pattern)))
     }
-    
 }
 
 impl<'s> MatchState<'s> for Pattern<'s> {

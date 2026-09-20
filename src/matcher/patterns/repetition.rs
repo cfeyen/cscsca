@@ -9,12 +9,8 @@ use crate::{
     tokens::RepetitionNumber,
 };
 
-// todo: [ pat = n, m ]
-// todo: ensure agreement occurs in repetition count
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Repetition<'s> {
-    checked_at_zero: bool,
     pattern: PatternList<'s>,
     included: PatternList<'s>,
     inclusions: usize,
@@ -26,13 +22,20 @@ pub struct Repetition<'s> {
 
 impl<'s> MatchState<'s> for Repetition<'s> {
     fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
+        let mut repetion_chocies = choices.partial_clone();
+        
+        if let Some(id) = self.id && !choices.repetition.contains_key(id) {
+            repetion_chocies.repetition.to_mut().insert(id, self.len);
+        }
+        
         if
-            self.min as usize <= self.len
-            && self.max_len(phones, choices) >= self.len
-            && self.included.len() == self.len
-            && let Some(new_choices) = self.included.matches(phones, choices)
+            self.len >= self.min as usize
+            && self.len <= self.max_len(phones, choices)
+            && self.len == self.included.len()
+            && let Some(new_choices) = self.included.matches(phones, &repetion_chocies)
         {
-            Some(new_choices)
+            repetion_chocies.take_owned(new_choices);
+            Some(repetion_chocies.owned_choices())
         } else {
             None
         }
@@ -40,68 +43,50 @@ impl<'s> MatchState<'s> for Repetition<'s> {
 
     fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if self.min as usize > self.len {
-            self.checked_at_zero = true;
             self.len = self.min as _;
         }
 
-        if self.checked_at_zero || self.id.as_ref().map(|id| choices.repetition.contains_key(id)).is_some_and(|exists| exists) {
-            let mut new_choices = choices.partial_clone();
+        let mut new_choices = choices.partial_clone();
 
-            let max_len = self.max_len(phones, choices);
+        let max_len = self.max_len(phones, choices);
 
-            // checks each varient up to the maximum length 
-            loop {
-                if let Some(included_choices) = self.included.next_match(phones, &new_choices) {
-                    let mut choices = new_choices.partial_clone();
-                    choices.take_owned(included_choices);
+        // checks each varient up to the maximum length 
+        loop {
+            if let Some(included_choices) = self.included.next_match(phones, &new_choices) {
+                let mut choices = new_choices.partial_clone();
+                choices.take_owned(included_choices);
 
-                    if let Some(match_choices) = self.matches(&mut phones.clone(), &choices) {
-                        choices.take_owned(match_choices);
+                if let Some(match_choices) = self.matches(&mut phones.clone(), &choices) {
+                    choices.take_owned(match_choices);
 
-                        if let Some(id) = &self.id && !choices.repetition.contains_key(id) {
-                            choices.repetition.to_mut().insert(id, self.len);
-                        }
-
-                        new_choices.take_owned(choices.owned_choices());
-
-                        return Some(new_choices.owned_choices());
+                    if let Some(id) = &self.id && !choices.repetition.contains_key(id) {
+                        choices.repetition.to_mut().insert(id, self.len);
                     }
-                } else {
-                    self.included.reset();
-                    for pat in self.pattern.inner() {
-                        self.included.push(pat.clone());
-                    }
-                    self.inclusions += 1;
 
-                    if self.inclusions > max_len {
-                        self.len += 1;
-                        self.included = PatternList::default();
-                        self.inclusions = 0;
+                    new_choices.take_owned(choices.owned_choices());
 
-                        if self.len > max_len {
-                            break;
-                        }
+                    return Some(new_choices.owned_choices());
+                }
+            } else {
+                self.included.reset();
+                for pat in self.pattern.inner() {
+                    self.included.push(pat.clone());
+                }
+                self.inclusions += 1;
+
+                if self.inclusions > max_len {
+                    self.len += 1;
+                    self.included = PatternList::default();
+                    self.inclusions = 0;
+
+                    if self.len > max_len {
+                        break;
                     }
                 }
             }
-
-            None
-        } else {
-            // checks with a length of zero
-            self.checked_at_zero = true;
-            self.len = 0;
-            self.inclusions = 0;
-            self.included = PatternList::default();
-
-            if let Some(id) = self.id {
-                let mut new_choices = choices.partial_clone();
-                new_choices.repetition.to_mut().insert(id, self.len);
-                
-                Some(new_choices.owned_choices())
-            } else {
-                Some(OwnedChoices::default())
-            }
         }
+
+        None
     }
 
     fn len(&self) -> usize {
@@ -109,7 +94,6 @@ impl<'s> MatchState<'s> for Repetition<'s> {
     }
 
     fn reset(&mut self) {
-        self.checked_at_zero = false;
         self.included = PatternList::default();
         self.inclusions = 0;
 
@@ -121,9 +105,7 @@ impl<'s> MatchState<'s> for Repetition<'s> {
     }
 
     fn advance_once(&mut self) {
-        if !self.checked_at_zero {
-            self.checked_at_zero = true;
-        }
+        self.included.advance_once();
     }
 }
 
@@ -134,7 +116,6 @@ impl<'s> Repetition<'s> {
         }
 
         Ok(Self {
-            checked_at_zero: false,
             pattern,
             included: PatternList::default(),
             inclusions: 0,

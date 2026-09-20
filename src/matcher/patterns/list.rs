@@ -3,24 +3,22 @@ use crate::{
     matcher::{
         choices::{Choices, OwnedChoices},
         match_state::MatchState,
-        patterns::{check_box::CheckBox, repetition::Repetition, non_bound::NonBound, optional::Optional, selection::Selection, Pattern},
+        patterns::{Pattern, check_box::CheckBox, non_bound::NonBound, optional::Optional, repetition::Repetition, selection::Selection},
         phones::Phones
-    },
-    phones::Phone,
-    tokens::Direction,
+    }, phones::Phone, tokens::Direction,
 };
 
 /// A list of matchable `Pattern`s
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PatternList<'s> {
-    checked_at_initial: bool,
+    checked_at_end: bool,
     patterns: Vec<Pattern<'s>>,
 }
 
 impl<'s> PatternList<'s> {
     /// Creates a new `PatternList`
     pub const fn new(patterns: Vec<Pattern<'s>>) -> Self {
-        Self { patterns, checked_at_initial: false }
+        Self { patterns, checked_at_end: false }
     }
 
     /// Gets the inner list of `Pattern`s
@@ -35,7 +33,7 @@ impl<'s> PatternList<'s> {
 
     /// Sets the flag marking the list as checked at its current position to `false`
     pub const fn checked_flag_reset(&mut self) {
-        self.checked_at_initial = false;
+        self.checked_at_end = false;
     }
 
     /// Converts a list of patterns to phones
@@ -83,45 +81,58 @@ impl<'s> PatternList<'s> {
         Ok(phones)
     }
 
-    // Recursively determines the next match of a sublist of the `PatternList` 
-    fn next_sub_match<'p>(&mut self, index: usize, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
+    fn recursive_submatch<'p>(&mut self, index: usize, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if index >= self.patterns.len() {
+            if self.checked_at_end {
+                return None;
+            }
+            
+            self.checked_at_end = true;
             return Some(OwnedChoices::default());
         }
 
         // gets the actual index from the input index based on direction
         // (`index` phones from the initial side)
         let real_index = match phones.direction() {
-            Direction::Ltr => Some(index),
-            Direction::Rtl => Some(self.patterns.len() - 1 - index),
-        }?;
+            Direction::Ltr => index,
+            Direction::Rtl => self.patterns.len() - 1 - index,
+        };
 
         loop {
-            let mut new_choices = choices.partial_clone();
             let pat = &mut self.patterns[real_index];
-
-            // finds the pattern's next match
-            let pat_choices = pat.next_match(phones, &new_choices)?;
-            new_choices.take_owned(pat_choices);
 
             // creates the phones for the remaining patterns
             let mut next_phones = *phones;
             next_phones.skip(pat.len());
 
-            if let Some(next_choices) = self.next_sub_match(index + 1, &next_phones, &new_choices) {
-                // if the remaining patterns match there is another match
-                new_choices.take_owned(next_choices);
-            } else {
-                // resets all the patterns directionally after the real index
-                match phones.direction() {
-                    Direction::Ltr => self.patterns.get_mut(real_index + 1..).unwrap_or_default(),
-                    Direction::Rtl => &mut self.patterns[..real_index]
-                }.iter_mut().for_each(MatchState::reset);
+            let mut new_choices = choices.partial_clone();
 
-                continue;
+            if let Some(pat_choices) = pat.matches(&mut phones.clone(), choices) {
+                new_choices.take_owned(pat_choices);
+
+                if let Some(next_choices) = self.recursive_submatch(index + 1, &next_phones, &new_choices) {
+                    // if the following patterns match, return the success
+                    new_choices.take_owned(next_choices);
+
+                    return Some(new_choices.owned_choices());
+                }
             }
 
-            return Some(new_choices.owned_choices());
+            // if the pattern does not match, or no match exists for the following patterns,
+            // advance the pattern and reset the following patterns
+            let pat = &mut self.patterns[real_index];
+
+            pat.advance_once();
+
+            // If another match does not exist, then this pattern cannot match
+            pat.next_match(phones, choices)?;
+
+            match phones.direction() {
+                Direction::Ltr => self.patterns.get_mut(real_index + 1..).unwrap_or_default(),
+                Direction::Rtl => &mut self.patterns[..real_index]
+            }.iter_mut().for_each(MatchState::reset);
+
+            self.checked_at_end = false;
         }
     }
 }
@@ -147,17 +158,7 @@ impl<'s> MatchState<'s> for PatternList<'s> {
     }
 
     fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
-        if !self.checked_at_initial {
-            self.checked_at_initial = true;
-            if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
-                self.advance_once();
-                return Some(new_choices);
-            }
-        } else if self.patterns.is_empty() {
-            return None;
-        }
-
-        self.next_sub_match(0, phones, choices)
+        self.recursive_submatch(0, phones, choices)
     }
 
     fn len(&self) -> usize {
@@ -165,16 +166,12 @@ impl<'s> MatchState<'s> for PatternList<'s> {
     }
 
     fn reset(&mut self) {
-        self.checked_at_initial = false;
+        self.checked_at_end = false;
         self.patterns.iter_mut().for_each(MatchState::reset);
     }
 
     fn advance_once(&mut self) {
-        if !self.checked_at_initial {
-            self.checked_at_initial = true;
-        }
-        
-        self.patterns.first_mut().map(MatchState::advance_once);
+        self.patterns.iter_mut().for_each(MatchState::advance_once);
     }
 }
 

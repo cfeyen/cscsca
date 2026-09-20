@@ -172,3 +172,19 @@ fn bounded_repetition() {
 fn numbers_as_phones() {
     assert_eq!("023", await_io! { apply("123", "1 >> 0 / _ 2") });
 }
+
+#[io_test(pollster::block_on)]
+fn nested_selection_with_empty_first_option() {
+    assert_eq!("2", await_io! { apply("|bc|", "| {b {, c}} | >> {{1, 2}}") });
+    assert_eq!("2", await_io! { apply("|bc|", "| (b {, c}) | >> ({1, 2})") });
+    assert_eq!("2|bc|", await_io! { apply("n|bc|", "n >> $a{1, 2} / _ | {b $a{[{}], c}} |") });
+    assert_eq!("2|bc|", await_io! { apply("n|bc|", "n >> $a{1, 2} / _ | (b $a{[{}], c}) |") });
+
+    assert_eq!("2", await_io! { apply("|ab|", "| ({a, } $a{, b}) | >> ($a{1, 2})") });
+}
+
+#[io_test(pollster::block_on)]
+fn multiple_cond_checks_due_to_anticond() {
+    assert_eq!("dbc", await_io! { apply("dac", "a >> b / _ $a{c, c} // $a{d, e} _") });
+    assert_eq!("ebc", await_io! { apply("eac", "a >> b / _ $a{c, c} // $a{d, e} _") });
+}

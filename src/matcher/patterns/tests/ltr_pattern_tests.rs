@@ -463,3 +463,64 @@ fn fully_bounded_repetition() {
 
     assert!(pattern.next_match(&match_phones, &Choices::default()).is_none());
 }
+
+#[test]
+fn unit_backtracking() {
+    let mut pattern = PatternList::new(vec![
+        Pattern::new_phone(Phone::Symbol("|")),
+        Pattern::new_optional(
+            vec![
+                Pattern::new_phone(Phone::Symbol("a")),
+                Pattern::new_selection(vec![
+                    vec![],
+                    vec![Pattern::new_phone(Phone::Symbol("b")),],
+                ], None)
+            ],
+            None,
+        ),
+        Pattern::new_phone(Phone::Symbol("|")),
+    ]);
+
+    let phones = Phones::new(&[
+        Phone::Symbol("|"),
+        Phone::Symbol("a"),
+        Phone::Symbol("b"),
+        Phone::Symbol("|"),
+    ], 0, Direction::Ltr);
+
+    assert!(pattern.next_match(&phones, &Choices::default()).is_some());
+    assert!(pattern.next_match(&phones, &Choices::default()).is_none());
+}
+
+#[test]
+fn complex_backtracking() {
+    let mut pattern = PatternList::new(vec![
+        Pattern::new_phone(Phone::Symbol("|")),
+        Pattern::new_optional(
+            vec![
+                Pattern::new_selection(vec![
+                    vec![Pattern::new_phone(Phone::Symbol("a"))],
+                    vec![],
+                ], None),
+                Pattern::new_selection(vec![
+                    vec![],
+                    vec![Pattern::new_phone(Phone::Symbol("b")),],
+                ], None)
+            ],
+            None,
+        ),
+        Pattern::new_phone(Phone::Symbol("|")),
+    ]);
+
+    let phones = Phones::new(&[
+        Phone::Symbol("|"),
+        Phone::Symbol("a"),
+        Phone::Symbol("b"),
+        Phone::Symbol("|"),
+    ], 0, Direction::Ltr);
+
+    assert!(pattern.next_match(&phones, &Choices::default()).is_some());
+    // todo: the extra match is not erronous, but is slightly inefficient
+    assert!(pattern.next_match(&phones, &Choices::default()).is_some());
+    assert!(pattern.next_match(&phones, &Choices::default()).is_none());
+}

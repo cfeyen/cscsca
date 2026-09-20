@@ -5,18 +5,16 @@ use crate::{
     ir::tokens::{Break, IrToken},
     matcher::{
         choices::{Choices, OwnedChoices},
-        match_state::MatchState,
-        patterns::{
+        match_state::MatchState, patterns::{
+            Pattern,
             cond::{CondPattern, CondPhoneInput},
             ir_to_patterns::RuleStructureError,
             list::PatternList,
             optional::Optional,
             selection::Selection,
-            Pattern,
         },
         phones::Phones,
-    },
-    tokens::{Direction, Shift}
+    }, tokens::{Direction, Shift}
 };
 
 /// A matchable pattern for a rule

@@ -1,10 +1,11 @@
 use crate::{
     keywords::ARG_SEP_CHAR,
-    matcher::{choices::{Choices, OwnedChoices},
-    match_state::MatchState,
-    patterns::list::PatternList, phones::Phones},
-    tokens::ScopeId,
-    tokens::ScopeType,
+    matcher::{
+        choices::{Choices, OwnedChoices},
+        match_state::MatchState,
+        patterns::list::PatternList, phones::Phones
+    },
+    tokens::{ScopeId, ScopeType},
 };
 
 /// A pattern that repersents one of its sub-patterns
@@ -85,7 +86,7 @@ impl<'s> MatchState<'s>  for Selection<'s> {
     }
 
     fn advance_once(&mut self) {
-        self.options.first_mut().map(MatchState::advance_once);
+        self.options.get_mut(self.selected_index).map(MatchState::advance_once);
     }
 }
 

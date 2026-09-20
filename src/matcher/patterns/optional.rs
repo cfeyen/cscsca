@@ -57,16 +57,10 @@ impl<'s> MatchState<'s> for Optional<'s> {
 
     fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
         if self.selected {
-            loop {
-                if self.option.next_match(phones, choices).is_some() {
-                    if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
-                        return Some(new_choices);
-                    }
-
-                    continue;
+            while self.option.next_match(phones, choices).is_some() {
+                if let Some(new_choices) = self.matches(&mut phones.clone(), choices) {
+                    return Some(new_choices);
                 }
-
-                break;
             }
 
             self.selected = false;
