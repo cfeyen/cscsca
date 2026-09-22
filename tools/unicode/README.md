@@ -1,0 +1,1 @@
+Prints the hexcodes of all Unicode combining character in a structure that can be pasted into a Rust match statement

@@ -188,3 +188,17 @@ fn multiple_cond_checks_due_to_anticond() {
     assert_eq!("dbc", await_io! { apply("dac", "a >> b / _ $a{c, c} // $a{d, e} _") });
     assert_eq!("ebc", await_io! { apply("eac", "a >> b / _ $a{c, c} // $a{d, e} _") });
 }
+
+#[io_test(pollster::block_on)]
+fn combining_characters() {
+    assert_eq!("123", await_io! { apply("ɨɨ́ɨ́̀", "{ɨ, ɨ́, ɨ́̀} >> {1, 2, 3}") });
+    assert_eq!("ɨɨ́3", await_io! { apply("ɨɨ́ɨ́̀", "ɨ ɨ́ >> ɨɨ́ \n{ɨ, ɨ́, ɨ́̀} >> {1, 2, 3}") });
+}
+
+#[io_test(pollster::block_on)]
+fn combining_characters_in_get() {
+    assert_eq!("123", await_io! { LineByLineExecutor::new(
+        NoLog(Some(LineApplicationLimit::default())),
+        SingleInputGetter("ɨ́̀")
+    ).apply("ɨɨ́ɨ́̀", "GET a :\n{ɨ, ɨ́, %a} >> {1, 2, 3}") });
+}

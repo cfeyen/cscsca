@@ -4,6 +4,7 @@ A sound change applier based on linguistic sound change notation.
 
 ## Cool and Useful Features
 - Digraphs (should be merged from single phones at the very start of the file)
+- Combining characters automatically are combined into phones
 - Application direction
 - Expansive conditions and anti-conditions
 - Definitions that can be inserted anywhere in a rule

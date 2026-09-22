@@ -4,6 +4,7 @@ A sound change applier based on linguistic sound change notation.
 
 ## Cool and Useful Features
 - Digraphs (should be merged from single phones at the very start of the file)
+- Combining characters automatically are combined into phones
 - Application direction
 - Expansive conditions and anti-conditions
 - Definitions that can be inserted anywhere in a rule
@@ -25,6 +26,9 @@ Examples: `a` `ts` `á` `litteraly_a_phone`
 
 **Notes**:
 - to convert an input `ts` (phones `t`, `s`) to the phone `ts` use the rule ```t s >> ts```
+- `á` and `á` are different (the first is `\u{e1}` and the second is `a` + `\u{301}`) CSCSCA will automatically count `a` + `\u{301}` as a single phone, but does distinguish it from `\u{e1}`
+    - CSCSCA will automatically make any Unicode Mark character (any combining character) part of the phone that directly proceeds it
+        - This may not support the latest Unicode versions, but will always support at least Unicode 17.0.0
 
 ### Shifts
 

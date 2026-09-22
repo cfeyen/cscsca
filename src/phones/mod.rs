@@ -9,6 +9,7 @@ use crate::{
     lexer::substring::Substring,
 };
 
+mod unicode;
 #[cfg(test)]
 mod tests;
 
@@ -100,11 +101,16 @@ pub fn build_phone_list(input: EscapedStr<'_>) -> Vec<Phone<'_>> {
     let mut substring = Substring::new(input);
     let mut phones = Vec::new();
 
+    let mut escaped = false;
+
     while let Some(c) = substring.peek() {
         substring.grow();
 
         match c {
-            ESCAPE_CHAR => (),
+            ESCAPE_CHAR if !escaped => {
+                escaped = true;
+                continue;
+            },
             '\n' => {
                 _ = substring.pass();
                 if !phones.last().is_some_and(Phone::is_bound) {
@@ -119,8 +125,13 @@ pub fn build_phone_list(input: EscapedStr<'_>) -> Vec<Phone<'_>> {
                     phones.push(Phone::Bound);
                 }
             },
-            _ => phones.push(Phone::Symbol(substring.pass())),
+            _ if substring.peek().is_some_and(unicode::is_combining) => (),
+            _ => {  
+                phones.push(Phone::Symbol(substring.pass()));
+            },
         }
+
+        escaped = false;
     }
 
     if !substring.str().is_empty() {

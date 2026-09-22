@@ -28,6 +28,26 @@ fn phone_list() {
         build_phone_list(EscapedString::from(format!("a{BOUND_CHAR}b c").as_str()).as_escaped_str()),
         vec![Phone::Symbol("a"), Phone::Symbol(&format!("{ESCAPE_CHAR}{BOUND_CHAR}")), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
     );
+
+    assert_eq!(
+        build_phone_list(EscapedString::from("a\\\\b c").as_escaped_str()),
+        vec![Phone::Symbol("a"), Phone::Symbol(&format!("{ESCAPE_CHAR}{ESCAPE_CHAR}")), Phone::Symbol(&format!("{ESCAPE_CHAR}{ESCAPE_CHAR}")), Phone::Symbol("b"), Phone::Bound, Phone::Symbol("c")]
+    );
+
+    assert_eq!(
+        build_phone_list(EscapedString::from("a\u{0301}").as_escaped_str()),
+        vec![Phone::Symbol("a\u{0301}")]
+    );
+}
+
+#[test]
+fn unicode_verion() {
+    println!("--------------------------------------------------------------------------------");
+    println!("If this test fails:");
+    println!(" 1) update the unicodedata2 package verion in tools/unicode");
+    println!(" 2) update the is_combining function");
+    println!("--------------------------------------------------------------------------------");
+    assert_eq!(char::UNICODE_VERSION, (17, 0, 0));
 }
 
 #[test]
