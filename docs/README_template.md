@@ -1,3 +1,5 @@
+<img src="docs/banner.svg" alt=">>/ CSCSCA" width=750/>
+
 # CSCSCA - Charles' Super Cool Sound Change Applier
 
 A sound change applier based on linguistic sound change notation.
