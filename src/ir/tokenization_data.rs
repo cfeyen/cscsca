@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ptr::NonNull};
 
 use crate::{
     escaped_strings::{EscapedStr, EscapedString}, ir::{IrLine, sir_expr_to_ir_line, ir_line_from_sir}, lexer::{Sir, Lexer, sir::SirToken}, phones::build_phone_list
@@ -21,7 +21,7 @@ pub struct TokenizationData<'s> {
     definitions: HashMap<&'s str, Definition<'s>>,
     variables: HashMap<&'s str, Vec<IrToken<'s>>>,
     /// A list of pointers to all strs leaked
-    sources: Vec<*const str>,
+    sources: Vec<NonNull<str>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -157,14 +157,14 @@ impl<'s> TokenizationData<'s> {
     /// There should be no references remaining to any string in the sources buffer
     pub unsafe fn free_sources(self) {
         for source in self.sources {
-            let ptr = source.cast_mut();
+            let ptr = source.as_ptr();
             unsafe { drop(Box::from_raw(ptr)); }
         }
     }
 
     /// Adds a source to the sources buffer so it can be freed later
     fn add_source(&mut self, source: &'s str) {
-        self.sources.push(std::ptr::from_ref(source));
+        self.sources.push(NonNull::from_ref(source));
     }
 
     /// Returns a reference to the sources buffer
@@ -173,7 +173,7 @@ impl<'s> TokenizationData<'s> {
     /// The internal `HashMap`s may contain references to data in the sources buffer
     /// 
     /// Do not free the sources until this struct is dropped
-    pub fn sources(&self) -> &[*const str] {
+    pub fn sources(&self) -> &[NonNull<str>] {
         &self.sources
     }
 

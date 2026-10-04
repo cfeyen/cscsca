@@ -215,8 +215,7 @@ impl Drop for AppliableRules<'_> {
             // Safety: `AppliableRules` should never be cloned
             // or leak references to the IO sources
             // ! this must be invarient and maintained within the `AppliableRules` API
-            let ptr = source.cast_mut();
-            unsafe { drop(Box::from_raw(ptr)); }
+            unsafe { drop(Box::from_non_null(*source)); }
         }
     }
 }
