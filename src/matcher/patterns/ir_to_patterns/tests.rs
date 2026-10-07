@@ -38,7 +38,7 @@ fn one_to_one() {
             PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
             Vec::new(),
             Vec::new(),
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -57,7 +57,7 @@ fn three_to_three() {
             PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a")), Pattern::new_phone(Phone::Symbol("b")), Pattern::new_phone(Phone::Symbol("c"))]),
             Vec::new(),
             Vec::new(),
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Phone(Phone::Symbol("b")),
@@ -96,7 +96,7 @@ fn selected_three_to_selected_three() {
             RulePattern::new(input,
             Vec::new(),
             Vec::new(),
-        ).expect("pattern construction should be valid")),
+        )),
 
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::ScopeStart(ScopeType::Selection),
@@ -144,7 +144,7 @@ fn labeled_selected_three_to_selected_three() {
             RulePattern::new(input,
             Vec::new(),
             Vec::new(),
-        ).expect("pattern construction should be valid")),
+        )),
 
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Label("label"),
@@ -205,7 +205,7 @@ fn no_output() {
             RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
             Vec::new(),
             Vec::new(),
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -225,7 +225,7 @@ fn single_option() {
             RulePattern::new(input,
             Vec::new(),
             Vec::new(),
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::ScopeStart(ScopeType::Optional),
         IrToken::Phone(Phone::Symbol("a")),
@@ -268,7 +268,7 @@ fn nested_scopes() {
             RulePattern::new(    input,
                 Vec::new(),
                 Vec::new(),
-            ).expect("pattern construction should be valid")),
+            )),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::ScopeStart(ScopeType::Selection),
@@ -317,7 +317,7 @@ fn single_cond() {
                 PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
             )],
             Vec::new(),
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -356,7 +356,7 @@ fn three_conds() {
                 ),
             ],
             Vec::new(),
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -389,7 +389,7 @@ fn single_anti_cond() {
                 PatternList::new(vec![Pattern::new_phone(Phone::Symbol("c"))]),
                 PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
             )]
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -428,7 +428,7 @@ fn three_anti_conds() {
                     PatternList::new(vec![Pattern::new_phone(Phone::Symbol("f"))]),
                 ),
             ]
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -465,7 +465,7 @@ fn cond_and_anti_cond() {
                 PatternList::new(vec![Pattern::new_phone(Phone::Symbol("e"))]),
                 PatternList::new(vec![Pattern::new_phone(Phone::Symbol("f"))]),
             )],
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -524,7 +524,7 @@ fn three_conds_and_anti_conds() {
                     PatternList::new(vec![Pattern::new_phone(Phone::Symbol("j"))]),
                 ),
             ],
-        ).expect("pattern construction should be valid")),
+        )),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Phone(Phone::Symbol("a")),
         IrToken::Break(Break::Shift(shift)),
@@ -568,7 +568,7 @@ fn shift_cond_repetition_input() {
                     PatternList::default(),
                 )],
                 Vec::new(),
-            ).expect("pattern construction should be valid")
+            )
         ),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
@@ -596,7 +596,7 @@ fn shift_anti_cond_repetition_input() {
                     PatternList::new(vec![Pattern::new_repetition(None, PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build")]),
                     PatternList::default(),
                 )],
-            ).expect("pattern construction should be valid")
+            )
         ),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
@@ -620,11 +620,11 @@ fn shift_cond_label_repetition_input() {
                 PatternList::default(),
                 vec![CondPattern::new(
                     CondType::Pattern,
-                    PatternList::new(vec![Pattern::new_repetition(Some("label"), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build")]),
+                    PatternList::new(vec![Pattern::new_repetition(Some(ScopeId::Name("label")), PatternList::new(vec![Pattern::new_any(None)]), 0, None).expect("Should build")]),
                     PatternList::default(),
                 )],
                 Vec::new(),
-            ).expect("pattern construction should be valid")
+            )
         ),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
@@ -653,7 +653,7 @@ fn bounded_repetition() {
                     PatternList::default(),
                 )],
                 Vec::new(),
-            ).expect("pattern construction should be valid")
+            )
         ),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
@@ -678,7 +678,7 @@ fn bounded_repetition() {
                     PatternList::default(),
                 )],
                 Vec::new(),
-            ).expect("pattern construction should be valid")
+            )
         ),
     }, lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
         IrToken::Break(Break::Shift(shift)),
@@ -746,7 +746,7 @@ fn any_to_any() {
                     PatternList::new(any),
                     Vec::new(),
                     Vec::new(),
-                ).expect("pattern construction should be valid")
+                )
             ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
@@ -775,7 +775,7 @@ fn any_any_to_any_any() {
                     PatternList::new(anys),
                     Vec::new(),
                     Vec::new(),
-                ).expect("pattern construction should be valid")
+                )
             ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
@@ -803,7 +803,7 @@ fn labeled_any_to_any() {
                     PatternList::new(any),
                     Vec::new(),
                     Vec::new(),
-                ).expect("pattern construction should be valid")
+                )
             ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
@@ -840,7 +840,7 @@ fn selections_around_any_to_any() {
                     ]),
                     Vec::new(),
                     Vec::new(),
-                ).expect("pattern construction should be valid")
+                )
             ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
@@ -878,7 +878,7 @@ fn simple_negative() {
                     PatternList::new(negtive),
                     Vec::new(),
                     Vec::new(),
-                ).expect("pattern construction should be valid")
+                )
             ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
@@ -916,7 +916,7 @@ fn nested_negative() {
                     PatternList::new(input),
                     Vec::new(),
                     Vec::new(),
-                ).expect("pattern construction should be valid")
+                )
             ),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
@@ -955,7 +955,7 @@ fn cond_with_scope() {
                     PatternList::default(),
                 )],
                 Vec::new(),
-            ).expect("pattern construction should be valid"))
+            ))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -990,7 +990,7 @@ fn anti_cond_with_scope() {
                     PatternList::new(vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("c"))], Some(ScopeId::Name("label")))]),
                     PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
                 )],
-            ).expect("pattern construction should be valid")),
+            )),
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -1023,7 +1023,7 @@ fn equality_cond() {
                     PatternList::new(vec![Pattern::new_phone(Phone::Symbol("d"))]),
                 )],
                 Vec::new(),
-            ).expect("pattern construction should be valid"))
+            ))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -1061,7 +1061,7 @@ fn and_cond() {
                 PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
                 vec![cond],
                 Vec::new(),
-            ).expect("pattern construction should be valid"))
+            ))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -1100,7 +1100,7 @@ fn and_anticond() {
                 PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
                 Vec::new(),
                 vec![cond],
-            ).expect("pattern construction should be valid"))
+            ))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -1145,7 +1145,7 @@ fn double_and() {
                 PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
                 vec![cond],
                 Vec::new(),
-            ).expect("pattern construction should be valid"))
+            ))
         }, lines: ONE }),
         build_rule(IrLine::Ir { tokens: vec![
             IrToken::Phone(Phone::Symbol("a")),
@@ -1193,7 +1193,7 @@ fn selection_sequence() {
             ]),
             vec![CondPattern::default()],
             Vec::new(),
-        ).expect("pattern construction should be valid"))
+        ))
     }, lines: ONE };
 
     let actual = build_rule(IrLine::Ir { tokens: vec![

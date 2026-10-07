@@ -45,34 +45,36 @@ impl<'s> PatternList<'s> {
                 Pattern::Phone(CheckBox { unit_state: phone, .. }) => phones.push(*phone),
 
                 Pattern::NonBound(CheckBox { unit_state: NonBound { id: Some(id) }, ..}) =>
-                if let Some(phone) = choices.any.get(id) {
-                    phones.push(*phone);
-                } else {
-                    return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
-                },
+                    if let Some(phone) = choices.any.get(id) {
+                        phones.push(*phone);
+                    } else {
+                        return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
+                    },
 
                 Pattern::Repetition(Repetition { id: Some(id), .. }) =>
-                match choices.repetition.get(id) {
-                    Some(0) => (),
-                    _ => return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone())),
-                }
+                    match choices.repetition.get(id) {
+                        Some(required_phones) => required_phones.iter().for_each(|phone| phones.push(*phone)),
+                        None => return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone())),
+                    },
                 
                 Pattern::Optional(Optional { id: Some(id), option, .. }) =>
-                if let Some(selected) = choices.optional.get(id).copied() {
-                    if selected {
-                        phones.append(&mut option.as_phones(choices)?);
-                    }
-                } else {
-                    return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
-                },
+                    if let Some(selected) = choices.optional.get(id).copied() {
+                        if selected {
+                            phones.append(&mut option.as_phones(choices)?);
+                        }
+                    } else {
+                        return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
+                    },
 
                 Pattern::Selection(Selection { id: Some(id), options, .. }) => 
-                if let Some(choice) = choices.selection.get(id).copied() 
-                && let Some(option) = options.get(choice) {
-                    phones.append(&mut option.as_phones(choices)?);
-                } else {
-                    return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
-                },
+                    if
+                        let Some(choice) = choices.selection.get(id).copied() 
+                        && let Some(option) = options.get(choice)
+                    {
+                        phones.append(&mut option.as_phones(choices)?);
+                    } else {
+                        return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone()));
+                    },
 
                 _ => return Err(ApplicationError::PatternCannotBeConvertedToPhones(pattern.clone())),
             }

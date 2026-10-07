@@ -7,7 +7,7 @@ use crate::{phones::Phone, tokens::ScopeId};
 pub struct Choices<'c, 's> {
     pub(super) selection: Cow<'c, HashMap<ScopeId<'s>, usize>>,
     pub(super) optional: Cow<'c, HashMap<ScopeId<'s>, bool>>,
-    pub(super) repetition: Cow<'c, HashMap<&'s str, usize>>,
+    pub(super) repetition: Cow<'c, HashMap<ScopeId<'s>, Vec<Phone<'s>>>>,
     pub(super) any: Cow<'c, HashMap<ScopeId<'s>, Phone<'s>>>,
 }
 
@@ -25,6 +25,11 @@ impl<'c, 's> Choices<'c, 's> {
     /// Gets the any phone choices
     pub fn any(&self) -> &HashMap<ScopeId<'s>, Phone<'s>> {
         &self.any
+    }
+
+    /// Gets the repetition choices
+    pub fn repetition(&self) -> &HashMap<ScopeId<'s>, Vec<Phone<'s>>> {
+        &self.repetition
     }
 
     /// A cheeper way to clone `Choices` with less heap allocation
@@ -74,8 +79,16 @@ impl<'c, 's> Choices<'c, 's> {
 pub struct OwnedChoices<'s> {
     selection: Option<HashMap<ScopeId<'s>, usize>>,
     optional: Option<HashMap<ScopeId<'s>, bool>>,
-    repetition: Option<HashMap<&'s str, usize>>,
+    repetition: Option<HashMap<ScopeId<'s>, Vec<Phone<'s>>>>,
     any: Option<HashMap<ScopeId<'s>, Phone<'s>>>,
+}
+
+impl OwnedChoices<'_> {
+    /// Returns true if no choices are owned
+    pub fn is_empty(&self) -> bool {
+        // This may not be optimal, but will not compile if OwnedChoices is updated and this is not
+        matches!(self, Self { selection: None, optional: None, repetition: None, any: None })
+    }
 }
 
 /// Returns the owned content of a `Cow` if it exists

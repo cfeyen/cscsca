@@ -47,9 +47,6 @@ There are three types of scopes
 - repetition **`[`**...**`]`**: a phone or group of phones repeated 0 or more times. At the end of a repetition scope, you may also add `= n` or `= n, m` where `n` is the minimum number of repetitions, and `m` is the maximum
     - Example: `[s = 1, 2]` one or two occurances of the phone `s`
 
-
-**Note**: repetition scopes are only allowed in conditions/anti-conditions (see: Conditions and Anti-Conditions)
-
 Examples:
 ```cscsca
 ## `l` and `l` `j` become `j`
@@ -72,8 +69,6 @@ u >> y / i [* ! w] _
 As seen in the example above, corresponding scopes in the input and output try to agree on what they choose. However, there are times when we want this behavior to be different than the default or expanded to conditions
 
 To force scopes to agree on what they choose, we can use labels. A label has a name that starts with **`$`** and precedes a scope
-
-**Note**: repetition scopes agree not in phones, but in phone count, causing agreeing repetition scopes to be the same length or shorter than the one that sets the agreement
 
 Examples:
 ```cscsca

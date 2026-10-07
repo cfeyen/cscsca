@@ -44,7 +44,7 @@ impl<'s> Pattern<'s> {
         Self::NonBound(CheckBox::new(NonBound { id }))
     }
 
-    pub fn new_repetition(id: Option<&'s str>, pattern: PatternList<'s>, min: RepetitionNumber, max: Option<RepetitionNumber>) -> Result<Self, RuleStructureError<'s>> {
+    pub fn new_repetition(id: Option<ScopeId<'s>>, pattern: PatternList<'s>, min: RepetitionNumber, max: Option<RepetitionNumber>) -> Result<Self, RuleStructureError<'s>> {
         Ok(Self::Repetition(Repetition::new(id, pattern, min, max)?))
     }
 

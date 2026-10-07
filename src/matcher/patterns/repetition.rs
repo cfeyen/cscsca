@@ -1,12 +1,10 @@
 use crate::{
-    keywords::{ARG_SEP_CHAR, MATCH_CHAR, REPETITION_END_CHAR, REPETITION_START_CHAR},
-    matcher::{
+    keywords::{ARG_SEP_CHAR, MATCH_CHAR, REPETITION_END_CHAR, REPETITION_START_CHAR}, matcher::{
         choices::{Choices, OwnedChoices},
         match_state::MatchState,
         patterns::{ir_to_patterns::RuleStructureError, list::PatternList},
         phones::Phones
-    },
-    tokens::RepetitionNumber,
+    }, tokens::{Direction, RepetitionNumber, ScopeId},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,7 +12,7 @@ pub struct Repetition<'s> {
     pattern: PatternList<'s>,
     included: PatternList<'s>,
     inclusions: usize,
-    pub(super) id: Option<&'s str>,
+    pub id: Option<ScopeId<'s>>,
     len: usize,
     min: RepetitionNumber,
     max: Option<RepetitionNumber>,
@@ -22,20 +20,44 @@ pub struct Repetition<'s> {
 
 impl<'s> MatchState<'s> for Repetition<'s> {
     fn matches<'p>(&self, phones: &mut Phones<'_, 'p>, choices: &Choices<'_, 'p>) -> Option<OwnedChoices<'p>> where 's: 'p {
-        let mut repetion_chocies = choices.partial_clone();
+        // gets the phones that the repetition must try to match
+        let match_phones = {
+            let mut phones = *phones;
+            let mut match_phones = Vec::new();
+
+            for _ in 0..self.len() {
+                match_phones.push(*phones.next());
+            }
+
+            // make the match phones ltr
+            if phones.direction() == Direction::Rtl {
+                match_phones.reverse();
+            }
+
+            match_phones
+        };
         
-        if let Some(id) = self.id && !choices.repetition.contains_key(id) {
-            repetion_chocies.repetition.to_mut().insert(id, self.len);
+        let mut new_choices = choices.partial_clone();
+        
+        if let Some(id) = &self.id {
+            if let Some(target_phones) = new_choices.repetition.get(id) {
+                // if the target phones don't match, the match must fail
+                if &match_phones != target_phones {
+                    return None;
+                }
+            } else {
+                new_choices.repetition.to_mut().insert(id.clone(), match_phones);
+            }
         }
-        
+
         if
             self.len >= self.min as usize
-            && self.len <= self.max_len(phones, choices)
+            && self.len <= self.max_len(phones)
             && self.len == self.included.len()
-            && let Some(new_choices) = self.included.matches(phones, &repetion_chocies)
+            && let Some(included_choices) = self.included.matches(&mut phones.clone(), &new_choices)
         {
-            repetion_chocies.take_owned(new_choices);
-            Some(repetion_chocies.owned_choices())
+            new_choices.take_owned(included_choices);
+            Some(new_choices.owned_choices())
         } else {
             None
         }
@@ -48,7 +70,7 @@ impl<'s> MatchState<'s> for Repetition<'s> {
 
         let mut new_choices = choices.partial_clone();
 
-        let max_len = self.max_len(phones, choices);
+        let max_len = self.max_len(phones);
 
         // checks each varient up to the maximum length 
         loop {
@@ -58,11 +80,6 @@ impl<'s> MatchState<'s> for Repetition<'s> {
 
                 if let Some(match_choices) = self.matches(&mut phones.clone(), &choices) {
                     choices.take_owned(match_choices);
-
-                    if let Some(id) = &self.id && !choices.repetition.contains_key(id) {
-                        choices.repetition.to_mut().insert(id, self.len);
-                    }
-
                     new_choices.take_owned(choices.owned_choices());
 
                     return Some(new_choices.owned_choices());
@@ -110,7 +127,7 @@ impl<'s> MatchState<'s> for Repetition<'s> {
 }
 
 impl<'s> Repetition<'s> {
-    pub fn new(id: Option<&'s str>, pattern: PatternList<'s>, min: RepetitionNumber, max: Option<RepetitionNumber>) -> Result<Self, RuleStructureError<'s>> {
+    pub fn new(id: Option<ScopeId<'s>>, pattern: PatternList<'s>, min: RepetitionNumber, max: Option<RepetitionNumber>) -> Result<Self, RuleStructureError<'s>> {
         if let Some(max) = max && min > max {
             return Err(RuleStructureError::MinExceedsMax { min, max });
         }
@@ -126,15 +143,11 @@ impl<'s> Repetition<'s> {
         })
     }
 
-    fn max_len(&self, phones: &Phones<'_, '_>, choices: &Choices<'_, '_>) -> usize {
+    fn max_len(&self, phones: &Phones<'_, '_>) -> usize {
         let mut max_len = phones.rem_len();
 
         if let Some(max) = self.max {
             max_len = max_len.min(max as _);
-        }
-
-        if let Some(id) = &self.id && let Some(max) = choices.repetition.get(id).copied() {
-            max_len = max.min(max_len);
         }
 
         max_len

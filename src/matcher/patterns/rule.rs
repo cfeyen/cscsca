@@ -8,10 +8,7 @@ use crate::{
         match_state::MatchState, patterns::{
             Pattern,
             cond::{CondPattern, CondPhoneInput},
-            ir_to_patterns::RuleStructureError,
             list::PatternList,
-            optional::Optional,
-            selection::Selection,
         },
         phones::Phones,
     }, tokens::{Direction, Shift}
@@ -25,34 +22,17 @@ pub struct RulePattern<'s> {
     anti_conds: Vec<CondPattern<'s>>,
 }
 
-fn contains_repetition(tokens: &PatternList<'_>) -> bool {
-    for token in tokens.inner() {
-        match token {
-            Pattern::Repetition { .. } => return true,
-            Pattern::Optional(Optional { option, ..}) if contains_repetition(option) => return true,
-            Pattern::Selection(Selection { options, .. }) if options.iter().any(|tokens| contains_repetition(tokens)) => return true,
-            _ => (),
-        }
-    }
-
-    false
-}
-
 impl<'s> RulePattern<'s> {
-    pub fn new(input: PatternList<'s>, mut conds: Vec<CondPattern<'s>>, anti_conds: Vec<CondPattern<'s>>) -> Result<Self, RuleStructureError<'s>> {
-        if contains_repetition(&input) {
-            return Err(RuleStructureError::RepetitionOutOfCond);
-        }
-
+    pub fn new(input: PatternList<'s>, mut conds: Vec<CondPattern<'s>>, anti_conds: Vec<CondPattern<'s>>) -> Self {
         if conds.is_empty() {
             conds = vec![CondPattern::default()];
         }
 
-        Ok(Self {
+        Self {
             input,
             conds,
             anti_conds,
-        })
+        }
     }
 
     pub const fn input(&self) -> &PatternList<'s> {
@@ -68,17 +48,17 @@ impl<'s> RulePattern<'s> {
     }
     
     pub fn next_match<'p>(&mut self, phones: &Phones<'_, 'p>) -> Result<Option<OwnedChoices<'p>>, ApplicationError<'s>> where 's: 'p {
-        let mut new_choices = Choices::default();
-
         loop {
+            let mut choices = Choices::default();
+
             // checks the input
-            let Some(input_choices) = self.input.next_match(phones, &new_choices) else {
+            let Some(input_choices) = self.input.next_match(phones, &choices) else {
                 return Ok(None);
             };
             self.conds.iter_mut().for_each(CondPattern::reset);
             self.anti_conds.iter_mut().for_each(CondPattern::reset);
 
-            new_choices.take_owned(input_choices);
+            choices.take_owned(input_choices);
 
             // prepares to create condition phones
             let mut after_input_phones = *phones;
@@ -99,8 +79,8 @@ impl<'s> RulePattern<'s> {
             // checks each condition agains each anti-condition
             for cond in &mut self.conds {
                 // checks each match of each condition agains each anti-condition
-                'cond_loop: while let Some(cond_choices) = cond.next_match(&cond_phones, &new_choices)? {
-                    let mut post_cond_choices = new_choices.partial_clone();
+                'cond_loop: while let Some(cond_choices) = cond.next_match(&cond_phones, &choices)? {
+                    let mut post_cond_choices = choices.partial_clone();
                     post_cond_choices.take_owned(cond_choices.clone());
 
                     // checks agains each anti-condition
@@ -113,9 +93,9 @@ impl<'s> RulePattern<'s> {
 
                         anti_cond.reset();
                     }
-                    new_choices.take_owned(post_cond_choices.owned_choices());
+                    choices.take_owned(post_cond_choices.owned_choices());
                     cond.reset();
-                    return Ok(Some(new_choices.owned_choices()));
+                    return Ok(Some(choices.owned_choices()));
                 }
 
                 cond.reset();

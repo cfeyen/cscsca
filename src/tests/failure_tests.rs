@@ -3,17 +3,12 @@ use crate::io_macros::{await_io, io_test};
 use crate::tests::{apply_fallible, NoGet, NoLog};
 
 #[io_test(pollster::block_on)]
-fn repetition_out_of_cond() {
-    assert!(await_io! { apply_fallible("abc", "a [*] >> b / _ #") }.is_err());
-    assert!(await_io! { apply_fallible("a", "a >> b [*] c") }.is_err());
-    assert!(await_io! { apply_fallible("a", "a $rep [*] # >> b $rep [*] c") }.is_err());
-}
-
-#[io_test(pollster::block_on)]
 fn unmatched_output_scope() {
-    assert!(await_io! { apply_fallible("a", "a >> {b, c}") }.is_err());
+    assert!(await_io! { apply_fallible("a", "a >> {b}") }.is_err());
     assert!(await_io! { apply_fallible("a", "a >> (b)") }.is_err());
     assert!(await_io! { apply_fallible("a", "a >> *") }.is_err());
+    assert!(await_io! { apply_fallible("a", "a >> [b]") }.is_err());
+    assert!(await_io! { apply_fallible("a", "[a] >> [$a*] / # _ #") }.is_err());
 }
 
 #[io_test(pollster::block_on)]

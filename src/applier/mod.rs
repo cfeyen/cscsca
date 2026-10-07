@@ -2,16 +2,9 @@
 use std::time::Instant;
 
 use crate::{
-    executor::runtime::LineApplicationLimit,
-    ir::tokens::IrToken,
-    matcher::{
-        choices::Choices,
-        patterns::{check_box::CheckBox, non_bound::NonBound, optional::Optional, selection::Selection, Pattern},
-        phones::Phones,
-        patterns::{rule::SoundChangeRule, ir_to_patterns::RuleStructureError},
-    },
-    phones::Phone,
-    tokens::{Direction, ShiftType}
+    executor::runtime::LineApplicationLimit, ir::tokens::IrToken, matcher::{
+        choices::Choices, match_state::MatchState, patterns::{Pattern, check_box::CheckBox, non_bound::NonBound, optional::Optional, repetition::Repetition, rule::SoundChangeRule, selection::Selection}, phones::Phones,
+    }, phones::Phone, tokens::{Direction, ShiftType}
 };
 
 #[cfg(test)]
@@ -227,7 +220,26 @@ fn patterns_to_phones<'s: 'p, 'p>(patterns: &[Pattern<'s>], choices: &Choices<'_
                     return Err(ApplicationError::UnmatchedTokenInOutput(pattern.clone()));
                 }
             },
-            Pattern::Repetition { .. } => return Err(ApplicationError::RepetitionOutOfCond),
+            Pattern::Repetition(Repetition { id: Some(id), .. } ) => {
+                if let Some(matched_phones) = choices.repetition().get(id) {
+                    let phones_iter = Phones::new(matched_phones, 0, Direction::Ltr);
+
+                    let mut pattern_clone = pattern.clone();
+                    if let Some(new_choices) = pattern_clone.next_match(&phones_iter, choices) {
+                        if !new_choices.is_empty() {
+                            return Err(ApplicationError::SubtokenRequiresNewAgreementInOutput(pattern_clone));
+                        }
+                    } else {
+                        return Err(ApplicationError::OutputRepetitionDoesNotMatchOthers(pattern_clone, matched_phones.iter().map(Phone::as_str).collect()));
+                    }
+
+                    for phone in matched_phones {
+                        phones.push(*phone);
+                    }
+                } else {
+                    return Err(ApplicationError::UnmatchedTokenInOutput(pattern.clone()));
+                }
+            },
             _ => return Err(ApplicationError::UnmatchedTokenInOutput(pattern.clone()))
         }
     }
@@ -242,8 +254,9 @@ pub enum ApplicationError<'s> {
     UnmatchedTokenInOutput(Pattern<'s>),
     InvalidSelectionAccess(Pattern<'s>, usize),
     ExceededLimit(LimitCondition),
-    RepetitionOutOfCond,
     PatternCannotBeConvertedToPhones(Pattern<'s>),
+    OutputRepetitionDoesNotMatchOthers(Pattern<'s>, String),
+    SubtokenRequiresNewAgreementInOutput(Pattern<'s>),
 }
 
 impl std::error::Error for ApplicationError<'_> {}
@@ -254,16 +267,16 @@ impl std::fmt::Display for ApplicationError<'_> {
             Self::InvalidSelectionAccess(scope, elem) => {
                 write!(f, "Cannot access element {} in scope: {scope}", elem + 1)
             },
-            Self::UnmatchedTokenInOutput(pattern) => {
-                write!(f, "Cannot match the following token in the output to a token in the input: {pattern}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name"))
-            },
+            Self::UnmatchedTokenInOutput(pattern)
+                => write!(f, "Cannot match the following token in the output to a token in the input: {pattern}\nConsider adding a label '{}' and ensuring it is used in the input or every condition", IrToken::Label("name")),
             Self::ExceededLimit(limit) => write!(f, "{}", match limit {
                 #[cfg(feature = "sys_time")]
                 LimitCondition::Time(_) => "Could not apply changes in allotted time",
-                LimitCondition::Count { attempts: _, max: _ } => "Could not apply changes with the allotted application attempts",
+                LimitCondition::Count { .. } => "Could not apply changes with the allotted application attempts",
             }),
-            Self::RepetitionOutOfCond => write!(f, "{}", RuleStructureError::RepetitionOutOfCond),
             Self::PatternCannotBeConvertedToPhones(pattern) => write!(f, "'{pattern}' cannot be converted to a phone or list of phones"),
+            Self::OutputRepetitionDoesNotMatchOthers(pattern, target) => write!(f, "'{pattern}' in output does not match required phones '{target}'"),
+            Self::SubtokenRequiresNewAgreementInOutput(pattern) => write!(f, "The following token in the output requires new agreement: {pattern}"),
         }
     }
 }

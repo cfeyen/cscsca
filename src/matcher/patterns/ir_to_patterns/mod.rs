@@ -37,6 +37,7 @@ struct DefaultScopeIds {
     optional: usize,
     selection: usize,
     any: usize,
+    repetition: usize,
 }
 
 /// Builds a sound change rule out of a line of ir tokens along with the number of lines taken up on error
@@ -102,7 +103,6 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, (RuleStructureError, NonZero
             output,
             pattern: RefCell::new(
                 RulePattern::new(PatternList::new(input), conds, anti_conds)
-                    .map_err(|e| (e, line_count))?
             ),
         },
         lines: line_count,
@@ -168,7 +168,8 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut Peekable<impl Iterator<Item = &'
             },
             IrToken::ScopeStart(ScopeType::Repetition) => {
                 let RepetitionData { patterns, min, max } = ir_to_repetition_pattern(ir)?;
-                Pattern::new_repetition(None, PatternList::new(patterns), min, max)?
+                let id = repetition_id(default_scope_ids, parent_scope.cloned());
+                Pattern::new_repetition(id, PatternList::new(patterns), min, max)?
             },
             // ensures a label is proceeding a labelable token then creates that token with the label
             IrToken::Label(name) => {
@@ -183,7 +184,7 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut Peekable<impl Iterator<Item = &'
                         ScopeType::Selection => Pattern::new_selection(selection_contents_to_patterns(ir, child_ids, id.as_ref())?, id),
                         ScopeType::Repetition => {
                             let RepetitionData { patterns, min, max } = ir_to_repetition_pattern(ir)?;
-                            Pattern::new_repetition(Some(*name), PatternList::new(patterns), min, max)?
+                            Pattern::new_repetition(Some(ScopeId::Name(name)), PatternList::new(patterns), min, max)?
                         },
                     }
                 } else if let Some(IrToken::Any) = next {
@@ -247,12 +248,12 @@ struct RepetitionData<'s> {
     max: Option<RepetitionNumber>,
 }
 
-fn ir_to_repetition_pattern<'ir, 's: 'ir>(mut ir: &mut Peekable<impl Iterator<Item = &'ir IrToken<'s>>>) -> Result<RepetitionData<'s>, RuleStructureError<'s>> {
+fn ir_to_repetition_pattern<'ir, 's: 'ir>(ir: &mut Peekable<impl Iterator<Item = &'ir IrToken<'s>>>) -> Result<RepetitionData<'s>, RuleStructureError<'s>> {
     let mut content = Vec::new();
     // scope_stack tracks which scope the function is analyzing to determine when to seperate options and return
     let mut scope_stack = Vec::new();
 
-    for ir_token in &mut ir {
+    for ir_token in &mut *ir {
         match ir_token {
             IrToken::CondType(CondType::Match) => {
                 let min = match ir.next() {
@@ -428,6 +429,18 @@ fn any_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Opti
     }
 }
 
+/// Creates a default id for an an scope and mutates the next default
+fn repetition_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Option<ScopeId<'s>>) -> Option<ScopeId<'s>> {
+    if let Some(ids) = default_scope_ids {
+        let mut ids = ids.borrow_mut();
+        let id_num = ids.repetition;
+        ids.repetition += 1;
+        Some(ScopeId::IOUnlabeled { parent: parent.map(Rc::new), id_num, label_type: LabelType::Scope(ScopeType::Repetition) })
+    } else {
+        None
+    }
+}
+
 /// An error that occurs when converting ir tokens to patterns
 #[cfg_attr(test, derive(PartialEq))]
 #[derive(Debug)]
@@ -444,7 +457,6 @@ pub enum RuleStructureError<'s> {
     AndDoesNotFollowCond(AndType),
     SecondShift(Shift),
     UnexpectedCondType(CondType),
-    RepetitionOutOfCond,
     EmptyRepetition,
     EmptyInclusion,
     EmptyExclusion,
@@ -477,7 +489,6 @@ impl std::fmt::Display for RuleStructureError<'_> {
                 => write!(f, "Found a second shift token '{shift}' after the first"),
             Self::UnexpectedCondType(r#type)
                 => write!(f, "Found '{type}' either outside of a condition or after '{}' or '{}'", CondType::Pattern, CondType::Match),
-            Self::RepetitionOutOfCond => write!(f, "Repetitions ('{}...{}') are not allowed outside of conditions and anti-conditions", ScopeType::Repetition.start_char(), ScopeType::Repetition.end_char()),
             Self::EmptyRepetition => write!(f, "A repetition must contain some inclusive pattern"),
             Self::EmptyInclusion => write!(f, "A negative's inclusion must contain some pattern"),
             Self::EmptyExclusion => write!(f, "A negative's exclusion must contain some pattern"),

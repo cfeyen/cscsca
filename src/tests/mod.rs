@@ -158,6 +158,7 @@ fn escape_printing() {
 fn complex_agreement() {
     assert_eq!("zbc", await_io! { apply("abc", "a >> z / _ $c{b, * c} // _ $c{b, d}") });
     assert_eq!("bbc", await_io! { apply("abc", "a >> $a{b} / _ [* ! z] $a{c}") });
+    assert_eq!("yxbyx", await_io! { apply("yxayx", "a >> b / # $a[*] _ $a[*] #") });
 }
 
 #[io_test(pollster::block_on)]
@@ -166,6 +167,19 @@ fn bounded_repetition() {
     assert_eq!("bzzzzzc bzzzzc bzzzc bzzc azc ac", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 2] c") });
     assert_eq!("azzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 0, 4] c") });
     assert_eq!("bzzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z] c") });
+}
+
+#[io_test(pollster::block_on)]
+fn repetition_out_of_cond() {
+    assert_eq!("b", await_io! { apply("abc", "a [*] >> b / _ #") });
+    assert_eq!("b", await_io! { apply("abc", "a [*] << b / _ #") });
+    assert!(await_io! { apply_fallible("a", "a >> b [*] c") }.is_err());
+    assert_eq!("bca", await_io! { apply("abc", "a $rep [*] >> $rep [*] a / # _ #") });
+
+    assert_eq!("aba", await_io! { apply("aba", "[a b] >> / # _ #") });
+    assert_eq!("aba", await_io! { apply("aba", "[a b] << / # _ #") });
+    assert_eq!("", await_io! { apply("aba", "[{a, b}] >> / # _ #") });
+    assert_eq!("", await_io! { apply("aba", "[{a, b}] << / # _ #") });
 }
 
 #[io_test(pollster::block_on)]
@@ -181,6 +195,13 @@ fn nested_selection_with_empty_first_option() {
     assert_eq!("2|bc|", await_io! { apply("n|bc|", "n >> $a{1, 2} / _ | (b $a{[{}], c}) |") });
 
     assert_eq!("2", await_io! { apply("|ab|", "| ({a, } $a{, b}) | >> ($a{1, 2})") });
+}
+
+#[io_test(pollster::block_on)]
+fn repetitions_out_of_conds() {
+    assert_eq!("b y", await_io! { apply("abc xyz", "a [*] >> b / _ #\nx [*] << y / _ #") });
+    assert_eq!("cbba", await_io! { apply("abbc", "a [*] c >> c [*] a") });
+    assert_eq!("abab", await_io! { apply("abc", "c >> $a[*] / # $a[*] _") });
 }
 
 #[io_test(pollster::block_on)]

@@ -12,7 +12,7 @@ fn apply_empty_rule_to_no_phones() {
             PatternList::default(),
             Vec::new(),
             Vec::new(),
-        ).expect("rule structure should be valid")),
+        )),
     };
     
     assert_eq!(Ok(()), apply(&rule, &mut Vec::new(), Some(DEFAULT_LINE_APPLICATION_LIMIT)));
@@ -40,7 +40,7 @@ fn one_to_one_shift() {
             PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
             Vec::new(),
             Vec::new(),
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
@@ -62,7 +62,7 @@ fn one_to_two_shift() {
             PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
             Vec::new(),
             Vec::new(),
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("d"), Phone::Symbol("a")];
@@ -84,7 +84,7 @@ fn two_to_one_shift() {
             ]),
             Vec::new(),
             Vec::new(),
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("d"), Phone::Symbol("a"), Phone::Symbol("b")];
@@ -103,7 +103,7 @@ fn one_to_none_shift() {
             PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
             Vec::new(),
             Vec::new(),
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("a")];
@@ -122,7 +122,7 @@ fn remove_word_final_ltr() {
             PatternList::new(vec![Pattern::new_any(Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }))]),
             vec![CondPattern::new(CondType::Pattern, PatternList::default(), PatternList::new(vec![Pattern::new_phone(Phone::Bound)]))],
             Vec::new()
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Bound, Phone::Symbol("e"), Phone::Bound, Phone::Symbol("f"), Phone::Symbol("g")];
@@ -141,7 +141,7 @@ fn remove_word_final_rtl() {
             PatternList::new(vec![Pattern::new_any(Some(ScopeId::IOUnlabeled { id_num: 0, label_type: LabelType::Any, parent: None }))]),
             vec![CondPattern::new(CondType::Pattern, PatternList::default(), PatternList::new(vec![Pattern::new_phone(Phone::Bound)]))],
             Vec::new()
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Bound, Phone::Symbol("e"), Phone::Bound, Phone::Symbol("f"), Phone::Symbol("g")];
@@ -184,7 +184,7 @@ fn selection_to_selection() {
                 }),
             )
         ],
-        pattern: RefCell::new(RulePattern::new(input, Vec::new(), Vec::new()).expect("rule structure should be valid")),
+        pattern: RefCell::new(RulePattern::new(input, Vec::new(), Vec::new())),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c"), Phone::Symbol("d")];
@@ -225,7 +225,7 @@ fn option_phone_to_option_phone() {
             input,
             Vec::new(),
             Vec::new(),
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("e"), Phone::Symbol("b"), Phone::Symbol("e")];
@@ -244,7 +244,7 @@ fn phone_to_phone_word_final_ltr() {
             PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
             vec![CondPattern::new(CondType::Pattern, PatternList::default(), PatternList::new(vec![Pattern::new_phone(Phone::Bound)]))],
             Vec::new(),
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
@@ -263,7 +263,7 @@ fn phone_to_phone_word_final_rtl() {
             PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
             vec![CondPattern::new(CondType::Pattern, PatternList::default(), PatternList::new(vec![Pattern::new_phone(Phone::Bound)]))],
             Vec::new(),
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     let mut phones = vec![Phone::Symbol("a"), Phone::Symbol("c"), Phone::Symbol("a")];
@@ -319,7 +319,7 @@ fn quadruple_agreement() {
                 Some(ScopeId::Name("label")),
             )
         ],
-        pattern: RefCell::new(RulePattern::new(input, conds, anti_conds).expect("rule structure should be valid")),
+        pattern: RefCell::new(RulePattern::new(input, conds, anti_conds)),
     };
 
     let mut phones = vec![
@@ -364,7 +364,7 @@ fn count_limit() {
             PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
             Vec::new(),
         Vec::new()
-        ).expect("rule structure should be valid")),
+        )),
     };
 
     assert!(apply(&rule, &mut vec![Phone::Symbol("a")], Some(LineApplicationLimit::Attempts(1))).is_ok());

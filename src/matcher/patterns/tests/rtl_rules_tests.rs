@@ -6,7 +6,7 @@ fn matches_phones() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         Vec::new(),
         Vec::new()
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -19,7 +19,7 @@ fn matches_phones() {
         ]),
         Vec::new(),
         Vec::new()
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 2, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -33,7 +33,7 @@ fn match_phone_with_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         before_b.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -42,7 +42,7 @@ fn match_phone_with_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         before_b.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -51,7 +51,7 @@ fn match_phone_with_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         before_b,
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -62,7 +62,7 @@ fn match_phone_with_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         after_b.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -71,7 +71,7 @@ fn match_phone_with_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         after_b.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -80,7 +80,7 @@ fn match_phone_with_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         after_b,
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -94,7 +94,7 @@ fn match_phone_with_anti_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         Vec::new(),
         before_b.clone(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -103,7 +103,7 @@ fn match_phone_with_anti_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         Vec::new(),
         before_b.clone(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -112,7 +112,7 @@ fn match_phone_with_anti_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         Vec::new(),
         before_b,
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -123,7 +123,7 @@ fn match_phone_with_anti_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         Vec::new(),
         after_b.clone(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -132,7 +132,7 @@ fn match_phone_with_anti_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         Vec::new(),
         after_b.clone(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -141,7 +141,7 @@ fn match_phone_with_anti_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         Vec::new(),
         after_b,
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -160,7 +160,7 @@ fn and_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -169,7 +169,7 @@ fn and_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("c")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -178,7 +178,7 @@ fn and_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -187,7 +187,7 @@ fn and_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond,
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -206,7 +206,7 @@ fn and_not_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -215,7 +215,7 @@ fn and_not_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("c")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -224,7 +224,7 @@ fn and_not_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("b"), Phone::Symbol("a")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -233,7 +233,7 @@ fn and_not_cond() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond,
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -267,7 +267,7 @@ fn agreement_between_pattern_halves() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -276,7 +276,7 @@ fn agreement_between_pattern_halves() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond,
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("d")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -318,7 +318,7 @@ fn agreement_between_and_conds() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond.clone(),
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("c")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_some());
@@ -327,7 +327,7 @@ fn agreement_between_and_conds() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond,
         Vec::new(),
-    ).expect("pattern construction should be valid");
+    );
     let match_phones = Phones::new(&[Phone::Symbol("c"), Phone::Symbol("a"), Phone::Symbol("d")], 1, Direction::Rtl);
 
     assert!(rule_pattern.next_match(&match_phones).expect("next match should not error").is_none());
@@ -361,7 +361,7 @@ fn complex_argeement() {
         PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]),
         cond,
         anti_cond,
-    ).expect("pattern construction should be valid");
+    );
 
     let match_phones = Phones::new(&[Phone::Symbol("a"), Phone::Symbol("b"), Phone::Symbol("c")], 0, Direction::Rtl);
 
@@ -372,7 +372,7 @@ fn complex_argeement() {
 fn phone_match_phone_cond() {
     let conds = vec![CondPattern::new(CondType::Match, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]))];
 
-    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -381,7 +381,7 @@ fn phone_match_phone_cond() {
 
     let bad_conds = vec![CondPattern::new(CondType::Match, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), PatternList::new(vec![Pattern::new_phone(Phone::Symbol("b"))]))];
 
-    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), bad_conds, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), bad_conds, Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -394,7 +394,7 @@ fn optional_match_conds() {
 
     let conds = vec![CondPattern::new(CondType::Match, PatternList::new(vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("a"))], Some(label.clone()))]), PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]))];
 
-    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds.clone(), Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds.clone(), Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -402,7 +402,7 @@ fn optional_match_conds() {
 
     let input = PatternList::new(vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("a"))], Some(label.clone()))]);
 
-    let mut rule_pattern = RulePattern::new(input, conds, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(input, conds, Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -410,7 +410,7 @@ fn optional_match_conds() {
 
     let conds = vec![CondPattern::new(CondType::Match, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), PatternList::new(vec![Pattern::new_optional(vec![Pattern::new_phone(Phone::Symbol("a"))], None)]))];
 
-    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -423,7 +423,7 @@ fn selection_match_conds() {
 
     let conds = vec![CondPattern::new(CondType::Match, PatternList::new(vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("a"))], vec![Pattern::new_phone(Phone::Symbol("b"))]], Some(label.clone()))]), PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]))];
 
-    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds.clone(), Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds.clone(), Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -431,7 +431,7 @@ fn selection_match_conds() {
 
     let input = PatternList::new(vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("a"))], vec![Pattern::new_phone(Phone::Symbol("b"))]], Some(label.clone()))]);
 
-    let mut rule_pattern = RulePattern::new(input, conds, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(input, conds, Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -439,7 +439,7 @@ fn selection_match_conds() {
 
     let conds = vec![CondPattern::new(CondType::Match, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), PatternList::new(vec![Pattern::new_selection(vec![vec![Pattern::new_phone(Phone::Symbol("a"))], vec![Pattern::new_phone(Phone::Symbol("b"))]], None)]))];
 
-    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -450,7 +450,7 @@ fn selection_match_conds() {
 fn inequal_length_match_conds() {
     let conds = vec![CondPattern::new(CondType::Match, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a")), Pattern::new_phone(Phone::Symbol("b"))]), PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]))];
     
-    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -458,7 +458,7 @@ fn inequal_length_match_conds() {
 
     let conds = vec![CondPattern::new(CondType::Match, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a")), Pattern::new_phone(Phone::Symbol("b"))]))];
     
-    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), conds, Vec::new());
 
     let match_phones = Phones::new(&[Phone::Symbol("a")], 0, Direction::Rtl);
 
@@ -467,20 +467,20 @@ fn inequal_length_match_conds() {
 
 #[test]
 fn zero_input() {
-    let mut rule_pattern = RulePattern::new(PatternList::default(), Vec::new(), Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::default(), Vec::new(), Vec::new());
 
     assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_some());
     assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_none());
 
 
     let cond = vec![CondPattern::new(CondType::Pattern, PatternList::new(vec![Pattern::new_phone(Phone::Bound)]), PatternList::new(vec![Pattern::new_phone(Phone::Bound)]))];
-    let mut rule_pattern = RulePattern::new(PatternList::default(), cond, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::default(), cond, Vec::new());
 
     assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_some());
     assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_none());
     
     let cond = vec![CondPattern::new(CondType::Pattern, PatternList::new(vec![Pattern::new_phone(Phone::Symbol("a"))]), PatternList::default())];
-    let mut rule_pattern = RulePattern::new(PatternList::default(), cond, Vec::new()).expect("pattern construction should be valid");
+    let mut rule_pattern = RulePattern::new(PatternList::default(), cond, Vec::new());
 
     assert!(rule_pattern.next_match(&Phones::new(&[], 0, Direction::Rtl)).expect("next match should not error").is_none());
 }
