@@ -1,5 +1,5 @@
-## Writing Sound Change Rules with CSCSCA
-### Phones
+# Writing Sound Change Rules with CSCSCA
+## Phones
 A phone is a group of non-special characters not separated by spaces
 
 Examples: `a` `ts` `á` `litteraly_a_phone`
@@ -10,7 +10,7 @@ Examples: `a` `ts` `á` `litteraly_a_phone`
     - CSCSCA will automatically make any Unicode Mark character (any combining character) part of the phone that directly proceeds it
         - This may not support the latest Unicode versions, but will always support at least Unicode 17.0.0
 
-### Shifts
+## Shifts
 
 A shift tells CSCSCA how changes are to be applied and separates inputs from outputs
 - **`>>`**: Left to right
@@ -20,7 +20,7 @@ A shift tells CSCSCA how changes are to be applied and separates inputs from out
 
 **Warning**: as it is technically possible to create an infinite loop with **`>`** or **`<`** or with zero-phone inputs, if applying changes to a single line is taking too long, CSCSCA will terminate itself and return an error
 
-### Rules
+## Rules
 A sound change
 
 Structured *`input`* *`shift`* *`output`* where *`input`* and *`output`* are phones and *`shift`* is a shift token
@@ -39,7 +39,7 @@ h >>
 
 **Note**: a line starting with **`##`** is a comment
 
-### Scopes
+## Scopes
 Scopes are a way to dynamically determine which phone, group of phones, or lack thereof exists in a rule.
 There are three types of scopes
 - optional **`(`**...**`)`**: a phone or group of phones that is optional
@@ -65,7 +65,7 @@ u >> y / i [*] _
 u >> y / i [* ! w] _
 ```
 
-### Labels
+## Labels
 As seen in the example above, corresponding scopes in the input and output try to agree on what they choose. However, there are times when we want this behavior to be different than the default or expanded to conditions
 
 To force scopes to agree on what they choose, we can use labels. A label has a name that starts with **`$`** and precedes a scope
@@ -76,7 +76,7 @@ Examples:
 {h, x} $label{i, u} >> $label{j i, w u}
 ```
 
-### Conditions and Anti-Conditions
+## Conditions and Anti-Conditions
 To apply a rule conditionally, add a condition after it
 
 A condition starts with a **`/`** and comes in two flavors: **pattern** and **equality**
@@ -110,7 +110,7 @@ GET dialect Enter dialect:
 
 **Note**: See **IO and Variables** for more on **`GET`** and **`%`**
 
-### Definitions
+## Definitions
 Oftentimes, we want to group phones by attributes, while CSCSCA does not have support for class definitions, CSCSCA does allow you to define a *Definition*, which can later be inserted into your code
 
 To define a *Definition* type **`DEFINE`** at the start of a line, followed by the name, then its contents.
@@ -157,7 +157,7 @@ DEFINE F {f, s, ç, x}
 ## @C now uses the new definitions of @P and @F accounts for all consonants again
 ```
 
-### Special Characters
+## Special Characters
 - **`*`**: represents any non-boundary phone. **`*`** may be preceded by a label to agree on which phone is represented
 - **`#`**: a word boundary
 - **`!`**: represents the proceeding pattern (selection, phone, etc) while disallowing the following pattern
@@ -165,7 +165,7 @@ DEFINE F {f, s, ç, x}
     - Note: if you want multiple patterns to be part of a negation pattern, wrap them in a selection scope (such as: `{(@G) @V} ! {(w) {u, o}}`)
 - **`\`**: escapes the effects of the following character, may be used at the end of a line to continue the rule on the next line
 
-### IO and Variables
+## IO and Variables
 To print the current phonetic form, type **`PRINT`** at the start of a line, followed by the message you would like to print with it
 
 To get input at runtime, type **`GET`** *`variable_name`* *`message`* where *`message`* is what you want to display to prompt input. To access the input later prefix *`variable_name`* with **`%`**

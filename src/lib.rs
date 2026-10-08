@@ -23,7 +23,6 @@ pub use crate::{
     executor::{
         LineByLineExecutor,
         appliable_rules::{
-            build_rules,
             AppliableRules,
         },
         runtime::{
@@ -49,13 +48,6 @@ pub(crate) mod tests;
 
 /// `NonZero` wrapped `1`
 const ONE: NonZero<usize> = NonZero::new(1).expect("1 ought to be nonzero");
-
-#[cfg(feature = "docs")]
-/// Returns the content of the README markdown file pertaining to writing sound change rules
-#[must_use]
-pub const fn docs() -> &'static str {
-    include_str!("../docs/writing_rules.md")
-}
 
 /// A type of error
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

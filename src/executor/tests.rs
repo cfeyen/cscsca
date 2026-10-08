@@ -6,7 +6,7 @@ use super::{
     LineByLineExecutor,
 };
 
-use crate::{ContextIoGetter, ContextRuntime, build_rules, executor::appliable_rules::build_rules_with_context, io_macros::{await_io, io_fn, io_test}, tests::{NoGet, NoLog}};
+use crate::{AppliableRules, ContextIoGetter, ContextRuntime, io_macros::{await_io, io_fn, io_test}, tests::{NoGet, NoLog}};
 
 struct SingleGetter(&'static str);
 
@@ -91,7 +91,7 @@ fn context_runtimes() {
     let mut logs = Vec::new();
     let mut runtime = RefContextLogger(PhantomData);
 
-    let appliable_rules = await_io! { build_rules("PRINT this is a test:", &mut NoGet) }.expect("should build");
+    let appliable_rules = await_io! { AppliableRules::new("PRINT this is a test:", &mut NoGet) }.expect("should build");
     await_io! { appliable_rules.apply_with_context("pata", &mut runtime, &mut logs) };
 
     assert_eq!(logs, vec![("this is a test:".to_string(), "pata".to_string())]);
@@ -109,7 +109,7 @@ fn context_runtimes() {
     let logs = Rc::new(RefCell::new(Vec::new()));
     let mut runtime = RcContextLogger;
 
-    let appliable_rules = await_io! { build_rules("PRINT this is a test:", &mut NoGet) }.expect("should build");
+    let appliable_rules = await_io! { AppliableRules::new("PRINT this is a test:", &mut NoGet) }.expect("should build");
     await_io! { appliable_rules.apply_with_context("pata", &mut runtime, logs.clone()) };
 
     assert_eq!(logs.borrow().clone(), vec![("this is a test:".to_string(), "pata".to_string())]);
@@ -158,7 +158,7 @@ fn context_getters() {
     let mut inputs = ["in".to_string()].into_iter();
     let mut getter = RefContextGetter(PhantomData);
 
-    let appliable_rules = await_io! { build_rules_with_context("GET a test:\na >> %a", &mut getter, &mut inputs) }.expect("should build");
+    let appliable_rules = await_io! { AppliableRules::new_with_context("GET a test:\na >> %a", &mut getter, &mut inputs) }.expect("should build");
     let res = await_io! { appliable_rules.apply("a", &mut NoLog::default()) };
 
     assert_eq!(res, "in");
@@ -176,7 +176,7 @@ fn context_getters() {
     let inputs = Rc::new(RefCell::new(["in".to_string()].into_iter()));
     let mut getter = RcContextGetter;
 
-    let appliable_rules = await_io! { build_rules_with_context("GET a test:\na >> %a", &mut getter, inputs) }.expect("should build");
+    let appliable_rules = await_io! { AppliableRules::new_with_context("GET a test:\na >> %a", &mut getter, inputs) }.expect("should build");
     let res = await_io! { appliable_rules.apply("a", &mut NoLog::default()) };
 
     assert_eq!(res, "in");

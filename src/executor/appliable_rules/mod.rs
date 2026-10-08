@@ -9,75 +9,6 @@ use crate::{
     }, io_fn, ir::tokenization_data::TokenizationData, lexer::Lexer, matcher::patterns::ir_to_patterns::RuleLine, phones::{build_phone_list, phone_list_to_string}
 };
 
-/// Builds all rules to a form that may be applied more easily within a given context
-/// 
-/// # Errors
-/// Errors on invalid rules or failed io
-#[io_fn]
-pub fn build_rules_with_context<'s, G: ContextIoGetter>(rules: &'s str, getter: &mut G, ctx: G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
-    let tokenization_data = TokenizationData::new();
-    
-    await_io! { build_rules_with_tokenization_data_and_context(rules, tokenization_data, getter, ctx) }
-}
-
-/// Builds all rules to a form that may be applied more easily
-/// 
-/// # Errors
-/// Errors on invalid rules or failed io
-#[io_fn]
-#[inline]
-pub fn build_rules<'s, G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<AppliableRules<'s>, ScaError> {
-    await_io! { build_rules_with_context(rules, getter, ()) }
-}
-
-/// Builds an `AppliableRules` struct from rules, pre-built tokenization data,
-/// the number of lines that proceed the first line, and a `ContextIoGetter`
-/// 
-/// # Errors
-/// Errors on invalid rules or failed io
-#[io_fn]
-fn build_rules_with_tokenization_data_and_context<'s, G: ContextIoGetter>(rules: &'s str, mut tokenization_data: TokenizationData<'s>, getter: &mut G, mut ctx: G::InputContext) -> Result<AppliableRules<'s>, ScaError> {
-    let mut rule_lines = Vec::new();
-    let mut sir = Lexer::lex(rules);
-
-    // prepares the getter to start fetching a new set of input
-    getter.on_start();
-
-    // builds each line
-    while !sir.is_empty() {
-        // builds the line and returns any errors
-        let (rule_line, c) = match await_io! {
-            build_line(&mut sir, &mut tokenization_data, getter, ctx)
-        } {
-            Ok(rule_line) => rule_line,
-            Err(e) => {
-                // signals to the getter that the rules are done being built
-                getter.on_end();
-
-                drop(rule_lines);
-                // Safety: Since the output is a `ScaError`,
-                // which owns all of its values, and `rule_lines` is dropped,
-                // no references remain to the sources buffer in `tokenization_data`
-                unsafe { tokenization_data.free_sources() };
-
-                
-                return Err(e.into_sca_error(rules.lines()));
-            }
-        };
-        ctx = c;
-        rule_lines.push(rule_line);
-    }
-
-    // signals to the getter that the rules are done being built
-    getter.on_end();
-
-    Ok(AppliableRules {
-        lines: rules.lines().collect(),
-        rules: rule_lines,
-        tokenization_data,
-    })
-}
-
 /// A set of rules reduced to an easily appliable form
 /// that may be applied any number of times
 #[derive(Debug)]
@@ -91,6 +22,75 @@ pub struct AppliableRules<'s> {
 }
 
 impl<'s> AppliableRules<'s> {
+    /// Builds all rules to a form that may be applied more easily within a given context
+    /// 
+    /// # Errors
+    /// Errors on invalid rules or failed io
+    #[io_fn]
+    pub fn new_with_context<G: ContextIoGetter>(rules: &'s str, getter: &mut G, ctx: G::InputContext) -> Result<Self, ScaError> {
+        let tokenization_data = TokenizationData::new();
+    
+        await_io! { Self::new_with_tokenization_data_and_context(rules, tokenization_data, getter, ctx) }
+    }
+
+    /// Builds all rules to a form that may be applied more easily
+    /// 
+    /// # Errors
+    /// Errors on invalid rules or failed io
+    #[io_fn]
+    #[inline]
+    pub fn new<G: IoGetter>(rules: &'s str, getter: &mut G) -> Result<Self, ScaError> {
+        await_io! { Self::new_with_context(rules, getter, ()) }
+    }
+
+    /// Builds an `AppliableRules` struct from rules, pre-built tokenization data,
+    /// the number of lines that proceed the first line, and a `ContextIoGetter`
+    /// 
+    /// # Errors
+    /// Errors on invalid rules or failed io
+    #[io_fn]
+    fn new_with_tokenization_data_and_context<G: ContextIoGetter>(rules: &'s str, mut tokenization_data: TokenizationData<'s>, getter: &mut G, mut ctx: G::InputContext) -> Result<Self, ScaError> {
+        let mut rule_lines = Vec::new();
+        let mut sir = Lexer::lex(rules);
+
+        // prepares the getter to start fetching a new set of input
+        getter.on_start();
+
+        // builds each line
+        while !sir.is_empty() {
+            // builds the line and returns any errors
+            let (rule_line, c) = match await_io! {
+                build_line(&mut sir, &mut tokenization_data, getter, ctx)
+            } {
+                Ok(rule_line) => rule_line,
+                Err(e) => {
+                    // signals to the getter that the rules are done being built
+                    getter.on_end();
+
+                    drop(rule_lines);
+                    // Safety: Since the output is a `ScaError`,
+                    // which owns all of its values, and `rule_lines` is dropped,
+                    // no references remain to the sources buffer in `tokenization_data`
+                    unsafe { tokenization_data.free_sources() };
+
+                    
+                    return Err(e.into_sca_error(rules.lines()));
+                }
+            };
+            ctx = c;
+            rule_lines.push(rule_line);
+        }
+
+        // signals to the getter that the rules are done being built
+        getter.on_end();
+
+        Ok(AppliableRules {
+            lines: rules.lines().collect(),
+            rules: rule_lines,
+            tokenization_data,
+        })
+    }
+    
     /// Applies all rules to the input using a runtime, errors are formatted as a string within a given context
     #[inline]
     #[io_fn]
@@ -170,7 +170,7 @@ impl<'s> AppliableRules<'s> {
         let num_lines_pre_extension = self.lines.len();
         
         let mut new_appliable = await_io! {
-            build_rules_with_tokenization_data_and_context(next_rules, tokenization_data, getter, ctx)
+            Self::new_with_tokenization_data_and_context(next_rules, tokenization_data, getter, ctx)
         }.map_err(|mut e| {
             e.line_num = unsafe { NonZero::new_unchecked(e.line_num.get() + num_lines_pre_extension) };
             e

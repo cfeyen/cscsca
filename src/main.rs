@@ -18,8 +18,6 @@ use cli_tools::{
 const APPLY_CMD: &str = "sca";
 const CHAR_HELP_CMD: &str = "chars";
 const HELP_CMD: &str = "help";
-const NEW_CMD: &str = "new";
-const FILE_EXTENTION: &str = ".sca";
 
 /// Reads the command line arguments and acts upon them
 /// 
@@ -33,15 +31,6 @@ fn main() {
         },
         Ok(CliCommand::Chars { words }) => for text in words {
             print_chars(&text);
-        },
-        Ok(CliCommand::New { use_template, path }) => {
-            let path = path + FILE_EXTENTION;
-
-            if std::path::Path::new(&path).exists() {
-                println!("{RED}Error: {BLUE}{path}{RESET} already exisits");
-            } else if fs::write(&path, if use_template { template() } else { "" }).is_err() {
-                println!("{RED}Error: {RESET}An error occured when writing to {BLUE}{path}{RESET}");
-            }
         },
         Ok(CliCommand::Help { extra_args }) => {
             if extra_args {
@@ -105,7 +94,7 @@ fn run_apply(paths: &[String], output_data: &OutputData, input_type: InputType) 
     if build {
         // build each rule set into an appliable form
         let appliable_rule_sets = match rule_sets.iter()
-            .map(|rule_set| cscsca::build_rules(rule_set, &mut CliGetter))
+            .map(|rule_set| cscsca::AppliableRules::new(rule_set, &mut CliGetter))
             .collect::<Result<Vec<_>, _>>() {
                 Ok(rules) => rules,
                 Err(e) => {
@@ -276,12 +265,7 @@ fn print_chars(text: &str) {
 
 /// prints the README fule
 fn help() {
-    println!("{}", include_str!("../README.md"));
-}
-
-/// returns the template file
-const fn template() -> &'static str {
-    include_str!("assets/template.sca")
+    println!("{}", include_str!("../docs/cli.md"));
 }
 
 /// The logging `Runtime` for the cli application

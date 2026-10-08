@@ -1,4 +1,3 @@
-const USE_TEMPLATE_FLAGS: [&str; 2] = ["-t", "--template"];
 const CHAIN_FLAGS: [&str; 2] = ["-c", "--chain"];
 const READ_FLAGS: [&str; 2] = ["-r", "--read"];
 const WRITE_FLAGS: [&str; 2] = ["-w", "--write"];
@@ -13,7 +12,7 @@ const DEFAULT_MAP_SPACER: &str = "->";
 
 use std::env;
 
-use crate::{cli_tools::ansi::{BOLD, RESET}, APPLY_CMD, CHAR_HELP_CMD, HELP_CMD, NEW_CMD};
+use crate::{cli_tools::ansi::{BOLD, RESET}, APPLY_CMD, CHAR_HELP_CMD, HELP_CMD};
 
 /// Parsed CLI input
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,10 +24,6 @@ pub enum CliCommand {
     },
     Chars { words: Vec<String> },
     Help { extra_args: bool },
-    New {
-        use_template: bool,
-        path: String,
-    },
     None,
 }
 
@@ -118,19 +113,6 @@ impl CliCommand {
             Some(cmd) => match cmd.as_str() {
                 APPLY_CMD => parse_sca(&mut args),
                 CHAR_HELP_CMD => Ok(Self::Chars { words: args.collect() }),
-                NEW_CMD => {
-                    let use_template = args.next_if(|s| USE_TEMPLATE_FLAGS.contains(&s.as_str())).is_some();
-
-                    let Some(path) = args.next() else {
-                        return Err(ArgumentParseError::ExpectedFileName);
-                    };
-                    
-                    if let Some(cmd) = args.next() {
-                        return Err(ArgumentParseError::UnexpectedCommand(cmd));
-                    }
-
-                    Ok(Self::New { use_template, path })
-                },
                 HELP_CMD => Ok(Self::Help { extra_args: args.next().is_some() }),
                 _ => Err(ArgumentParseError::UnexpectedCommand(cmd)),
             }

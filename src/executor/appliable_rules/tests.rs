@@ -1,12 +1,11 @@
-use super::*;
-use crate::{io_macros::{await_io, io_test}, tests::{NoGet, NoLog}, ONE};
+use crate::{AppliableRules, ONE, io_macros::{await_io, io_test}, tests::{NoGet, NoLog}};
 
 #[io_test(pollster::block_on)]
 fn appliable_rules() {
     let rules = "DEFINE V {i, e, a, u, o}\n{p, t, k} >> {b, d, g} / @V _ @V\n@V >> / _ #";
 
     let appliable_rules = await_io! {
-        build_rules(rules, &mut NoGet)
+        AppliableRules::new(rules, &mut NoGet)
     }.expect("rules should compile");
 
     assert_eq!(
@@ -29,7 +28,7 @@ fn appliable_rules() {
 fn appliable_rule_runtime_errors() {
     let rules = "{a, b} >> {c}";
 
-    let appliable_rules = await_io! { build_rules(rules, &mut NoGet) }
+    let appliable_rules = await_io! { AppliableRules::new(rules, &mut NoGet) }
         .expect("rules should compile");
 
     let result = await_io! { appliable_rules.apply_fallible("b", &mut NoLog::default()) };
@@ -40,7 +39,7 @@ fn appliable_rule_runtime_errors() {
 fn appliable_rule_build_time_errors() {
     let rules = "a > b > c";
 
-    let result = await_io! { build_rules(rules, &mut NoGet) };
+    let result = await_io! { AppliableRules::new(rules, &mut NoGet) };
     assert!(result.is_err_and(|e| e.rule == rules && e.line_num == ONE));
 }
 
@@ -49,7 +48,7 @@ fn extend_rules() {
     let rules_1 = "a >> bc";
     let rules_2 = "bc >> d";
 
-    let mut rules = await_io! { build_rules(rules_1, &mut NoGet) }.expect("Rules should be valid");
+    let mut rules = await_io! { AppliableRules::new(rules_1, &mut NoGet) }.expect("Rules should be valid");
     
     await_io! { rules.extend(rules_2, &mut NoGet) }.expect("Rules should be valid");
 
@@ -63,7 +62,7 @@ fn extend_rules_with_error() {
     let rules_1 = "a >> bc";
     let rules_2 = "@a";
 
-    let mut rules = await_io! { build_rules(rules_1, &mut NoGet) }.expect("Rules should be valid");
+    let mut rules = await_io! { AppliableRules::new(rules_1, &mut NoGet) }.expect("Rules should be valid");
     
     let res = await_io! { rules.extend(rules_2, &mut NoGet) };
 
@@ -85,7 +84,7 @@ fn extend_rules_with_definition() {
     let rules_1 = "DEFINE a bc >> d\na >> bc";
     let rules_2 = "@a";
 
-    let mut rules = await_io! { build_rules(rules_1, &mut NoGet) }.expect("Rules should be valid");
+    let mut rules = await_io! { AppliableRules::new(rules_1, &mut NoGet) }.expect("Rules should be valid");
     
     await_io! { rules.extend(rules_2, &mut NoGet) }.expect("Rules should be valid");
 

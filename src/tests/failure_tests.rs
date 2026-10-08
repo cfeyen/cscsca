@@ -1,4 +1,4 @@
-use crate::build_rules;
+use crate::AppliableRules;
 use crate::io_macros::{await_io, io_test};
 use crate::tests::{apply_fallible, NoGet, NoLog};
 
@@ -67,7 +67,7 @@ fn multi_line_errors() {
 
 #[io_test(pollster::block_on)]
 fn error_on_correct_line_after_escaped_newline_in_definition() {
-    let rules = await_io! { build_rules("DEFINE def $a{\\\r\n}\r\n{a, b} >> {c}", &mut NoGet) }
+    let rules = await_io! { AppliableRules::new("DEFINE def $a{\\\r\n}\r\n{a, b} >> {c}", &mut NoGet) }
         .expect("Should Build");
 
     assert_eq!(
