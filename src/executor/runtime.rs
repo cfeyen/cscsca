@@ -134,9 +134,15 @@ pub(super) trait RuntimeApplier: ContextRuntime {
             RuleLine::IoEvent(cmd) => await_io! {
                 self.execute_runtime_command(ctx, cmd, phones, line_num)
             },
-            RuleLine::Rule { rule, lines } => apply(rule, phones, self.line_application_limit())
-                .map(|()| ctx)
-                .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Application, line_num, *lines))
+            RuleLine::Rule { rule, lines } => {
+                if let Ok(rule) = rule.lock() {
+                    apply(&rule, phones, self.line_application_limit())
+                        .map(|()| ctx)
+                        .map_err(|e| RulelessScaError::from_error(&e, ScaErrorType::Application, line_num, *lines))
+                } else {
+                    Err(RulelessScaError::from_error_message("A serious synchronization error has occurred".to_string(), ScaErrorType::Application, line_num, *lines))
+                }
+            }
         }
     }
 

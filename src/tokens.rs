@@ -1,6 +1,6 @@
 use crate::{ir::tokens::IrToken, keywords::{AND_CHAR, ANY_CHAR, REPETITION_END_CHAR, REPETITION_START_CHAR, INPUT_PATTERN_STR, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR}};
 
-use std::{fmt::Display, rc::Rc};
+use std::{fmt::Display, sync::Arc};
 
 /// A number of repetitions within a repetition scope
 pub type RepetitionNumber = u16;
@@ -165,7 +165,7 @@ pub (crate) enum ScopeId<'s> {
     IOUnlabeled {
         id_num: usize,
         label_type: LabelType,
-        parent: Option<Rc<Self>>,
+        parent: Option<Arc<Self>>,
     }
 }
 

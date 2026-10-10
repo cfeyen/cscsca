@@ -1,4 +1,4 @@
-use crate::{executor::{getter::IoGetter, runtime::DEFAULT_LINE_APPLICATION_LIMIT, LineByLineExecutor}, LineApplicationLimit, Runtime, ScaError};
+use crate::{AppliableRules, LineApplicationLimit, Runtime, ScaError, executor::{LineByLineExecutor, getter::IoGetter, runtime::DEFAULT_LINE_APPLICATION_LIMIT}};
 use crate::io_macros::{await_io, io_test, io_fn};
 
 mod demo_tests;
@@ -222,4 +222,18 @@ fn combining_characters_in_get() {
         NoLog(Some(LineApplicationLimit::default())),
         SingleInputGetter("ɨ́̀")
     ).apply("ɨɨ́ɨ́̀", "GET a :\n{ɨ, ɨ́, %a} >> {1, 2, 3}") });
+}
+
+#[cfg(not(feature = "async_io"))]
+#[test]
+fn parallelism() {
+    let rules = AppliableRules::new("a >> b", &mut NoGet).expect("Rules should build");
+
+    std::thread::scope(|s| {
+        let a = s.spawn(|| rules.apply("abc", &mut NoLog::default()));
+        let b = s.spawn(|| rules.apply("abc123", &mut NoLog::default()));
+
+        assert_eq!(a.join().expect("Application should succeed"), "bbc");
+        assert_eq!(b.join().expect("Application should succeed"), "bbc123");
+    });
 }

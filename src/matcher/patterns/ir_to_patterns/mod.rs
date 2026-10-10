@@ -1,4 +1,4 @@
-use std::{cell::RefCell, iter::Peekable, num::NonZero, rc::Rc};
+use std::{cell::RefCell, iter::Peekable, num::NonZero, sync::{Arc, Mutex}};
 
 use crate::{
     ONE, executor::io_events::{IoEvent, RuntimeIoEvent}, ir::{IrLine, tokens::{Break, IrToken}}, matcher::patterns::{
@@ -11,15 +11,42 @@ use crate::{
 mod tests;
 
 /// A rule, executed command, or nothing representing a line of source code
-#[cfg_attr(test, derive(PartialEq))]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum RuleLine<'s> {
     Rule {
-        rule: SoundChangeRule<'s>,
+        rule: Mutex<SoundChangeRule<'s>>,
         lines: NonZero<usize>,
     },
     IoEvent(RuntimeIoEvent<'s>),
     Empty { lines: NonZero<usize> },
+}
+
+#[cfg(test)]
+impl PartialEq for RuleLine<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Empty { lines: s }, Self::Empty { lines: o }) => s == o,
+            (Self::IoEvent(s), Self::IoEvent(o)) => s == o,
+            (
+                Self::Rule { rule: self_rule, lines: self_lines},
+                Self::Rule { rule: other_rule, lines: other_lines},
+            ) => if self_lines == other_lines {
+                let Ok(sr) = self_rule.lock() else {
+                    panic!("Failed to lock mutex");
+                };
+
+                let Ok(or) = other_rule.try_lock() else {
+                    // since these tests are not running things in parallel, if the second mutex cannot lock, it is also the first mutex
+                    return true;
+                };
+
+                *sr == *or
+            } else {
+                false
+            },
+            _ => false
+        }
+    }
 }
 
 impl RuleLine<'_> {
@@ -98,13 +125,13 @@ pub fn build_rule(line: IrLine) -> Result<RuleLine, (RuleStructureError, NonZero
     }
 
     Ok(RuleLine::Rule {
-        rule: SoundChangeRule {
+        rule: Mutex::new(SoundChangeRule {
             kind: shift,
             output,
             pattern: RefCell::new(
                 RulePattern::new(PatternList::new(input), conds, anti_conds)
             ),
-        },
+        }),
         lines: line_count,
     })
 }
@@ -399,7 +426,7 @@ fn optional_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent:
         let mut ids = ids.borrow_mut();
         let id_num = ids.optional;
         ids.optional += 1;
-        Some(ScopeId::IOUnlabeled { parent: parent.map(Rc::new), id_num, label_type: LabelType::Scope(ScopeType::Optional) })
+        Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Scope(ScopeType::Optional) })
     } else {
         None
     }
@@ -411,7 +438,7 @@ fn selection_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent
         let mut ids = ids.borrow_mut();
         let id_num = ids.selection;
         ids.selection += 1;
-        Some(ScopeId::IOUnlabeled { parent: parent.map(Rc::new), id_num, label_type: LabelType::Scope(ScopeType::Selection) })
+        Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Scope(ScopeType::Selection) })
     } else {
         None
     }
@@ -423,7 +450,7 @@ fn any_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, parent: Opti
         let mut ids = ids.borrow_mut();
         let id_num = ids.any;
         ids.any += 1;
-        Some(ScopeId::IOUnlabeled { parent: parent.map(Rc::new), id_num, label_type: LabelType::Any })
+        Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Any })
     } else {
         None
     }
@@ -435,7 +462,7 @@ fn repetition_id<'s>(default_scope_ids: Option<&RefCell<DefaultScopeIds>>, paren
         let mut ids = ids.borrow_mut();
         let id_num = ids.repetition;
         ids.repetition += 1;
-        Some(ScopeId::IOUnlabeled { parent: parent.map(Rc::new), id_num, label_type: LabelType::Scope(ScopeType::Repetition) })
+        Some(ScopeId::IOUnlabeled { parent: parent.map(Arc::new), id_num, label_type: LabelType::Scope(ScopeType::Repetition) })
     } else {
         None
     }

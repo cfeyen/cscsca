@@ -24,6 +24,10 @@ pub struct TokenizationData<'s> {
     sources: Vec<NonNull<str>>,
 }
 
+// Safety:
+// It is safe to share the sources since the pointer are never written to
+unsafe impl Sync for TokenizationData<'_> {}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Definition<'s> {
     Lazy(Sir<'s>),
