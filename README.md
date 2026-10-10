@@ -30,3 +30,7 @@ See: [cli.md](docs/cli.md)
 
 See: [crate.md](docs/crate.md)
 
+## Building from Source
+
+See: [building.md](docs/building.md)
+
