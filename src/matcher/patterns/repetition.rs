@@ -86,12 +86,9 @@ impl<'s> MatchState<'s> for Repetition<'s> {
                 }
             } else {
                 self.included.reset();
-                for pat in self.pattern.inner() {
-                    self.included.push(pat.clone());
-                }
-                self.inclusions += 1;
+                self.add_inclusion();
 
-                if self.inclusions > max_len {
+                if self.inclusions > self.len {
                     self.len += 1;
                     self.included = PatternList::default();
                     self.inclusions = 0;
@@ -113,11 +110,6 @@ impl<'s> MatchState<'s> for Repetition<'s> {
     fn reset(&mut self) {
         self.included = PatternList::default();
         self.inclusions = 0;
-
-        for _ in 0..self.min {
-            self.add_inclusion();
-        }
-
         self.len = 0;
     }
 
@@ -144,7 +136,8 @@ impl<'s> Repetition<'s> {
     }
 
     fn max_len(&self, phones: &Phones<'_, '_>) -> usize {
-        let mut max_len = phones.rem_len();
+        // adding the minimum length to the remaining length allows bounds in the repetition to match beyond phones
+        let mut max_len = phones.rem_len() + self.min as usize;
 
         if let Some(max) = self.max {
             max_len = max_len.min(max as _);
@@ -154,10 +147,8 @@ impl<'s> Repetition<'s> {
     }
 
     fn add_inclusion(&mut self) {
-        for _ in 0..self.inclusions {
-            for pat in self.pattern.inner() {
-                self.included.push(pat.clone());
-            }
+        for pat in self.pattern.inner() {
+            self.included.push(pat.clone());
         }
 
         self.inclusions += 1;

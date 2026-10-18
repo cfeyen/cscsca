@@ -224,6 +224,11 @@ fn combining_characters_in_get() {
     ).apply("ɨɨ́ɨ́̀", "GET a :\n{ɨ, ɨ́, %a} >> {1, 2, 3}") });
 }
 
+#[io_test(pollster::block_on)]
+fn bounds_beyond_phones_in_repetition() {
+    assert_eq!("b", await_io! { apply("a", "a >> b / _ [# = 1]") })
+}
+
 #[cfg(not(feature = "async_io"))]
 #[test]
 fn parallelism() {
