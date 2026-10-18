@@ -71,7 +71,7 @@ impl<'s> AppliableRules<'s> {
                     // Safety: Since the output is a `ScaError`,
                     // which owns all of its values, and `rule_lines` is dropped,
                     // no references remain to the sources buffer in `tokenization_data`
-                    unsafe { tokenization_data.free_sources() };
+                    unsafe { tokenization_data.clear() };
 
                     
                     return Err(e.into_sca_error(rules.lines()));
@@ -211,11 +211,11 @@ impl<'s> AppliableRules<'s> {
 
 impl Drop for AppliableRules<'_> {
     fn drop(&mut self) {
-        for source in self.tokenization_data.sources() {
-            // Safety: `AppliableRules` should never be cloned
-            // or leak references to the IO sources
-            // ! this must be invarient and maintained within the `AppliableRules` API
-            unsafe { drop(Box::from_non_null(*source)); }
+        // Safety: `AppliableRules` should never be cloned
+        // or leak references to the IO sources
+        // ! this must be invarient and maintained within the `AppliableRules` API
+        unsafe {
+            self.tokenization_data.clear();
         }
     }
 }

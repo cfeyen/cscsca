@@ -141,7 +141,7 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecutor<R, G> {
                     // Safety: Since the output is a `ScaError`,
                     // which owns all of its values, and `phones` is dropped,
                     // no references remain to the sources buffer in `tokenization_data`
-                    unsafe { tokenization_data.free_sources() };
+                    unsafe { tokenization_data.clear() };
 
                     return Err(e.into_sca_error(rules.lines()));
                 },
@@ -158,7 +158,7 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecutor<R, G> {
                     // Safety: Since the output is a `ScaError`,
                     // which owns all of its values, and `phones` is dropped,
                     // no references remain to the sources buffer in `tokenization_data`
-                    unsafe { tokenization_data.free_sources() };
+                    unsafe { tokenization_data.clear() };
 
                     return Err(e.into_sca_error(rules.lines()));
                 }
@@ -175,7 +175,7 @@ impl<R: ContextRuntime, G: ContextIoGetter> LineByLineExecutor<R, G> {
         // Safety: Since the output is a `String`,
         // which owns all of its values, and `phones` is dropped,
         // no references remain to the sources buffer in `tokenization_data`
-        unsafe { tokenization_data.free_sources() };
+        unsafe { tokenization_data.clear() };
 
         Ok(output)
     }

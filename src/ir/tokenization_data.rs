@@ -1,10 +1,14 @@
-use std::{collections::HashMap, ptr::NonNull};
+use std::collections::HashMap;
 
 use crate::{
     escaped_strings::{EscapedStr, EscapedString}, ir::{IrLine, sir_expr_to_ir_line, ir_line_from_sir}, lexer::{Sir, Lexer, sir::SirToken}, phones::build_phone_list
 };
 
+use sources::Sources;
+
 use super::{tokens::IrToken, IrError};
+
+mod sources;
 
 /// Data that is created in the tokenization process
 /// and lasts longer than the tokenization of a single line
@@ -21,12 +25,8 @@ pub struct TokenizationData<'s> {
     definitions: HashMap<&'s str, Definition<'s>>,
     variables: HashMap<&'s str, Vec<IrToken<'s>>>,
     /// A list of pointers to all strs leaked
-    sources: Vec<NonNull<str>>,
+    sources: Sources,
 }
-
-// Safety:
-// It is safe to share the sources since the pointer are never written to
-unsafe impl Sync for TokenizationData<'_> {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Definition<'s> {
@@ -155,30 +155,21 @@ impl<'s> TokenizationData<'s> {
         source
     }
 
-    /// Frees all variable sources and consumes the struct
-    /// 
-    /// # Safety
-    /// There should be no references remaining to any string in the sources buffer
-    pub unsafe fn free_sources(self) {
-        for source in self.sources {
-            let ptr = source.as_ptr();
-            unsafe { drop(Box::from_raw(ptr)); }
-        }
-    }
-
     /// Adds a source to the sources buffer so it can be freed later
     fn add_source(&mut self, source: &'s str) {
-        self.sources.push(NonNull::from_ref(source));
+        self.sources.push(source);
     }
 
-    /// Returns a reference to the sources buffer
+    /// Empties the internal `HashMaps`s and frees sources replacing
     /// 
-    /// # Warning
-    /// The internal `HashMap`s may contain references to data in the sources buffer
-    /// 
-    /// Do not free the sources until this struct is dropped
-    pub fn sources(&self) -> &[NonNull<str>] {
-        &self.sources
+    /// # Safety
+    /// No other references to the sources should exist
+    pub unsafe fn clear(&mut self) {
+        self.definitions.clear();
+        self.variables.clear();
+        unsafe {
+            std::mem::take(&mut self.sources).free();
+        }
     }
 
     /// Takes the sources from another `TokenizationData`
@@ -202,7 +193,7 @@ impl<'s> TokenizationData<'s> {
         Self {
             definitions: self.definitions.clone(),
             variables: self.variables.clone(),
-            sources: Vec::new(),
+            sources: Sources::new(),
         }
     }
 }
@@ -236,5 +227,5 @@ fn test_get_variable_to_multiple_phones() {
         ])
     );
 
-    unsafe { tokenization_data.free_sources() };
+    unsafe { tokenization_data.clear() };
 }

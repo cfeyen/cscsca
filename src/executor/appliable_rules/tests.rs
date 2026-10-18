@@ -92,3 +92,12 @@ fn extend_rules_with_definition() {
 
     assert_eq!(&output, "d bc");
 }
+
+const fn is_sync<T: Sync>() -> bool { true }
+const fn is_send<T: Send>() -> bool { true }
+
+#[test]
+fn thread_traits<'s>() {
+    assert!(is_sync::<AppliableRules>());
+    assert!(is_send::<AppliableRules>());
+}
