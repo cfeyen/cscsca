@@ -77,6 +77,9 @@ const_list! {
     /// the end of a repetition scope
     REPETITION_END_CHAR = ']';
 
+    /// the start of a scope modifier
+    SCOPE_SPLIT_CHAR = '|';
+
     // Cond foci
     /// The seperator in a match condition
     MATCH_CHAR = '=';

@@ -29,6 +29,8 @@ pub enum SirToken<'s> {
     ScopeStart(ScopeType, Span),
     /// The end of a scope
     ScopeEnd(ScopeType, Span),
+    /// The start of a scope modifier
+    ScopeSplit(Span),
     /// Any non-boundary phone
     Any(Span),
     /// A scope argument seperator
@@ -72,13 +74,13 @@ impl SirToken<'_> {
             Self::InvalidPrefix(_, s) | Self::NonPhoneEscape(_, s)
             | Self::Break(_, s) | Self::CondFocus(_, s)
             | Self::ScopeStart(_, s) | Self::ScopeEnd(_, s)
-            | Self::Negative(s) | Self::Any(s)
-            | Self::ArgSep(s) | Self::Bound(s)
-            | Self::DefinitionDeclaration(s) | Self::LazyDefinitionDeclaration(s)
-            | Self::GetCommand(s) | Self::GetAsCodeCommand(s)
-            | Self::PrintCommand(s) | Self::Comment(s)
-            | Self::Whitespace(s) | Self::EndOfExpr(s)
-            | Self::Message(_, s)
+            | Self::ScopeSplit(s) | Self::Negative(s)
+            | Self::Any(s) | Self::ArgSep(s)
+            | Self::Bound(s) | Self::DefinitionDeclaration(s)
+            | Self::LazyDefinitionDeclaration(s) | Self::GetCommand(s)
+            | Self::GetAsCodeCommand(s) | Self::PrintCommand(s)
+            | Self::Comment(s) | Self::Whitespace(s)
+            | Self::EndOfExpr(s) | Self::Message(_, s)
             => s
         }
     }

@@ -1,7 +1,7 @@
 use crate::{
     ir::{prefix::Prefix, tokens::Break},
     keywords::{
-        AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, REPETITION_END_CHAR, REPETITION_START_CHAR, RTL_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, VARIABLE_PREFIX, is_isolated_char, is_isolation_bound, is_special_char, is_special_str
+        AND_CHAR, ANY_CHAR, ARG_SEP_CHAR, BOUND_CHAR, COMMENT_LINE_START, COND_CHAR, DEFINITION_LINE_START, DEFINITION_PREFIX, ESCAPE_CHAR, GET_AS_CODE_LINE_START, GET_LINE_START, INPUT_PATTERN_STR, LABEL_PREFIX, LAZY_DEFINITION_LINE_START, LTR_CHAR, MATCH_CHAR, NOT_CHAR, OPTIONAL_END_CHAR, OPTIONAL_START_CHAR, PRINT_LINE_START, REPETITION_END_CHAR, REPETITION_START_CHAR, RTL_CHAR, SCOPE_SPLIT_CHAR, SELECTION_END_CHAR, SELECTION_START_CHAR, VARIABLE_PREFIX, is_isolated_char, is_isolation_bound, is_special_char, is_special_str
     },
     lexer::{sir::SirToken, substring::Substring, token_types::{PhoneValidStr, Span}},
     tokens::{AndType, CondType, Direction, ScopeType, Shift, ShiftType}
@@ -129,6 +129,7 @@ impl<'s> Lexer<'s> {
                 SELECTION_END_CHAR => push_char_token!(self <- ScopeEnd(ScopeType::Selection)),
                 REPETITION_START_CHAR => push_char_token!(self <- ScopeStart(ScopeType::Repetition)),
                 REPETITION_END_CHAR => push_char_token!(self <- ScopeEnd(ScopeType::Repetition)),
+                SCOPE_SPLIT_CHAR => push_char_token!(self <- ScopeSplit()),
                 // handles other single-character tokens
                 AND_CHAR => push_char_token!(self <- Break(Break::And(AndType::And))),
                 ANY_CHAR => push_char_token!(self <- Any),

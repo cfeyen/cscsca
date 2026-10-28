@@ -1,5 +1,6 @@
 use crate::{
-    keywords::{ARG_SEP_CHAR, MATCH_CHAR, REPETITION_END_CHAR, REPETITION_START_CHAR}, matcher::{
+    keywords::{ARG_SEP_CHAR, REPETITION_END_CHAR, REPETITION_START_CHAR, SCOPE_SPLIT_CHAR},
+    matcher::{
         choices::{Choices, OwnedChoices},
         match_state::MatchState,
         patterns::{ir_to_patterns::RuleStructureError, list::PatternList},
@@ -164,7 +165,7 @@ impl std::fmt::Display for Repetition<'_> {
         write!(f, "{REPETITION_START_CHAR} {} ", self.pattern)?;
 
         if self.min > 0 || self.max.is_some() {
-            write!(f, "{MATCH_CHAR} ")?;
+            write!(f, "{SCOPE_SPLIT_CHAR} ")?;
 
             if let Some(max) = self.max {
                 write!(f, "{}{ARG_SEP_CHAR} {max}", self.min)?;

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use crate::{
-    keywords::{ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, LABEL_PREFIX, NOT_CHAR},
+    keywords::{ANY_CHAR, ARG_SEP_CHAR, COND_CHAR, LABEL_PREFIX, NOT_CHAR, SCOPE_SPLIT_CHAR},
     phones::Phone,
     tokens::{AndType, CondType, RepetitionNumber, ScopeType, Shift}
 };
@@ -25,6 +25,8 @@ pub enum IrToken<'s> {
     ScopeStart(ScopeType),
     /// The end of a scope
     ScopeEnd(ScopeType),
+    /// The start of a scope modifier
+    ScopeSplit,
     /// Repetition negator
     Negative,
     /// A unsigned integer
@@ -41,6 +43,7 @@ impl Display for IrToken<'_> {
             Self::Phone(phone) => write!(f, "{phone}"),
             Self::ScopeEnd(kind) => write!(f, "{}", kind.end_char()),
             Self::ScopeStart(kind) => write!(f, "{}", kind.start_char()),
+            Self::ScopeSplit => write!(f, "{SCOPE_SPLIT_CHAR}"),
             Self::Label(name) => write!(f, "{LABEL_PREFIX}{name}"),
             Self::Negative => write!(f, "{NOT_CHAR}"),
             Self::Number(_, phone) => write!(f, "{phone}")

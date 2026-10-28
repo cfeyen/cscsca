@@ -171,6 +171,7 @@ pub fn sir_expr_to_ir_line<'s>(sir: Vec<SirToken<'s>>, tokenization_data: &mut T
             SirToken::Phone(symbol) => IrToken::Phone(Phone::Symbol(symbol.str())),
             SirToken::ScopeEnd(st, _) => IrToken::ScopeEnd(st),
             SirToken::ScopeStart(st, _) => IrToken::ScopeStart(st),
+            SirToken::ScopeSplit(_) => IrToken::ScopeSplit,
             SirToken::Variable(var) => {
                 let content = tokenization_data.get_variable(var.str());
 

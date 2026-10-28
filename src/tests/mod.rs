@@ -163,9 +163,9 @@ fn complex_agreement() {
 
 #[io_test(pollster::block_on)]
 fn bounded_repetition() {
-    assert_eq!("azzzzzc bzzzzc bzzzc bzzc azc ac", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 2, 4] c") });
-    assert_eq!("bzzzzzc bzzzzc bzzzc bzzc azc ac", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 2] c") });
-    assert_eq!("azzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z = 0, 4] c") });
+    assert_eq!("azzzzzc bzzzzc bzzzc bzzc azc ac", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z | 2, 4] c") });
+    assert_eq!("bzzzzzc bzzzzc bzzzc bzzc azc ac", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z | 2] c") });
+    assert_eq!("azzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z | 0, 4] c") });
     assert_eq!("bzzzzzc bzzzzc bzzzc bzzc bzc bc", await_io! { apply("azzzzzc azzzzc azzzc azzc azc ac", "a >> b / _ [z] c") });
 }
 
@@ -189,12 +189,12 @@ fn numbers_as_phones() {
 
 #[io_test(pollster::block_on)]
 fn nested_selection_with_empty_first_option() {
-    assert_eq!("2", await_io! { apply("|bc|", "| {b {, c}} | >> {{1, 2}}") });
-    assert_eq!("2", await_io! { apply("|bc|", "| (b {, c}) | >> ({1, 2})") });
-    assert_eq!("2|bc|", await_io! { apply("n|bc|", "n >> $a{1, 2} / _ | {b $a{[{}], c}} |") });
-    assert_eq!("2|bc|", await_io! { apply("n|bc|", "n >> $a{1, 2} / _ | (b $a{[{}], c}) |") });
+    assert_eq!("2", await_io! { apply("-bc-", "- {b {, c}} - >> {{1, 2}}") });
+    assert_eq!("2", await_io! { apply("-bc-", "- (b {, c}) - >> ({1, 2})") });
+    assert_eq!("2-bc-", await_io! { apply("n-bc-", "n >> $a{1, 2} / _ - {b $a{[{}], c}} -") });
+    assert_eq!("2-bc-", await_io! { apply("n-bc-", "n >> $a{1, 2} / _ - (b $a{[{}], c}) -") });
 
-    assert_eq!("2", await_io! { apply("|ab|", "| ({a, } $a{, b}) | >> ($a{1, 2})") });
+    assert_eq!("2", await_io! { apply("-ab-", "- ({a, } $a{, b}) - >> ($a{1, 2})") });
 }
 
 #[io_test(pollster::block_on)]
@@ -226,7 +226,7 @@ fn combining_characters_in_get() {
 
 #[io_test(pollster::block_on)]
 fn bounds_beyond_phones_in_repetition() {
-    assert_eq!("b", await_io! { apply("a", "a >> b / _ [# = 1]") })
+    assert_eq!("b", await_io! { apply("a", "a >> b / _ [# | 1]") })
 }
 
 #[cfg(not(feature = "async_io"))]

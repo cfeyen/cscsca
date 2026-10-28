@@ -198,6 +198,7 @@ fn ir_tokens_to_patterns<'ir, 's: 'ir>(ir: &mut Peekable<impl Iterator<Item = &'
                 let id = repetition_id(default_scope_ids, parent_scope.cloned());
                 Pattern::new_repetition(id, PatternList::new(patterns), min, max)?
             },
+            IrToken::ScopeSplit => return Err(RuleStructureError::UnexpectedScopeSplit),
             // ensures a label is proceeding a labelable token then creates that token with the label
             IrToken::Label(name) => {
                 let next = ir.next();
@@ -282,7 +283,7 @@ fn ir_to_repetition_pattern<'ir, 's: 'ir>(ir: &mut Peekable<impl Iterator<Item =
 
     for ir_token in &mut *ir {
         match ir_token {
-            IrToken::CondType(CondType::Match) => {
+            IrToken::ScopeSplit => {
                 let min = match ir.next() {
                     None => return Err(RuleStructureError::ExpectedRangeMinimum),
                     Some(IrToken::Number(min, _)) => *min,
@@ -484,6 +485,7 @@ pub enum RuleStructureError<'s> {
     AndDoesNotFollowCond(AndType),
     SecondShift(Shift),
     UnexpectedCondType(CondType),
+    UnexpectedScopeSplit,
     EmptyRepetition,
     EmptyInclusion,
     EmptyExclusion,
@@ -510,6 +512,7 @@ impl std::fmt::Display for RuleStructureError<'_> {
             Self::MismatchedScopeBounds(start, end)
                 => write!(f, "Found mismatched scope bounds '{}'...'{}'", start.start_char(), end.end_char()),
             Self::UnexpectedToken(ir_token) => write!(f, "Found unexpected token '{ir_token}'"),
+            Self::UnexpectedScopeSplit => write!(f, "Found unexpected scope modifier '{}'", IrToken::ScopeSplit),
             Self::NoConditionFocus => write!(f, "Found condition without an input patern ('{}') or equality ('{}')", CondType::Pattern, CondType::Match),
             Self::AndDoesNotFollowCond(and_type) => write!(f, "Found '{and_type}' outside of a condition"),
             Self::SecondShift(shift)
