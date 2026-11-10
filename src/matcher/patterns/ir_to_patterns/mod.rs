@@ -283,7 +283,7 @@ fn ir_to_repetition_pattern<'ir, 's: 'ir>(ir: &mut Peekable<impl Iterator<Item =
 
     for ir_token in &mut *ir {
         match ir_token {
-            IrToken::ScopeSplit => {
+            IrToken::ScopeSplit if scope_stack.is_empty() => {
                 let min = match ir.next() {
                     None => return Err(RuleStructureError::ExpectedRangeMinimum),
                     Some(IrToken::Number(min, _)) => *min,

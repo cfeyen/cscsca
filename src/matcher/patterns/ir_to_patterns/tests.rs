@@ -732,6 +732,47 @@ fn bounded_repetition() {
 }
 
 #[test]
+fn nested_bounded_repetition() {
+    let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
+
+    assert_eq!(Ok(RuleLine::Rule { rule: Mutex::new(SoundChangeRule {
+        kind: shift,
+        output: Vec::new(),
+        pattern: RefCell::new(
+            RulePattern::new(
+                PatternList::default(),
+                vec![CondPattern::new(
+                    CondType::Pattern,
+                    PatternList::new(vec![
+                        Pattern::new_repetition(None, PatternList::new(vec![
+                            Pattern::new_repetition(None, PatternList::new(vec![
+                                Pattern::new_any(None)
+                            ]), 1, None).expect("Should build"),
+                            Pattern::new_any(None),
+                        ]), 1, None).expect("Should build")]),
+                    PatternList::default(),
+                )],
+                Vec::new(),
+            )
+        ),
+    }), lines: ONE }), build_rule(IrLine::Ir { tokens: vec![
+        IrToken::Break(Break::Shift(shift)),
+        IrToken::Break(Break::Cond),
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::ScopeStart(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::ScopeSplit,
+        IrToken::Number(1, Phone::Symbol("1")),
+        IrToken::ScopeEnd(ScopeType::Repetition),
+        IrToken::Any,
+        IrToken::ScopeSplit,
+        IrToken::Number(1, Phone::Symbol("1")),
+        IrToken::ScopeEnd(ScopeType::Repetition),
+        IrToken::CondType(CondType::Pattern),
+    ], lines: ONE }));
+}
+
+#[test]
 fn any_to_any() {
     let shift = Shift { dir: Direction::Ltr, kind: ShiftType::Move};
     
